@@ -14,7 +14,7 @@ export function AdminTabs({ pendingInvites }: { pendingInvites: number }) {
     { href: "/admin/audit", label: "Audit log" },
   ];
   return (
-    <nav className="mt-4 flex gap-0.5 overflow-x-auto" role="tablist">
+    <nav className="mt-4 flex gap-0.5" role="tablist">
       {tabs.map((t) => {
         const on = t.exact ? path === t.href : path.startsWith(t.href);
         return (

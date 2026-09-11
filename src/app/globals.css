@@ -38,18 +38,20 @@
   --shadow-panel: var(--shadow);
 }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 var(--ui); -webkit-font-smoothing: antialiased; }
-button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
-a { color: inherit; text-decoration: none; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-input, select, textarea { font: inherit; color: inherit; }
-kbd { font: 12px var(--ui); color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
-.tnum { font-variant-numeric: tabular-nums; }
-dialog { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 0; max-width: min(92vw, 520px); width: 100%; }
-dialog::backdrop { background: rgba(20, 18, 14, 0.45); }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+@layer base {
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 var(--ui); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  input, select, textarea { font: inherit; color: inherit; }
+  kbd { font: 12px var(--ui); color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  dialog { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 0; max-width: min(92vw, 520px); width: 100%; }
+  dialog::backdrop { background: rgba(20, 18, 14, 0.45); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+}
 
 /* Copy editor (Tiptap) */
 .prose-copy { font: 400 18px/1.65 var(--serif); color: var(--ink); }

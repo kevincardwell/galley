@@ -61,7 +61,7 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
   };
 
   return (
-    <aside className="details flex flex-col gap-5 border-line bg-surface-2 p-4 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-l max-[899px]:border-t">
+    <aside className="details flex min-w-0 flex-col gap-5 overflow-x-hidden border-line bg-surface-2 p-4 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-l max-[899px]:border-t">
       <div>
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <TitleField key={section.id} id={section.id} title={section.title} readOnly={readOnly} />
@@ -70,12 +70,12 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
           </span>
         </div>
         <dl className="tnum m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[13px]">
-          <dt className="m-0 text-ink-2">Status</dt>
-          <dd className="m-0">
+          <dt className="m-0 text-ink-2 col-span-2">Status</dt>
+          <dd className="m-0 col-span-2 -mt-1">
             {readOnly ? (
               <Pill tone={statusTone(section.status)}>{STATUS_LABEL[section.status]}</Pill>
             ) : (
-              <div role="radiogroup" aria-label="Status" className="inline-flex overflow-hidden rounded-r border border-line bg-surface">
+              <div role="radiogroup" aria-label="Status" className="flex w-full overflow-hidden rounded-r border border-line bg-surface">
                 {STATUSES.map((s) => {
                   const on = s === section.status;
                   const tone = statusTone(s);
@@ -88,7 +88,7 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
                       disabled={pending}
                       onClick={() => setStatus(s)}
                       className={clsx(
-                        "flex items-center gap-1.5 border-r border-line px-2 py-[3px] text-xs font-medium transition-colors last:border-r-0",
+                        "flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border-r border-line px-2 py-1 text-xs font-medium transition-colors last:border-r-0",
                         on ? (tone === "done" ? "bg-done-soft text-done" : tone === "review" ? "bg-review-soft text-review" : "bg-surface-2 text-ink") : "text-ink-2 hover:bg-surface-2",
                       )}
                     >

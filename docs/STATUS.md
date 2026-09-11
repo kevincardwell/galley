@@ -8,13 +8,15 @@
 - Docker: multi-stage `Dockerfile`, `compose.yml`, `docker/entrypoint.sh`, healthcheck. CI: `.github/workflows/ci.yml` (tsc, lint, vitest, build, docker build) and `release.yml` (multi-arch push to ghcr.io on main/tags).
 - README covers Docker and local install.
 
+## Browser check done 2026-09-11 (evening)
+Clicked through home, overview, tasks (detail panel), copy (typed, autosaved, versions), assets (uploaded 3 images: thumbs, dimensions, palette all worked), admin, share link (copy + files pages), export zip, search API, file-route token checks. Fixed: base CSS was unlayered and beat Tailwind utilities (primary buttons had no fill); copy details pane overflowed sideways (status control); stray scrollbar on admin tabs.
+
 ## Not yet done (pick up here)
-1. **Nothing has been looked at in a browser yet.** Run `npm run dev`, create the admin, click through Tasks, Copy, Assets, Admin. Expect layout rough edges; the agents built from spec.
-2. **Docker image not yet built or run locally.** `docker compose up -d --build` then repeat the click-through inside the container (ffmpeg posters, volume permissions).
+1. **Docker image not yet built.** `docker build` was refused: this user is not in the `docker` group. Run `sudo usermod -aG docker $USER` and log back in (or use `sudo docker compose up -d --build`), then click through inside the container (ffmpeg posters, volume permissions).
 3. **Push to GitHub.** Repo name assumed `kevincardwell/galley` in README, compose.yml and package.json; change if different. `gh repo create galley --public --source=. --push`. The release workflow needs Packages write (default GITHUB_TOKEN is fine) and the ghcr package set to public once it exists.
 4. E2E only covers access. Add task → copy → upload → export steps once the UI has been eyeballed (selectors unknown until then).
 5. Small known gaps: no version diff view (only list + restore); toolbar link uses window.prompt; page/section drag reorder not wired (actions exist); SMTP stored but not sending; instance logo not implemented; `request.formData()` buffers uploads in memory.
-6. Git identity for this repo is set locally to Kevin Cardwell <57758314+kevincardwell@users.noreply.github.com>; change if commits should carry a different name.
+6. Git identity for this repo is Kevin Cardwell <57758314+kevincardwell@users.noreply.github.com> (all commits rewritten to it).
 
 ## Layout of the code
 See `docs/AGENT-BRIEF.md` for conventions (server-action guard pattern, tokens, contracts) and `docs/PLAN.md` for intent.
