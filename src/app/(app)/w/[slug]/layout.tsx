@@ -26,7 +26,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
   const canManage = access.role === "admin" || access.role === "manager";
   return (
     <div className="flex min-h-full flex-col" style={{ ["--accent" as string]: ws.accent }}>
-      <header className="border-b border-line px-6 pt-4" style={{ background: "linear-gradient(to bottom, var(--accent-soft), var(--surface) 78%)" }}>
+      <header className="min-w-0 border-b border-line px-6 pt-4" style={{ background: "linear-gradient(to bottom, var(--accent-soft), var(--surface) 78%)" }}>
         <div className="flex flex-wrap items-start gap-3.5">
           <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-accent font-serif text-base font-semibold text-accent-ink">
             {ws.faviconPath ? <img src={`/api/favicon/${ws.id}`} alt="" className="size-5" /> : ws.name[0]}
@@ -43,7 +43,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
         </div>
         <WorkspaceTabs slug={ws.slug} counts={{ open: counts.open, approved: counts.approved, sections: counts.sections, assets: counts.assets }} canManage={canManage} />
       </header>
-      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
     </div>
   );
 }

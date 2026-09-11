@@ -8,6 +8,7 @@ import type { AssetFolder, AssetItem } from "@/lib/media/types";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/field";
+import { toast } from "@/components/ui/toast";
 import { deleteAsset, moveToFolder, renameAsset, setTags } from "@/actions/assets";
 import { KindIcon } from "./asset-tile";
 import { fileUrl, previewUrl } from "./urls";
@@ -22,7 +23,11 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
   const [copied, setCopied] = useState<string | null>(null);
 
   const flash = (what: string) => { setCopied(what); setTimeout(() => setCopied(null), 1400); };
-  const copy = (text: string, what: string) => navigator.clipboard.writeText(text).then(() => flash(what));
+  const copy = (text: string, what: string) =>
+    navigator.clipboard
+      .writeText(text)
+      .then(() => { flash(what); toast(what === "link" ? "Link copied" : `Copied ${what}`); })
+      .catch(() => toast("Could not copy", { tone: "late" }));
   const link = () => {
     const base = `${window.location.origin}/api/file/${asset.id}/original`;
     return shareToken ? `${base}?share=${shareToken}` : base;

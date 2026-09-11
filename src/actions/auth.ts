@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { hasAnyUser } from "@/lib/settings";
 import { logAudit } from "@/lib/activity";
+import { clearFailures, isThrottled, recordFailure } from "@/lib/auth/throttle";
 
 export type FormState = { error?: string } | undefined;
 
@@ -28,10 +29,13 @@ export async function setupAction(_: FormState, form: FormData): Promise<FormSta
 export async function loginAction(_: FormState, form: FormData): Promise<FormState> {
   const parsed = credentials.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: "Check your email and password." };
+  if (await isThrottled(parsed.data.email)) return { error: "Too many attempts. Try again in a few minutes." };
   const user = db.select().from(schema.users).where(eq(schema.users.email, parsed.data.email)).get();
   if (!user || user.deactivatedAt || !(await verifyPassword(user.passwordHash, parsed.data.password))) {
+    await recordFailure(parsed.data.email);
     return { error: "That email and password do not match." };
   }
+  await clearFailures(parsed.data.email);
   logAudit({ actorId: user.id, action: "auth.login", subjectType: "user", subjectId: user.id });
   await createSession(user.id);
   const next = String(form.get("next") || "");

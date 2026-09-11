@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { toggleShareLink } from "@/actions/workspaces";
+import { toast } from "@/components/ui/toast";
 
 export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManage }: { workspaceId: string; slug: string; shareToken: string | null; canManage: boolean }) {
   const [open, setOpen] = useState(false);
@@ -19,7 +20,16 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
           <div className="flex flex-col gap-3">
             <div className="flex gap-2">
               <input id="share-url" readOnly value={url} className="min-w-0 flex-1 rounded-r border border-line bg-surface-2 px-2.5 py-1.5 text-sm" />
-              <Button onClick={() => { navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? "Copied" : "Copy"}</Button>
+              <Button
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(url)
+                    .then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); toast("Link copied"); })
+                    .catch(() => toast("Could not copy", { tone: "late" }));
+                }}
+              >
+                {copied ? "Copied" : "Copy"}
+              </Button>
             </div>
             <div className="flex justify-between">
               <Button variant="danger" disabled={pending} onClick={() => start(() => toggleShareLink(workspaceId, false))}>Turn off link</Button>

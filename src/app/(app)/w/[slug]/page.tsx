@@ -6,6 +6,7 @@ import { db, schema } from "@/db/client";
 import { recentActivity } from "@/lib/queries/workspaces";
 import { formatDue, timeAgo } from "@/lib/format";
 import { Pill } from "@/components/ui/pill";
+import { QuickToggle } from "@/components/overview/quick-toggle";
 
 export default async function OverviewPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -45,7 +46,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ slug:
             <ul className="m-0 list-none divide-y divide-line-2 border-y border-line-2 p-0">
               {nextTasks.map((t) => { const due = formatDue(t.dueOn); return (
                 <li key={t.id} className="flex items-center gap-3 py-2">
-                  <span className="size-4 shrink-0 rounded border-[1.5px] border-ink-3" />
+                  <QuickToggle taskId={t.id} title={t.title} />
                   <Link href={`/w/${slug}/tasks?task=${t.id}`} className="min-w-0 flex-1 truncate hover:underline">{t.title}</Link>
                   {due.label && <span className={`tnum text-xs ${due.tone === "late" ? "text-late font-medium" : due.tone === "soon" ? "text-review font-medium" : "text-ink-2"}`}>{due.label}</span>}
                 </li>

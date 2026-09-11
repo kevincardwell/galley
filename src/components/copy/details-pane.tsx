@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
 import { Textarea } from "@/components/ui/field";
+import { toast } from "@/components/ui/toast";
 import { AttachPicker } from "@/components/assets/attach-picker";
 import { addComment, renameSection, resolveComment, restoreVersion, setSectionStatus } from "@/actions/copy";
 import { STATUS_LABEL, statusTone, type SectionDetails, type SectionRow } from "@/lib/copy/types";
@@ -49,6 +50,9 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
     if (await onCopyMarkdown()) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
+      toast("Copied as Markdown");
+    } else {
+      toast("Could not copy", { tone: "late" });
     }
   };
 

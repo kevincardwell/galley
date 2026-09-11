@@ -14,7 +14,7 @@ export function AdminTabs({ pendingInvites }: { pendingInvites: number }) {
     { href: "/admin/audit", label: "Audit log" },
   ];
   return (
-    <nav className="mt-4 flex gap-0.5" role="tablist">
+    <nav className="mt-4 flex min-w-0 max-w-full gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
       {tabs.map((t) => {
         const on = t.exact ? path === t.href : path.startsWith(t.href);
         return (
@@ -23,10 +23,10 @@ export function AdminTabs({ pendingInvites }: { pendingInvites: number }) {
             href={t.href}
             role="tab"
             aria-selected={on}
-            className={clsx("-mb-px flex items-center gap-1.5 whitespace-nowrap rounded-t border-b-2 px-3 py-2 font-medium", on ? "border-accent text-ink" : "border-transparent text-ink-2 hover:text-ink")}
+            className={clsx("-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t border-b-2 px-3 py-2 font-medium", on ? "border-accent text-ink" : "border-transparent text-ink-2 hover:text-ink")}
           >
             {t.label}
-            {t.n && <span className="tnum text-xs text-ink-3">{t.n}</span>}
+            {t.n && <span className="tnum text-xs text-ink-3 max-sm:hidden">{t.n}</span>}
           </Link>
         );
       })}

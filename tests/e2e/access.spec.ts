@@ -60,8 +60,8 @@ test.describe.serial("invite-only access", () => {
     await page.fill("#auth-password", "another-long-password");
     await page.click("button[type=submit]");
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText("Marlow & Finch Joinery").first()).toBeVisible();
-    await expect(page.getByText("Harbourside Bakery")).toHaveCount(0);
+    await expect(page.locator("main").getByText("Marlow & Finch Joinery")).toBeVisible();
+    await expect(page.locator("main").getByText("Harbourside Bakery")).toHaveCount(0);
     await page.goto("/w/harbourside-bakery");
     await expect(page.getByText(/not found|could not be found/i)).toBeVisible();
     await page.goto("/admin");
