@@ -1,17 +1,21 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+const KEY = "galley-theme";
+const listeners = new Set<() => void>();
+function read() { try { return localStorage.getItem(KEY) ?? ""; } catch { return ""; } }
+function write(next: string) {
+  try { if (next) localStorage.setItem(KEY, next); else localStorage.removeItem(KEY); } catch {}
+  if (next) document.documentElement.dataset.theme = next; else delete document.documentElement.dataset.theme;
+  listeners.forEach((l) => l());
+}
+const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<string>("");
-  useEffect(() => { try { setTheme(localStorage.getItem("galley-theme") ?? ""); } catch {} }, []);
-  function cycle() {
-    const next = theme === "" ? "dark" : theme === "dark" ? "light" : "";
-    setTheme(next);
-    try { next ? localStorage.setItem("galley-theme", next) : localStorage.removeItem("galley-theme"); } catch {}
-    if (next) document.documentElement.dataset.theme = next; else delete document.documentElement.dataset.theme;
-  }
+  const theme = useSyncExternalStore(subscribe, read, () => "");
+  const next = theme === "" ? "dark" : theme === "dark" ? "light" : "";
   return (
-    <button onClick={cycle} className="rounded px-1.5 py-1 text-xs text-ink-3 hover:bg-surface hover:text-ink" title={`Theme: ${theme || "system"}`}>
+    <button onClick={() => write(next)} className="rounded px-1.5 py-1 text-xs text-ink-3 hover:bg-surface hover:text-ink" title={`Theme: ${theme || "system"}`}>
       {theme === "dark" ? "Dark" : theme === "light" ? "Light" : "Auto"}
     </button>
   );

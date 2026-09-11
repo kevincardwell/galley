@@ -3,13 +3,14 @@ import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { newToken } from "@/lib/ids";
+import { getSettings } from "@/lib/settings";
 
 export const SESSION_COOKIE = "galley_session";
-const DAYS = Number(process.env.SESSION_DAYS || 30);
 
 export async function createSession(userId: string) {
   const id = newToken();
-  const expiresAt = Math.floor(Date.now() / 1000) + DAYS * 86400;
+  const days = getSettings().sessionDays || 30;
+  const expiresAt = Math.floor(Date.now() / 1000) + days * 86400;
   db.insert(schema.sessions).values({ id, userId, expiresAt }).run();
   const jar = await cookies();
   jar.set(SESSION_COOKIE, id, {

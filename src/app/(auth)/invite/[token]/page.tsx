@@ -5,14 +5,20 @@ import { AuthForm } from "@/components/auth-form";
 
 export const metadata = { title: "Join" };
 
-export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
+function findLiveInvite(token: string) {
   const invite = db
     .select()
     .from(schema.invites)
     .where(and(eq(schema.invites.token, token), isNull(schema.invites.acceptedAt), isNull(schema.invites.revokedAt)))
     .get();
-  if (!invite || invite.expiresAt < Math.floor(Date.now() / 1000)) {
+  if (!invite || invite.expiresAt < Math.floor(Date.now() / 1000)) return null;
+  return invite;
+}
+
+export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const invite = findLiveInvite(token);
+  if (!invite) {
     return (
       <div>
         <h1 className="m-0 text-lg font-semibold">This invite has expired</h1>

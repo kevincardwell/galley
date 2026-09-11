@@ -17,6 +17,22 @@ type Hit = { kind: "workspace" | "task" | "section" | "asset" | "page"; title: s
 
 export function CommandPalette() {
   const open = useSyncExternalStore(store.subscribe, store.get, () => false);
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        if (isOpen) store.close(); else store.open();
+      }
+      if (e.key === "Escape" && isOpen) store.close();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  return open ? <PaletteBody /> : null;
+}
+
+/** Mounted fresh on every open, so the query and results always start empty. */
+function PaletteBody() {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);
   const [active, setActive] = useState(0);
@@ -24,33 +40,21 @@ export function CommandPalette() {
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); isOpen ? store.close() : store.open(); }
-      if (e.key === "Escape" && isOpen) store.close();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  useEffect(() => { if (open) { setQ(""); setHits([]); setActive(0); setTimeout(() => input.current?.focus(), 0); } }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal }).catch(() => null);
       if (res?.ok) { setHits(await res.json()); setActive(0); }
     }, 120);
     return () => { clearTimeout(t); ctrl.abort(); };
-  }, [q, open]);
+  }, [q]);
 
-  if (!open) return null;
   function go(h: Hit) { store.close(); router.push(h.href); }
   return (
     <div className="fixed inset-0 z-50 grid place-items-start justify-center bg-[rgba(20,18,14,0.45)] pt-[12vh]" onClick={store.close}>
       <div className="w-[min(92vw,560px)] overflow-hidden rounded-[10px] border border-line bg-surface shadow-panel" onClick={(e) => e.stopPropagation()}>
         <input
           ref={input}
+          autoFocus
           id="palette-q"
           value={q}
           onChange={(e) => setQ(e.target.value)}

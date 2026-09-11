@@ -12,7 +12,7 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
   return (
     <div className="flex gap-2">
       {canManage && <Button onClick={() => setOpen(true)}>Share with client</Button>}
-      <Button variant="primary" onClick={() => { window.location.href = `/api/export/${slug}`; }}>Export</Button>
+      <a href={`/api/export/${slug}`} download className="inline-flex items-center rounded-r border border-accent bg-accent px-3 py-1.5 font-medium text-accent-ink hover:brightness-95">Export</a>
       <Dialog open={open} onClose={() => setOpen(false)} title="Share with client">
         <p className="m-0 mb-3 text-ink-2">Anyone with the link can read the copy and browse the files. They cannot edit anything or see tasks.</p>
         {shareToken ? (
