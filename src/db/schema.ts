@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, blob, primaryKey, index } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 const now = () => sql`(unixepoch())`;
@@ -64,6 +64,7 @@ export const workspaces = sqliteTable("workspaces", {
   accent: text("accent").notNull().default("#2F6B4F"),
   faviconPath: text("favicon_path"),
   shareToken: text("share_token").unique(),
+  shareReview: integer("share_review", { mode: "boolean" }).notNull().default(false),
   createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: integer("created_at").notNull().default(now()),
   archivedAt: integer("archived_at"),
@@ -148,6 +149,9 @@ export const sections = sqliteTable(
     wordCount: integer("word_count").notNull().default(0),
     position: integer("position").notNull().default(0),
     version: integer("version").notNull().default(1),
+    ydoc: blob("ydoc", { mode: "buffer" }), // Yjs encoded state, source of truth once collaboration has started
+    clientApprovedAt: integer("client_approved_at"),
+    clientApprovedBy: text("client_approved_by"),
     updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
     updatedAt: integer("updated_at").notNull().default(now()),
   },
@@ -176,7 +180,48 @@ export const comments = sqliteTable("comments", {
   taskId: text("task_id").references(() => tasks.id, { onDelete: "cascade" }),
   body: text("body").notNull(),
   authorId: text("author_id").references(() => users.id, { onDelete: "set null" }),
+  guestName: text("guest_name"), // set when a client left it through the share link
   resolvedAt: integer("resolved_at"),
+  createdAt: integer("created_at").notNull().default(now()),
+});
+
+// ---- Collaboration (Yjs update log, compacted into sections.ydoc) ----
+export const collabUpdates = sqliteTable(
+  "collab_updates",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    sectionId: text("section_id").notNull().references(() => sections.id, { onDelete: "cascade" }),
+    update: blob("update", { mode: "buffer" }).notNull(),
+    createdAt: integer("created_at").notNull().default(now()),
+  },
+  (t) => [index("collab_updates_section").on(t.sectionId, t.id)],
+);
+
+// ---- Notifications (in-app inbox; email is sent alongside when SMTP is configured) ----
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // mention, assigned, client_comment, client_approved, invite
+    title: text("title").notNull(),
+    body: text("body"),
+    href: text("href"),
+    readAt: integer("read_at"),
+    emailedAt: integer("emailed_at"),
+    createdAt: integer("created_at").notNull().default(now()),
+  },
+  (t) => [index("notifications_user").on(t.userId, t.readAt)],
+);
+
+// ---- Backups ----
+export const backups = sqliteTable("backups", {
+  id: text("id").primaryKey(),
+  filename: text("filename").notNull(),
+  bytes: integer("bytes").notNull(),
+  kind: text("kind", { enum: ["manual", "scheduled"] }).notNull().default("manual"),
+  createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: integer("created_at").notNull().default(now()),
 });
 
