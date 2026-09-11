@@ -11,6 +11,9 @@
 ## Browser check done 2026-09-11 (evening)
 Clicked through home, overview, tasks (detail panel), copy (typed, autosaved, versions), assets (uploaded 3 images: thumbs, dimensions, palette all worked), admin, share link (copy + files pages), export zip, search API, file-route token checks. Fixed: base CSS was unlayered and beat Tailwind utilities (primary buttons had no fill); copy details pane overflowed sideways (status control); stray scrollbar on admin tabs.
 
+## Quality pass done 2026-09-11 (late evening)
+Dialogs centred (Tailwind preflight had zeroed dialog margin). Added: mobile top bar + slide-in drawer, horizontally scrolling tabs, /me/account (name + password change), error.tsx/global-error.tsx, loading skeletons, icon.svg/apple-icon/manifest, security headers, login throttling (8 fails / 15 min per ip+email), toast system, link popover in the copy toolbar, working Up-next checkbox on overview, stable dnd id (hydration warning gone), board no longer widens the page.
+
 ## Not yet done (pick up here)
 1. **Docker image not yet built.** `docker build` was refused: this user is not in the `docker` group. Run `sudo usermod -aG docker $USER` and log back in (or use `sudo docker compose up -d --build`), then click through inside the container (ffmpeg posters, volume permissions).
 3. **Push to GitHub.** Repo name assumed `kevincardwell/galley` in README, compose.yml and package.json; change if different. `gh repo create galley --public --source=. --push`. The release workflow needs Packages write (default GITHUB_TOKEN is fine) and the ghcr package set to public once it exists.
