@@ -419,7 +419,7 @@ export function TaskBoard(props: Props) {
               <Empty title="No tasks yet" hint="Add the first thing that needs doing." action={canEdit && <Button variant="primary" onClick={() => requestNewTask()}>New task</Button>} />
             </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
+            <DndContext id="galley-tasks" sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
               {view === "list" ? <ListView sections={visible} /> : <BoardView sections={visible} />}
               <DragOverlay dropAnimation={null}>
                 {activeTask ? (view === "list" ? <TaskRowOverlay task={activeTask} /> : <TaskCardOverlay task={activeTask} />) : null}

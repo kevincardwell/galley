@@ -48,8 +48,10 @@
   input, select, textarea { font: inherit; color: inherit; }
   kbd { font: 12px var(--ui); color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
   .tnum { font-variant-numeric: tabular-nums; }
-  dialog { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 0; max-width: min(92vw, 520px); width: 100%; }
-  dialog::backdrop { background: rgba(20, 18, 14, 0.45); }
+  dialog { margin: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 0; max-width: min(92vw, 520px); width: 100%; max-height: min(90dvh, 720px); overflow: auto; }
+  dialog[open] { animation: dialog-in 160ms ease-out; }
+  dialog::backdrop { background: rgba(20, 18, 14, 0.45); backdrop-filter: blur(2px); }
+  @keyframes dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 }
 
