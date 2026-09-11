@@ -21,7 +21,7 @@ test.describe.serial("invite-only access", () => {
     await page.fill("#auth-password", ADMIN.password);
     await page.click("button[type=submit]");
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("heading", { name: "Workspaces" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Workspaces" })).toBeVisible();
   });
 
   test("there is no sign-up route once set up", async ({ page }) => {
@@ -60,7 +60,7 @@ test.describe.serial("invite-only access", () => {
     await page.fill("#auth-password", "another-long-password");
     await page.click("button[type=submit]");
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText("Marlow & Finch Joinery")).toBeVisible();
+    await expect(page.getByText("Marlow & Finch Joinery").first()).toBeVisible();
     await expect(page.getByText("Harbourside Bakery")).toHaveCount(0);
     await page.goto("/w/harbourside-bakery");
     await expect(page.getByText(/not found|could not be found/i)).toBeVisible();
