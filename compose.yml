@@ -1,0 +1,26 @@
+services:
+  galley:
+    image: ghcr.io/kevincardwell/galley:latest
+    # Or build from source instead of pulling:
+    # build: .
+    container_name: galley
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Public URL people use to reach Galley (used in invite links).
+      GALLEY_URL: http://localhost:3000
+      # Any long random string. `openssl rand -hex 32`
+      GALLEY_SECRET: change-me
+      # Largest single upload, in megabytes.
+      MAX_UPLOAD_MB: 500
+    volumes:
+      - galley-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  galley-data:

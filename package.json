@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint src tests",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -42,5 +46,11 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.0"
-  }
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "description": "Tasks, copy and media for every website you build. Self-hosted, one container.",
+  "license": "MIT",
+  "repository": "github:kevincardwell/galley"
 }

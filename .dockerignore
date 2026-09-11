@@ -1,0 +1,12 @@
+node_modules
+.next
+data
+.git
+.github
+docs
+tests
+test-results
+playwright-report
+*.md
+!README.md
+.env*
