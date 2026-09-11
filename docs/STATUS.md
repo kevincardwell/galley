@@ -27,7 +27,7 @@ Verified in browser: collab save, share review, diff, backups, notifications inb
 
 ## Not yet done (pick up here)
 1. **Docker image not yet built.** `docker build` was refused: this user is not in the `docker` group. Run `sudo usermod -aG docker $USER` and log back in (or use `sudo docker compose up -d --build`), then click through inside the container (ffmpeg posters, volume permissions).
-3. **Push to GitHub.** Repo name assumed `kevincardwell/galley` in README, compose.yml and package.json; change if different. `gh repo create galley --public --source=. --push`. The release workflow needs Packages write (default GITHUB_TOKEN is fine) and the ghcr package set to public once it exists.
+3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.
 4. E2E only covers access. Add task → copy → upload → export steps once the UI has been eyeballed (selectors unknown until then).
 5. Small known gaps: page/section drag reorder not wired (actions exist); instance logo not implemented; upload accepts by extension/mime only (bad content fails at processing with a recorded error, not at upload); oversize uploads are drained before rejection (no client-side pre-check).
 6. Git identity for this repo is Kevin Cardwell <57758314+kevincardwell@users.noreply.github.com> (all commits rewritten to it).
