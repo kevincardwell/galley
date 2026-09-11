@@ -2,13 +2,41 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { toggleShareLink } from "@/actions/workspaces";
+import { setShareReview, toggleShareLink } from "@/actions/workspaces";
 import { toast } from "@/components/ui/toast";
 
-export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManage }: { workspaceId: string; slug: string; shareToken: string | null; canManage: boolean }) {
+type Props = {
+  workspaceId: string;
+  slug: string;
+  shareToken: string | null;
+  canManage: boolean;
+  /** workspace.shareReview: whether the share link lets the client comment and approve. */
+  shareReview?: boolean;
+};
+
+export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManage, shareReview = false }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [copied, setCopied] = useState(false);
+  // Optimistic so the box flips at once; the server value wins after revalidation.
+  const [review, setReview] = useState(shareReview);
+  const [prevReview, setPrevReview] = useState(shareReview);
+  if (prevReview !== shareReview) {
+    setPrevReview(shareReview);
+    setReview(shareReview);
+  }
+  const toggleReview = (next: boolean) => {
+    setReview(next);
+    start(async () => {
+      try {
+        await setShareReview(workspaceId, next);
+        toast(next ? "Clients can now comment and approve" : "Client review turned off");
+      } catch {
+        setReview(!next);
+        toast("Could not save", { tone: "late" });
+      }
+    });
+  };
   const url = typeof window !== "undefined" && shareToken ? `${window.location.origin}/share/${shareToken}` : "";
   return (
     <div className="flex gap-2">
@@ -31,6 +59,13 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
                 {copied ? "Copied" : "Copy"}
               </Button>
             </div>
+            <label className="flex cursor-pointer items-start gap-2 text-[13px] text-ink">
+              <input type="checkbox" checked={review} disabled={pending} onChange={(e) => toggleReview(e.target.checked)} className="mt-0.5 accent-[var(--accent)]" />
+              <span>
+                Let the client comment and approve sections
+                <span className="block text-xs text-ink-2">They give a name, no account needed. Comments and approvals show up in the editor and your inbox.</span>
+              </span>
+            </label>
             <div className="flex justify-between">
               <Button variant="danger" disabled={pending} onClick={() => start(() => toggleShareLink(workspaceId, false))}>Turn off link</Button>
               <Button onClick={() => setOpen(false)}>Done</Button>

@@ -1,8 +1,8 @@
 import "server-only";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { asDoc } from "@/lib/copy/serialize";
-import type { AttachedFile, CommentRow, PageRow, SectionDetails, SectionRow, VersionRow } from "@/lib/copy/types";
+import type { AttachedFile, CommentRow, PageRow, SectionDetails, SectionRow, ShareSectionReview, VersionRow } from "@/lib/copy/types";
 
 /** Pages of a workspace in order, with per-page section status counts. */
 export function listPages(workspaceId: string): PageRow[] {
@@ -78,6 +78,7 @@ export function listVersions(sectionId: string, limit = 9): VersionRow[] {
       wordCount: schema.sectionVersions.wordCount,
       createdAt: schema.sectionVersions.createdAt,
       authorName: schema.users.name,
+      plainText: schema.sectionVersions.plainText,
     })
     .from(schema.sectionVersions)
     .leftJoin(schema.users, eq(schema.users.id, schema.sectionVersions.createdBy))
@@ -95,6 +96,7 @@ export function listComments(sectionId: string): CommentRow[] {
       createdAt: schema.comments.createdAt,
       resolvedAt: schema.comments.resolvedAt,
       authorName: schema.users.name,
+      guestName: schema.comments.guestName,
     })
     .from(schema.comments)
     .leftJoin(schema.users, eq(schema.users.id, schema.comments.authorId))
@@ -114,7 +116,7 @@ export function listSectionAttachments(sectionId: string): AttachedFile[] {
 }
 
 export function sectionDetails(sectionId: string): SectionDetails {
-  return { versions: listVersions(sectionId), comments: listComments(sectionId), attachments: listSectionAttachments(sectionId) };
+  return { versions: listVersions(sectionId), comments: listComments(sectionId), attachments: listSectionAttachments(sectionId), ...sectionClientReview(sectionId) };
 }
 
 // ---- Share link (public, read-only) ----
@@ -131,4 +133,59 @@ export function listAssets(workspaceId: string) {
     .where(eq(schema.assets.workspaceId, workspaceId))
     .orderBy(desc(schema.assets.createdAt))
     .all();
+}
+
+// ---- Client review (share link) ----
+
+/** The client-approval state of a section plus whether its workspace lets clients review at all. */
+export function sectionClientReview(sectionId: string): Pick<SectionDetails, "shareReview" | "clientApprovedAt" | "clientApprovedBy"> {
+  const row = db
+    .select({ shareReview: schema.workspaces.shareReview, clientApprovedAt: schema.sections.clientApprovedAt, clientApprovedBy: schema.sections.clientApprovedBy })
+    .from(schema.sections)
+    .innerJoin(schema.workspaces, eq(schema.workspaces.id, schema.sections.workspaceId))
+    .where(eq(schema.sections.id, sectionId))
+    .get();
+  return { shareReview: row?.shareReview ?? false, clientApprovedAt: row?.clientApprovedAt ?? null, clientApprovedBy: row?.clientApprovedBy ?? null };
+}
+
+/** Unresolved comments and client approval for every section of a page, keyed by section id. Used by the share page. */
+export function shareReviewForPage(pageId: string): Record<string, ShareSectionReview> {
+  const out: Record<string, ShareSectionReview> = {};
+  const secs = db
+    .select({ id: schema.sections.id, clientApprovedAt: schema.sections.clientApprovedAt, clientApprovedBy: schema.sections.clientApprovedBy })
+    .from(schema.sections)
+    .where(eq(schema.sections.pageId, pageId))
+    .all();
+  for (const s of secs) out[s.id] = { comments: [], clientApprovedAt: s.clientApprovedAt, clientApprovedBy: s.clientApprovedBy };
+  const rows = db
+    .select({ id: schema.comments.id, sectionId: schema.comments.sectionId, body: schema.comments.body, createdAt: schema.comments.createdAt, authorName: schema.users.name, guestName: schema.comments.guestName })
+    .from(schema.comments)
+    .innerJoin(schema.sections, eq(schema.sections.id, schema.comments.sectionId))
+    .leftJoin(schema.users, eq(schema.users.id, schema.comments.authorId))
+    .where(and(eq(schema.sections.pageId, pageId), isNull(schema.comments.resolvedAt)))
+    .orderBy(asc(schema.comments.createdAt))
+    .all();
+  for (const c of rows) {
+    if (!c.sectionId) continue;
+    out[c.sectionId]?.comments.push({ id: c.id, body: c.body, createdAt: c.createdAt, name: c.guestName ?? c.authorName ?? "Someone" });
+  }
+  return out;
+}
+
+// ---- Collaboration ----
+
+/** The un-compacted Yjs updates of a section, oldest first. Applied on top of sections.ydoc when a room loads. */
+export function listCollabUpdates(sectionId: string): { id: number; update: Buffer }[] {
+  return db
+    .select({ id: schema.collabUpdates.id, update: schema.collabUpdates.update })
+    .from(schema.collabUpdates)
+    .where(eq(schema.collabUpdates.sectionId, sectionId))
+    .orderBy(asc(schema.collabUpdates.id))
+    .all();
+}
+
+/** How many updates await compaction; handy for diagnostics and tests. */
+export function countCollabUpdates(sectionId: string): number {
+  const row = db.select({ n: sql<number>`count(*)` }).from(schema.collabUpdates).where(eq(schema.collabUpdates.sectionId, sectionId)).get();
+  return row?.n ?? 0;
 }

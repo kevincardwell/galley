@@ -13,9 +13,15 @@ export function Lightbox({ items, index, onIndex, onClose }: Props) {
   const prev = () => onIndex((index - 1 + items.length) % items.length);
   const next = () => onIndex((index + 1) % items.length);
 
+  // Remember which tile opened the viewer so focus can go back to it on close.
+  const openedFrom = useRef<string | null>(asset?.id ?? null);
   useEffect(() => {
     const d = ref.current;
     if (d && !d.open) d.showModal();
+    const from = openedFrom.current;
+    return () => {
+      if (from) document.querySelector<HTMLElement>(`[data-asset-id="${from}"]`)?.focus({ preventScroll: true });
+    };
   }, []);
 
   useEffect(() => {
@@ -37,6 +43,7 @@ export function Lightbox({ items, index, onIndex, onClose }: Props) {
       // Inline: globals.css styles `dialog` outside any layer, which would beat utility classes.
       style={{ width: "100vw", height: "100dvh", maxWidth: "none", maxHeight: "none", margin: 0, padding: 0, border: 0, borderRadius: 0, background: "rgba(8,8,8,0.94)", color: "#fff" }}
       aria-label={asset.filename}
+      aria-modal="true"
     >
       <div className="flex h-full flex-col">
         <header className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-white/80">

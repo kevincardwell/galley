@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Pill } from "@/components/ui/pill";
-import { findPage, listSections, workspaceByShareToken } from "@/lib/queries/copy";
+import { findPage, listSections, shareReviewForPage, workspaceByShareToken } from "@/lib/queries/copy";
+import { SectionReview } from "./review";
 import { isDocEmpty, tiptapToHtml } from "@/lib/copy/serialize";
 import { STATUS_LABEL, statusTone } from "@/lib/copy/types";
 
@@ -11,6 +12,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   const page = findPage(ws.id, pageSlug);
   if (!page) notFound();
   const sections = listSections(page.id);
+  const review = ws.shareReview ? shareReviewForPage(page.id) : null;
 
   return (
     <article className="mx-auto max-w-[68ch]">
@@ -29,6 +31,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                 <Pill tone={statusTone(s.status)}>{STATUS_LABEL[s.status]}</Pill>
               </div>
               {isDocEmpty(s.content) ? <p className="prose-copy m-0 text-ink-3">Empty.</p> : <div className="prose-copy" dangerouslySetInnerHTML={{ __html: tiptapToHtml(s.content) }} />}
+              {review && <SectionReview token={token} sectionId={s.id} review={review[s.id] ?? { comments: [], clientApprovedAt: null, clientApprovedBy: null }} />}
             </section>
           ))}
         </div>

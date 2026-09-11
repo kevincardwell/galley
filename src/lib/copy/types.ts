@@ -30,6 +30,7 @@ export type VersionRow = {
   wordCount: number;
   createdAt: number;
   authorName: string | null;
+  plainText: string;
 };
 
 export type CommentRow = {
@@ -38,11 +39,25 @@ export type CommentRow = {
   createdAt: number;
   resolvedAt: number | null;
   authorName: string | null;
+  /** Set when a client left it through the share link (authorName is null then). */
+  guestName: string | null;
 };
 
 export type AttachedFile = { attachmentId: string; assetId: string; filename: string; kind: "image" | "video" | "pdf" };
 
-export type SectionDetails = { versions: VersionRow[]; comments: CommentRow[]; attachments: AttachedFile[] };
+export type SectionDetails = {
+  versions: VersionRow[];
+  comments: CommentRow[];
+  attachments: AttachedFile[];
+  /** Whether the workspace's share link lets the client comment and approve. */
+  shareReview: boolean;
+  clientApprovedAt: number | null;
+  clientApprovedBy: string | null;
+};
+
+/** What the public share page needs per section when client review is on. */
+export type ShareComment = { id: string; body: string; createdAt: number; name: string };
+export type ShareSectionReview = { comments: ShareComment[]; clientApprovedAt: number | null; clientApprovedBy: string | null };
 
 export type SaveResult =
   | { conflict: false; version: number; updatedAt: number }

@@ -14,11 +14,22 @@ Clicked through home, overview, tasks (detail panel), copy (typed, autosaved, ve
 ## Quality pass done 2026-09-11 (late evening)
 Dialogs centred (Tailwind preflight had zeroed dialog margin). Added: mobile top bar + slide-in drawer, horizontally scrolling tabs, /me/account (name + password change), error.tsx/global-error.tsx, loading skeletons, icon.svg/apple-icon/manifest, security headers, login throttling (8 fails / 15 min per ip+email), toast system, link popover in the copy toolbar, working Up-next checkbox on overview, stable dnd id (hydration warning gone), board no longer widens the page.
 
+## Eight upgrades done 2026-09-11 (night)
+1. Live collaboration: Yjs over SSE + POST (no websocket, single port). Rooms in src/lib/collab/hub.ts, compaction into sections.ydoc, snapshots keep version history. Editing hub.ts needs a dev-server restart.
+2. Email: nodemailer via Admin → Settings SMTP; invites emailed; test-email button. Notifications: src/lib/notify.ts, inbox at /me/notifications, bell in sidebar; wired into task assignment, @mentions in task bodies and comments, copy comments, client review events.
+3. Version diff dialog (word-level) from the Versions list.
+4. Client review mode: share dialog checkbox; guests comment + approve per section; team notified.
+5. Sample workspace on setup (checkbox, default on) via src/lib/seed/sample.ts.
+6. `?` shortcut sheet, skip link, aria pass over ui/tasks/assets.
+7. Backups: Admin → Backups (zip of db + uploads + favicons), daily schedule with retention, armed on boot via src/instrumentation.ts.
+8. Uploads streamed to disk with busboy (src/lib/media/multipart.ts).
+Verified in browser: collab save, share review, diff, backups, notifications inbox, shortcut sheet; upload via curl. e2e updated for the sample-workspace first run.
+
 ## Not yet done (pick up here)
 1. **Docker image not yet built.** `docker build` was refused: this user is not in the `docker` group. Run `sudo usermod -aG docker $USER` and log back in (or use `sudo docker compose up -d --build`), then click through inside the container (ffmpeg posters, volume permissions).
 3. **Push to GitHub.** Repo name assumed `kevincardwell/galley` in README, compose.yml and package.json; change if different. `gh repo create galley --public --source=. --push`. The release workflow needs Packages write (default GITHUB_TOKEN is fine) and the ghcr package set to public once it exists.
 4. E2E only covers access. Add task → copy → upload → export steps once the UI has been eyeballed (selectors unknown until then).
-5. Small known gaps: no version diff view (only list + restore); toolbar link uses window.prompt; page/section drag reorder not wired (actions exist); SMTP stored but not sending; instance logo not implemented; `request.formData()` buffers uploads in memory.
+5. Small known gaps: page/section drag reorder not wired (actions exist); instance logo not implemented; upload accepts by extension/mime only (bad content fails at processing with a recorded error, not at upload); oversize uploads are drained before rejection (no client-side pre-check).
 6. Git identity for this repo is Kevin Cardwell <57758314+kevincardwell@users.noreply.github.com> (all commits rewritten to it).
 
 ## Layout of the code

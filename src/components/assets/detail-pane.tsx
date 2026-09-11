@@ -67,7 +67,7 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
                 style={{ background: hex }}
               />
             ))}
-            <span className="ml-1 self-center text-[11px] text-ink-3">{copied && asset.palette.includes(copied) ? `${copied} copied` : "Click to copy"}</span>
+            <span aria-live="polite" className="ml-1 self-center text-[11px] text-ink-3">{copied && asset.palette.includes(copied) ? `${copied} copied` : "Click to copy"}</span>
           </div>
         </section>
       )}
@@ -81,6 +81,7 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
         <section>
           <H>Folder</H>
           <Select
+            aria-label="Folder"
             value={asset.folderId ?? ""}
             disabled={!canEdit || pending}
             onChange={(e) => { const v = e.target.value || null; start(() => moveToFolder(asset.id, v)); }}
@@ -217,7 +218,7 @@ function TagsEditor({ asset, canEdit }: { asset: AssetItem; canEdit: boolean }) 
           onBlur={add}
           placeholder={asset.tags.length ? "Add tag" : "Add a tag, Enter to save"}
           aria-label="Add tag"
-          className="min-w-24 flex-1 bg-transparent px-1 text-xs text-ink placeholder:text-ink-3 focus:outline-none"
+          className="min-w-24 flex-1 rounded bg-transparent px-1 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       )}
       {!canEdit && asset.tags.length === 0 && <span className="text-[13px] text-ink-3">No tags.</span>}

@@ -8,6 +8,8 @@ import type { PageRow, SectionDetails, SectionRow } from "@/lib/copy/types";
 import { Outline } from "./outline";
 import { DetailsPane } from "./details-pane";
 import { SectionEditor, type EditorHandle, type SaveState, type Stats } from "./section-editor";
+import { Presence } from "./presence";
+import { CollabConnection, type Peer } from "@/lib/collab/client";
 
 type Props = {
   workspace: { id: string; slug: string };
@@ -29,6 +31,12 @@ export function CopyScreen({ workspace, page, pages, sections, details, readOnly
   const editors = useRef(new Map<string, EditorHandle>());
   const [focusId, setFocusId] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [peersBySection, setPeersBySection] = useState<Record<string, Peer[]>>({});
+
+  // One event stream for the whole page (see CollabConnection); every section editor shares it.
+  // Constructing it opens nothing; editors subscribe (and add later sections) from their effects.
+  const [connection] = useState(() => new CollabConnection(sections.map((s) => s.id)));
+  useEffect(() => () => connection.close(), [connection]);
 
   // Deep links from search: /copy/<page>#s-<sectionId>
   useEffect(() => {
@@ -63,6 +71,18 @@ export function CopyScreen({ workspace, page, pages, sections, details, readOnly
   const onState = useCallback((id: string, state: SaveState) => setSaveStates((m) => (m[id] === state ? m : { ...m, [id]: state })), []);
   const onStats = useCallback((id: string, s: Stats) => setStats((m) => (m[id]?.words === s.words && m[id]?.chars === s.chars ? m : { ...m, [id]: s })), []);
   const onActivate = useCallback((id: string) => setActiveId((cur) => (cur === id ? cur : id)), []);
+  const onPeers = useCallback((id: string, peers: Peer[]) => setPeersBySection((m) => ({ ...m, [id]: peers })), []);
+
+  // Everyone connected to any section of this page, one entry per person.
+  const peers: Peer[] = [];
+  const seen = new Set<string>();
+  for (const s of sections) {
+    for (const p of peersBySection[s.id] ?? []) {
+      if (seen.has(p.name)) continue;
+      seen.add(p.name);
+      peers.push(p);
+    }
+  }
 
   const onSectionCreated = (id: string) => {
     setFocusId(id);
@@ -115,7 +135,10 @@ export function CopyScreen({ workspace, page, pages, sections, details, readOnly
       <div className="page bg-surface px-4 pb-10 pt-6 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:px-10 min-[900px]:pb-16 min-[900px]:pl-[150px] min-[900px]:pt-9">
         <article className="mx-auto max-w-[68ch]">
           <p className="tnum m-0 mb-7 flex items-baseline justify-between gap-3 text-[13px] font-semibold text-ink-3">
-            <span className="truncate">{page.title}</span>
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="truncate">{page.title}</span>
+              <Presence peers={peers} />
+            </span>
             <span className="shrink-0 font-medium">{sections.length === 1 ? "1 section" : `${sections.length} sections`}</span>
           </p>
 
@@ -142,9 +165,12 @@ export function CopyScreen({ workspace, page, pages, sections, details, readOnly
                   active={s.id === activeId}
                   readOnly={readOnly}
                   autoFocus={focusId === s.id}
+                  selfName={selfName}
+                  connection={connection}
                   onActivate={onActivate}
                   onState={onState}
                   onStats={onStats}
+                  onPeers={onPeers}
                   register={register}
                 />
               ))}

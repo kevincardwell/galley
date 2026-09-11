@@ -1,6 +1,7 @@
 "use server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { notifyMentions } from "@/lib/notify";
 import { db, schema } from "@/db/client";
 import { SECTION_STATUSES, type SectionStatus } from "@/db/schema";
 import { requireUser } from "@/lib/auth/current";
@@ -11,6 +12,7 @@ import { logActivity } from "@/lib/activity";
 import { asDoc, tiptapToText, wordCount } from "@/lib/copy/serialize";
 import type { TiptapDoc } from "@/lib/copy/serialize";
 import type { SaveResult } from "@/lib/copy/types";
+import { getRoom, peekRoom, persistRoom } from "@/lib/collab/hub";
 
 const MAX_VERSIONS = 100;
 const MAX_TITLE = 120;
@@ -183,33 +185,33 @@ export async function reorderSections(pageId: string, orderedIds: string[]): Pro
 }
 
 /**
- * Last-write-wins with a version guard. When `expectedVersion` is stale the
- * save is refused and the current server copy is returned so the client can
- * show a banner instead of silently overwriting someone else's work.
+ * "Save now" for a collaborative section. Content no longer travels through
+ * this action: edits reach the server as Yjs updates via /api/collab, where
+ * they are logged immediately and compacted on a timer. This forces that
+ * compaction (and the version/plain-text snapshot) right away, for Cmd+S.
  */
-export async function saveSection(sectionId: string, content: TiptapDoc, expectedVersion: number): Promise<SaveResult> {
+export async function saveSection(sectionId: string): Promise<SaveResult> {
   const user = await requireUser();
   const { section, pageSlug } = sectionOrThrow(sectionId);
   const { workspace } = assertAccess(user, section.workspaceId, "edit");
-  if (section.version !== expectedVersion) {
-    const editor = section.updatedBy ? db.select({ name: schema.users.name }).from(schema.users).where(eq(schema.users.id, section.updatedBy)).get() : undefined;
-    return { conflict: true, current: { content: asDoc(section.content), version: section.version, updatedAt: section.updatedAt, updatedByName: editor?.name ?? null } };
-  }
-  const doc = asDoc(content);
-  const plainText = tiptapToText(doc);
-  const words = wordCount(plainText);
-  const version = section.version + 1;
-  const updatedAt = nowSec();
-  db.transaction(() => {
-    db.update(schema.sections)
-      .set({ content: doc, plainText, wordCount: words, version, updatedBy: user.id, updatedAt })
-      .where(and(eq(schema.sections.id, section.id), eq(schema.sections.version, expectedVersion)))
-      .run();
-    recordVersion(section.id, version, doc, plainText, words, user.id);
-  });
-  logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "updated", subjectType: "section", subjectId: section.id, subjectTitle: section.title });
+  const room = getRoom(section.id);
+  const saved = room ? persistRoom(room, user.id) : null;
   revalidatePath(copyPath(workspace.slug, pageSlug));
-  return { conflict: false, version, updatedAt };
+  return { conflict: false, version: saved?.version ?? section.version, updatedAt: saved?.updatedAt ?? section.updatedAt };
+}
+
+/**
+ * Applies the current live document of a section to its classic columns.
+ * The hub does this on its own schedule; actions that need the columns fresh
+ * (exports, status changes) can call it first. Not a public action: it takes
+ * no user input beyond the id and only touches rooms already loaded.
+ */
+export async function snapshotSection(sectionId: string): Promise<{ version: number; updatedAt: number } | null> {
+  const user = await requireUser();
+  const { section } = sectionOrThrow(sectionId);
+  assertAccess(user, section.workspaceId, "edit");
+  const room = peekRoom(section.id);
+  return room ? persistRoom(room, user.id) : null;
 }
 
 export async function setSectionStatus(sectionId: string, status: SectionStatus): Promise<void> {
@@ -266,6 +268,7 @@ export async function addComment(sectionId: string, body: string): Promise<{ id:
   const id = newId();
   db.insert(schema.comments).values({ id, workspaceId: workspace.id, sectionId: section.id, body: text, authorId: user.id }).run();
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "commented", subjectType: "section", subjectId: section.id, subjectTitle: section.title });
+  await notifyMentions({ text, workspaceId: workspace.id, actorId: user.id, href: `${copyPath(workspace.slug, pageSlug)}#s-${section.id}`, context: `a comment on “${section.title}”` });
   revalidatePath(copyPath(workspace.slug, pageSlug));
   return { id };
 }

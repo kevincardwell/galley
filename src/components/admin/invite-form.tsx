@@ -22,7 +22,7 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
   const [role, setRole] = useState<WorkspaceRole>("editor");
   const [isAdmin, setIsAdmin] = useState(false);
   const [password, setPassword] = useState("");
-  const [link, setLink] = useState<string | null>(null);
+  const [link, setLink] = useState<{ url: string; emailed: boolean; to: string } | null>(null);
   const [created, setCreated] = useState<string | null>(null);
   const invite = useAdminAction();
   const account = useAdminAction();
@@ -45,7 +45,7 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
           setCreated(null);
           invite.run(
             () => createInvite({ name, email, workspaceId: workspaceId || undefined, workspaceRole: role, isAdmin }),
-            (d) => setLink(d.url),
+            (d) => setLink({ url: d.url, emailed: d.emailed, to: email.trim() }),
           );
         }}
       >
@@ -70,15 +70,16 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
         <InlineError>{invite.error}</InlineError>
         {link ? (
           <div className="flex flex-col gap-2">
+            {link.emailed && <p role="status" className="m-0 text-sm text-done">Invite emailed to {link.to}</p>}
             <div className="flex gap-2">
-              <input id={id("link")} readOnly value={link} onFocus={(e) => e.currentTarget.select()} className="min-w-0 flex-1 rounded-r border border-line bg-surface px-2.5 py-1.5 text-sm" />
-              <CopyButton value={link} />
+              <input id={id("link")} readOnly value={link.url} onFocus={(e) => e.currentTarget.select()} className="min-w-0 flex-1 rounded-r border border-line bg-surface px-2.5 py-1.5 text-sm" />
+              <CopyButton value={link.url} />
             </div>
-            <Hint small>No email is sent unless SMTP is set up. You get a link to paste to them.</Hint>
+            <Hint small>{link.emailed ? "You can also paste this link to them directly." : "No email was sent (SMTP is not set up). Paste this link to them."}</Hint>
             {onDone && <Button size="sm" onClick={onDone}>Done</Button>}
           </div>
         ) : (
-          <Hint small>No email is sent unless SMTP is set up. You get a link to paste to them.</Hint>
+          <Hint small>The invite is emailed when SMTP is set up. Either way you get a link to paste to them.</Hint>
         )}
       </form>
 

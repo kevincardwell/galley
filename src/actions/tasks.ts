@@ -1,6 +1,7 @@
 "use server";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { notifyAssigned, notifyMentions } from "@/lib/notify";
 import { z } from "zod";
 import { db, schema } from "@/db/client";
 import { TASK_STATUSES, type TaskSection, type Task, type User, type Workspace } from "@/db/schema";
@@ -126,6 +127,13 @@ export async function updateTask(taskId: string, rawPatch: TaskPatch): Promise<v
   if (Object.keys(values).length === 0) return;
 
   db.update(schema.tasks).set(values).where(eq(schema.tasks.id, task.id)).run();
+  const href = `/w/${workspace.slug}/tasks?task=${task.id}`;
+  if (values.assigneeId && values.assigneeId !== task.assigneeId) {
+    await notifyAssigned({ taskId: task.id, taskTitle: values.title ?? task.title, workspaceId: workspace.id, assigneeId: values.assigneeId, actorId: user.id, href });
+  }
+  if (typeof values.body === "string" && values.body !== task.body) {
+    await notifyMentions({ text: values.body, workspaceId: workspace.id, actorId: user.id, href, context: `task “${values.title ?? task.title}”` });
+  }
   const completed = values.status === "done";
   logActivity({
     workspaceId: workspace.id,
@@ -316,6 +324,7 @@ export async function addComment(taskId: string, rawBody: string): Promise<strin
   const id = newId();
   db.insert(schema.comments).values({ id, workspaceId: workspace.id, taskId: task.id, body: parsed.data, authorId: user.id }).run();
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "commented on", subjectType: "task", subjectId: task.id, subjectTitle: task.title });
+  await notifyMentions({ text: parsed.data, workspaceId: workspace.id, actorId: user.id, href: `/w/${workspace.slug}/tasks?task=${task.id}`, context: `a comment on “${task.title}”` });
   refresh(workspace);
   return id;
 }

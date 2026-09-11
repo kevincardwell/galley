@@ -39,7 +39,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
               <Pill tone="accent">{STATUS_LABEL[ws.status]}</Pill>
             </div>
           </div>
-          <div className="ml-auto"><WorkspaceHeaderActions workspaceId={ws.id} slug={ws.slug} shareToken={ws.shareToken} canManage={canManage} /></div>
+          <div className="ml-auto"><WorkspaceHeaderActions workspaceId={ws.id} slug={ws.slug} shareToken={ws.shareToken} canManage={canManage} shareReview={ws.shareReview} /></div>
         </div>
         <WorkspaceTabs slug={ws.slug} counts={{ open: counts.open, approved: counts.approved, sections: counts.sections, assets: counts.assets }} canManage={canManage} />
       </header>

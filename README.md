@@ -6,10 +6,13 @@ A galley proof is the first typeset pull of a page, laid out so the words can be
 
 - **Workspaces**: one per website, with its own accent colour, client, status and favicon.
 - **Tasks**: sections, list and board views, drag to reorder, due dates, checklists, comments, attachments.
-- **Copy**: pages of ordered sections in a clean rich-text editor with draft → review → approved, version history, comments, and one-click copy as Markdown or HTML.
+- **Copy**: pages of ordered sections in a clean rich-text editor with draft → review → approved, version history with word-level diffs, comments, and one-click copy as Markdown or HTML.
+- **Live collaboration**: several people can edit the same section at once with visible cursors. No websocket server or extra port needed.
 - **Assets**: drag-and-drop images, video and PDFs with thumbnails, palettes, tags, folders, and links to the task or copy section they belong to.
 - **Invite only**: no public sign-up. The first account is the admin; everyone else is invited and sees only the workspaces they are added to.
-- **Client share link**: a read-only view of copy and files for the client, revocable at any time.
+- **Client share link**: a read-only view of copy and files for the client, revocable at any time. Turn on review mode and the client can comment and approve sections without an account.
+- **Notifications**: an in-app inbox for mentions, assignments and client feedback, with email when SMTP is set up.
+- **Backups**: one-click zip of everything from Admin, plus a daily schedule with retention.
 - **Export**: the whole workspace as a zip (Markdown copy, tasks CSV, original files).
 
 Everything lives in one SQLite file and one uploads folder. Back up by copying the data directory.
@@ -61,9 +64,12 @@ GALLEY_DATA_DIR=/srv/galley PORT=3000 npm start
 | `MAX_UPLOAD_MB` | `500` | Largest single upload. Can be changed later in Admin → Settings. |
 | `PORT` | `3000` | Port to listen on. |
 
+Email (SMTP) and the backup schedule are configured in the app under Admin → Settings and Admin → Backups, not with environment variables.
+
 ## Backup and upgrade
 
-- **Backup**: stop the container (or not; SQLite in WAL mode copies safely) and copy the data directory. That is everything.
+- **Backup**: Admin → Backups makes a consistent zip of the database and every upload, on demand or daily. Or copy the data directory yourself. That is everything.
+- **Restore**: stop Galley, unzip a backup into an empty data directory, start it again.
 - **Upgrade**: `docker compose pull && docker compose up -d`. Migrations run on start. Nothing else to do.
 
 ## Development

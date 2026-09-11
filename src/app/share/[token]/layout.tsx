@@ -28,7 +28,7 @@ export default async function ShareLayout({ children, params }: { children: Reac
             <h1 className="m-0 truncate text-lg font-semibold tracking-tight">
               <Link href={`/share/${token}`}>{ws.name}</Link>
             </h1>
-            <p className="m-0 text-xs text-ink-2">{ws.clientName ? `Prepared for ${ws.clientName} · ` : ""}Read-only preview</p>
+            <p className="m-0 text-xs text-ink-2">{ws.clientName ? `Prepared for ${ws.clientName} · ` : ""}{ws.shareReview ? "Read, comment and approve" : "Read-only preview"}</p>
           </div>
         </div>
         <div className="mx-auto w-full max-w-[880px]">

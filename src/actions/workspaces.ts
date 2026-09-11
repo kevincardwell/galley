@@ -92,3 +92,13 @@ export async function toggleShareLink(workspaceId: string, enable: boolean) {
   logAudit({ actorId: user.id, action: enable ? "share.enabled" : "share.disabled", subjectType: "workspace", subjectId: workspace.id });
   revalidatePath(`/w/${workspace.slug}`, "layout");
 }
+
+/** Lets (or stops letting) people with the share link comment on and approve sections. */
+export async function setShareReview(workspaceId: string, enabled: boolean) {
+  const user = await requireUser();
+  const { workspace } = assertAccess(user, workspaceId, "manage");
+  db.update(schema.workspaces).set({ shareReview: enabled }).where(eq(schema.workspaces.id, workspace.id)).run();
+  logAudit({ actorId: user.id, action: enabled ? "share.review_enabled" : "share.review_disabled", subjectType: "workspace", subjectId: workspace.id });
+  revalidatePath(`/w/${workspace.slug}`, "layout");
+  if (workspace.shareToken) revalidatePath(`/share/${workspace.shareToken}`, "layout");
+}

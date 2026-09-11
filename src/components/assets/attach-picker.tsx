@@ -30,7 +30,7 @@ export function AttachPicker({ workspaceId, taskId, sectionId, attached, readOnl
     <div className="flex flex-wrap items-center gap-2">
       {attached.map((f) => (
         <span key={f.attachmentId} className="group relative">
-          <a href={fileUrl({ id: f.assetId, processedAt: null }, "original")} target="_blank" rel="noreferrer" title={f.filename} className="block size-12 overflow-hidden rounded-r border border-line bg-surface-2">
+          <a href={fileUrl({ id: f.assetId, processedAt: null }, "original")} target="_blank" rel="noreferrer" title={f.filename} aria-label={`Open ${f.filename}`} className="block size-12 overflow-hidden rounded-r border border-line bg-surface-2">
             <Thumb id={f.assetId} kind={f.kind} />
           </a>
           {!readOnly && (
@@ -116,16 +116,15 @@ function PickerDialog({ workspaceId, attachedIds, onClose, onPick }: { workspace
         ) : shown.length === 0 ? (
           <p className="m-0 py-6 text-center text-ink-3">{assets.length === 0 ? "No files in this workspace yet. Upload one to attach it." : "Nothing matches."}</p>
         ) : (
-          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-2 p-0" role="listbox">
+          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-2 p-0" role="list" aria-label="Files">
             {shown.map((a) => {
               const done = attachedIds.has(a.id);
               return (
                 <li key={a.id}>
                   <button
                     type="button"
-                    role="option"
-                    aria-selected={done}
                     disabled={done}
+                    aria-label={done ? `${a.filename} (already attached)` : `Attach ${a.filename}`}
                     title={done ? `${a.filename} (already attached)` : a.filename}
                     onClick={() => { onPick(a.id); onClose(); }}
                     className={clsx(

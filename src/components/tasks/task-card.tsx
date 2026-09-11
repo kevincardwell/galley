@@ -61,7 +61,7 @@ export function SortableTaskCard({ task }: { task: TaskItem }) {
       {...attributes}
       role="button"
       aria-roledescription="task card, shift+space to drag"
-      className={clsx("cursor-pointer outline-none", isTempId(task.id) && "opacity-60")}
+      className={clsx("cursor-pointer rounded-r outline-none focus-visible:ring-2 focus-visible:ring-accent", isTempId(task.id) && "opacity-60")}
       {...pointer}
     >
       <CardContent task={task} highlighted={board.highlightId === task.id} open={board.openId === task.id} placeholder={isDragging} />

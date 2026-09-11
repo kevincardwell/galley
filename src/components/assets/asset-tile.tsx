@@ -38,6 +38,7 @@ export const AssetTile = memo(function AssetTile({ asset, selected, onSelect, on
       type="button"
       data-asset-id={asset.id}
       aria-pressed={selected}
+      aria-label={asset.filename}
       title={asset.filename}
       onClick={() => onSelect(asset.id)}
       onDoubleClick={() => onOpen(asset.id)}

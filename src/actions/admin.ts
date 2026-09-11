@@ -10,9 +10,12 @@ import { requireAdmin } from "@/lib/auth/current";
 import { hashPassword } from "@/lib/auth/password";
 import { logAudit } from "@/lib/activity";
 import { newId, newToken } from "@/lib/ids";
-import { saveSettings, type InstanceSettings } from "@/lib/settings";
+import { getSettings, saveSettings, type BackupSettings, type InstanceSettings } from "@/lib/settings";
 import { storage } from "@/lib/storage";
 import { resolveBaseUrl } from "@/lib/queries/admin";
+import { isEmailConfigured, sendEmail } from "@/lib/email";
+import { inviteEmail, testEmail } from "@/lib/email/templates";
+import { createBackup, deleteBackup, pruneBackups, type BackupRow } from "@/lib/backup";
 
 export type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -45,16 +48,18 @@ const inviteInput = z.object({
 });
 export type CreateInviteInput = z.input<typeof inviteInput>;
 
-export async function createInvite(input: CreateInviteInput): Promise<Result<{ url: string; inviteId: string }>> {
+export async function createInvite(input: CreateInviteInput): Promise<Result<{ url: string; inviteId: string; emailed: boolean }>> {
   const admin = await requireAdmin();
   const parsed = inviteInput.safeParse(input);
   if (!parsed.success) return fail(firstIssue(parsed.error));
   const { name, workspaceId, workspaceRole, isAdmin } = parsed.data;
   const existing = db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, parsed.data.email)).get();
   if (existing) return fail("Someone with that email already has an account. Add them to a workspace from Manage instead.");
+  let workspaceName: string | null = null;
   if (workspaceId) {
-    const ws = db.select({ id: schema.workspaces.id }).from(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).get();
+    const ws = db.select({ name: schema.workspaces.name }).from(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).get();
     if (!ws) return fail("That workspace no longer exists.");
+    workspaceName = ws.name;
   }
   const id = newId();
   const token = newToken();
@@ -71,9 +76,15 @@ export async function createInvite(input: CreateInviteInput): Promise<Result<{ u
       expiresAt: nowS() + INVITE_DAYS * 86400,
     })
     .run();
-  logAudit({ actorId: admin.id, action: "invite.created", subjectType: "invite", subjectId: id, meta: { email: parsed.data.email, workspaceId: workspaceId || null, isAdmin: isAdmin ?? false } });
+  const url = `${await resolveBaseUrl()}/invite/${token}`;
+  let emailed = false;
+  if (isEmailConfigured()) {
+    const mail = inviteEmail({ instanceName: getSettings().instanceName, url, inviterName: admin.name, workspaceName, expiresDays: INVITE_DAYS });
+    emailed = (await sendEmail({ to: parsed.data.email, ...mail })).ok;
+  }
+  logAudit({ actorId: admin.id, action: "invite.created", subjectType: "invite", subjectId: id, meta: { email: parsed.data.email, workspaceId: workspaceId || null, isAdmin: isAdmin ?? false, emailed } });
   refresh();
-  return ok({ url: `${await resolveBaseUrl()}/invite/${token}`, inviteId: id });
+  return ok({ url, inviteId: id, emailed });
 }
 
 export async function revokeInvite(inviteId: string): Promise<Result> {
@@ -266,6 +277,65 @@ export async function saveInstanceSettings(input: SaveSettingsInput): Promise<Re
   logAudit({ actorId: admin.id, action: "settings.saved", subjectType: "settings", subjectId: "instance", meta: { instanceName: next.instanceName, baseUrl: next.baseUrl, maxUploadMb: next.maxUploadMb, sessionDays: next.sessionDays, smtp: !!next.smtp } });
   refresh();
   return ok(next);
+}
+
+/** Sends the test template to `to` using the saved SMTP settings (save the form first). */
+export async function sendTestEmail(to: string): Promise<Result<{ to: string }>> {
+  const admin = await requireAdmin();
+  const parsedTo = email.safeParse(to || admin.email);
+  if (!parsedTo.success) return fail(firstIssue(parsedTo.error));
+  if (!isEmailConfigured()) return fail("Save SMTP settings with a host and a from address first.");
+  const mail = testEmail({ instanceName: getSettings().instanceName });
+  const sent = await sendEmail({ to: parsedTo.data, ...mail });
+  logAudit({ actorId: admin.id, action: "settings.test_email", subjectType: "settings", subjectId: "instance", meta: { to: parsedTo.data, ok: sent.ok } });
+  if (!sent.ok) return fail(`Could not send: ${sent.error}`);
+  return ok({ to: parsedTo.data });
+}
+
+// ---- Backups ----
+
+function refreshBackups() {
+  revalidatePath("/admin/backups");
+}
+
+export async function runBackupNow(): Promise<Result<BackupRow>> {
+  const admin = await requireAdmin();
+  try {
+    const row = await createBackup({ createdBy: admin.id, kind: "manual" });
+    logAudit({ actorId: admin.id, action: "backup.created", subjectType: "backup", subjectId: row.id, meta: { filename: row.filename, bytes: row.bytes } });
+    refreshBackups();
+    return ok(row);
+  } catch (err) {
+    console.error("[backup] manual backup failed:", err);
+    return fail(`Backup failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+export async function removeBackup(id: string): Promise<Result> {
+  const admin = await requireAdmin();
+  const removed = await deleteBackup(id);
+  if (!removed) return fail("That backup no longer exists.");
+  logAudit({ actorId: admin.id, action: "backup.deleted", subjectType: "backup", subjectId: id });
+  refreshBackups();
+  return ok(undefined);
+}
+
+const backupInput = z.object({
+  enabled: z.boolean(),
+  hour: z.coerce.number().int().min(0).max(23),
+  keep: z.coerce.number().int("Whole numbers only").min(1, "Keep at least one backup").max(365, "At most 365"),
+});
+export type SaveBackupScheduleInput = z.input<typeof backupInput>;
+
+export async function saveBackupSchedule(input: SaveBackupScheduleInput): Promise<Result<BackupSettings>> {
+  const admin = await requireAdmin();
+  const parsed = backupInput.safeParse(input);
+  if (!parsed.success) return fail(firstIssue(parsed.error));
+  const next = saveSettings({ backup: parsed.data });
+  const pruned = await pruneBackups(next.backup.keep);
+  logAudit({ actorId: admin.id, action: "settings.backup_schedule", subjectType: "settings", subjectId: "instance", meta: { ...next.backup, pruned } });
+  refreshBackups();
+  return ok(next.backup);
 }
 
 // ---- Storage ----

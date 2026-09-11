@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { clsx } from "@/lib/clsx";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/field";
+import { Input, Label } from "@/components/ui/field";
 import { createFolder, deleteFolder, renameFolder } from "@/actions/assets";
 import type { AssetCounts, AssetFilters, AssetFolder } from "@/lib/media/types";
 
@@ -104,7 +104,9 @@ function NewFolder({ workspaceId }: { workspaceId: string }) {
       <Button variant="ghost" onClick={() => setOpen(true)}>New folder</Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="New folder">
         <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); submit(); }}>
-          <Input autoFocus placeholder="Folder name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+          <Label htmlFor="new-folder-name">Folder name
+            <Input id="new-folder-name" autoFocus placeholder="Folder name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+          </Label>
           <div className="flex justify-end gap-2">
             <Button type="button" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" variant="primary" disabled={pending || !name.trim()}>Create</Button>
@@ -128,7 +130,9 @@ function FolderMenu({ folder, clearHref }: { folder: AssetFolder; clearHref: str
       <Button variant="ghost" size="sm" onClick={() => setMode("delete")}>Delete folder</Button>
       <Dialog open={mode === "rename"} onClose={close} title="Rename folder">
         <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); start(async () => { await renameFolder(folder.id, name); close(); }); }}>
-          <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+          <Label htmlFor={`rename-folder-${folder.id}`}>Folder name
+            <Input id={`rename-folder-${folder.id}`} autoFocus value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+          </Label>
           <div className="flex justify-end gap-2">
             <Button type="button" onClick={close}>Cancel</Button>
             <Button type="submit" variant="primary" disabled={pending || !name.trim()}>Save</Button>

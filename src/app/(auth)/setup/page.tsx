@@ -17,6 +17,7 @@ export default function SetupPage() {
         { name: "name", label: "Your name", autoComplete: "name" },
         { name: "email", label: "Email", type: "email", autoComplete: "email" },
         { name: "password", label: "Password", type: "password", autoComplete: "new-password" },
+        { name: "sample", label: "Add a sample workspace so I can see how it works", type: "checkbox", defaultChecked: true },
       ]}
       submit="Create account"
     />

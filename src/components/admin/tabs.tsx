@@ -10,6 +10,7 @@ export function AdminTabs({ pendingInvites }: { pendingInvites: number }) {
     { href: "/admin/workspaces", label: "Workspaces" },
     { href: "/admin/invites", label: "Invites", n: pendingInvites > 0 ? `${pendingInvites} pending` : undefined },
     { href: "/admin/storage", label: "Storage" },
+    { href: "/admin/backups", label: "Backups" },
     { href: "/admin/settings", label: "Settings" },
     { href: "/admin/audit", label: "Audit log" },
   ];

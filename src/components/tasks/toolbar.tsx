@@ -42,7 +42,7 @@ export function Toolbar({ view, onView, mine, onMine, canEdit, onNew }: {
           mine ? "border-accent-line bg-accent-soft text-accent" : "border-line text-ink-2 hover:text-ink",
         )}
       >
-        <span className={clsx("size-1.5 rounded-full", mine ? "bg-accent" : "bg-ink-3")} />
+        <span aria-hidden="true" className={clsx("size-1.5 rounded-full", mine ? "bg-accent" : "bg-ink-3")} />
         Assigned to me
       </button>
       <span className="ml-auto hidden items-center gap-1.5 text-xs text-ink-3 md:inline-flex">

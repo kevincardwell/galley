@@ -9,6 +9,7 @@ import { createSession, destroySession } from "@/lib/auth/session";
 import { hasAnyUser } from "@/lib/settings";
 import { logAudit } from "@/lib/activity";
 import { clearFailures, isThrottled, recordFailure } from "@/lib/auth/throttle";
+import { createSampleWorkspace } from "@/lib/seed/sample";
 
 export type FormState = { error?: string } | undefined;
 
@@ -22,8 +23,19 @@ export async function setupAction(_: FormState, form: FormData): Promise<FormSta
   const id = newId();
   db.insert(schema.users).values({ id, name, email, passwordHash: await hashPassword(password), isAdmin: true }).run();
   logAudit({ actorId: id, action: "setup.admin_created", subjectType: "user", subjectId: id });
+  let next = "/";
+  if (form.get("sample") === "on") {
+    // A failed sample must never block the admin from getting in.
+    try {
+      const { slug } = await createSampleWorkspace(id);
+      logAudit({ actorId: id, action: "setup.sample_created", subjectType: "workspace", subjectId: slug });
+      next = `/w/${slug}`;
+    } catch (err) {
+      console.error("[setup] sample workspace failed", err);
+    }
+  }
   await createSession(id);
-  redirect("/");
+  redirect(next);
 }
 
 export async function loginAction(_: FormState, form: FormData): Promise<FormState> {

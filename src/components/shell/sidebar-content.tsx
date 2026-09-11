@@ -4,6 +4,8 @@ import { listWorkspacesFor } from "@/lib/queries/workspaces";
 import { Avatar } from "@/components/ui/avatar";
 import { logoutAction } from "@/actions/auth";
 import { ThemeToggle } from "./theme-toggle";
+import { NotificationBell } from "@/components/notifications/bell";
+import { unreadCountFor } from "@/lib/queries/notifications";
 import { SidebarNav } from "./sidebar-nav";
 
 /**
@@ -26,6 +28,7 @@ export function SidebarContent({ user }: { user: User }) {
           <Link href="/me/account" className="block truncate text-ink hover:underline" title="Account settings">{user.name}</Link>
           <span className="block text-xs text-ink-3">{user.isAdmin ? "Admin" : "Member"}</span>
         </span>
+        <NotificationBell unread={unreadCountFor(user.id)} />
         <ThemeToggle />
         <form action={logoutAction}>
           <button

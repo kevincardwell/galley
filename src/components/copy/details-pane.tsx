@@ -9,6 +9,8 @@ import { Pill } from "@/components/ui/pill";
 import { Textarea } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import { AttachPicker } from "@/components/assets/attach-picker";
+import { VersionDiff } from "./version-diff";
+import { tiptapToText } from "@/lib/copy/serialize";
 import { addComment, renameSection, resolveComment, restoreVersion, setSectionStatus } from "@/actions/copy";
 import { STATUS_LABEL, statusTone, type SectionDetails, type SectionRow } from "@/lib/copy/types";
 import type { SaveState, Stats } from "./section-editor";
@@ -104,6 +106,22 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
               </div>
             )}
           </dd>
+          {details?.shareReview && (
+            <>
+              <dt className="m-0 text-ink-2">Client</dt>
+              <dd className="m-0 min-w-0">
+                {details.clientApprovedAt ? (
+                  <Pill tone="done" className="max-w-full">
+                    <span className="truncate">
+                      Approved by {details.clientApprovedBy ?? "the client"}, {timeAgo(details.clientApprovedAt)}
+                    </span>
+                  </Pill>
+                ) : (
+                  <span className="text-ink-3">Not yet approved by client</span>
+                )}
+              </dd>
+            </>
+          )}
           <dt className="m-0 text-ink-2">Words</dt>
           <dd className="m-0">{words}</dd>
           <dt className="m-0 text-ink-2">Characters</dt>
@@ -115,7 +133,7 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
         </dl>
       </div>
 
-      <Versions key={`v-${section.id}`} sectionId={section.id} current={section.version} versions={details?.versions ?? []} readOnly={readOnly} selfName={selfName} />
+      <Versions key={`v-${section.id}`} sectionId={section.id} current={section.version} currentText={tiptapToText(section.content)} versions={details?.versions ?? []} readOnly={readOnly} selfName={selfName} />
 
       <Comments key={`c-${section.id}`} sectionId={section.id} comments={details?.comments ?? []} readOnly={readOnly} selfName={selfName} />
 
@@ -174,10 +192,15 @@ function TitleField({ id, title, readOnly }: { id: string; title: string; readOn
   );
 }
 
-function Versions({ sectionId, current, versions, readOnly, selfName }: { sectionId: string; current: number; versions: SectionDetails["versions"]; readOnly: boolean; selfName: string }) {
+function Versions({ sectionId, current, currentText, versions, readOnly, selfName }: { sectionId: string; current: number; currentText: string; versions: SectionDetails["versions"]; readOnly: boolean; selfName: string }) {
   const [pending, start] = useTransition();
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const name = (n: string | null) => (n === selfName ? "You" : n ?? "Someone");
+  const opened = openId ? versions.find((v) => v.id === openId) ?? null : null;
+  // The newest saved version is the current copy; prefer its stored text so the diff matches what is in history.
+  const latest = versions[0];
+  const nowText = latest && latest.version === current ? latest.plainText : currentText;
   return (
     <div>
       <h3 className="m-0 mb-2 text-xs font-medium text-ink-3">Versions</h3>
@@ -189,7 +212,18 @@ function Versions({ sectionId, current, versions, readOnly, selfName }: { sectio
             const isCurrent = i === 0 || v.version === current;
             return (
               <li key={v.id} className="flex min-h-6 items-center justify-between gap-2">
-                <span className={clsx("truncate", isCurrent && "font-medium text-ink")}>{isCurrent ? "Current" : name(v.authorName)}</span>
+                {isCurrent ? (
+                  <span className="truncate font-medium text-ink">Current</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setOpenId(v.id)}
+                    title={`Compare version ${v.version} with the current copy`}
+                    className="-mx-1 min-w-0 truncate rounded-r px-1 text-left text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+                  >
+                    <span className="tnum text-ink-3">v{v.version}</span> {name(v.authorName)}
+                  </button>
+                )}
                 <span className="tnum flex shrink-0 items-center gap-2 text-ink-3">
                   <span>{timeAgo(v.createdAt)}</span>
                   {!isCurrent && !readOnly && (
@@ -215,6 +249,7 @@ function Versions({ sectionId, current, versions, readOnly, selfName }: { sectio
           })}
         </ul>
       )}
+      <VersionDiff sectionId={sectionId} version={opened} currentText={nowText} open={opened !== null} onClose={() => setOpenId(null)} readOnly={readOnly} selfName={selfName} />
     </div>
   );
 }
@@ -241,8 +276,12 @@ function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: stri
   const item = (c: SectionDetails["comments"][number]) => (
     <li key={c.id} className={clsx("rounded-r border border-line bg-surface p-2.5 text-[13px]", c.resolvedAt ? "opacity-60" : null)}>
       <div className="mb-1.5 flex items-center gap-2 text-ink-2">
-        <Avatar name={c.authorName ?? "?"} size={18} muted={c.authorName !== selfName} />
-        <span className="truncate">{c.authorName ?? "Someone"}</span>
+        {c.guestName ? (
+          <span className="shrink-0 rounded-full border border-line bg-surface-2 px-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-3">client</span>
+        ) : (
+          <Avatar name={c.authorName ?? "?"} size={18} muted={c.authorName !== selfName} />
+        )}
+        <span className="truncate">{c.guestName ?? c.authorName ?? "Someone"}</span>
         <span className="tnum ml-auto shrink-0 text-xs text-ink-3">{timeAgo(c.createdAt)}</span>
       </div>
       <p className="m-0 whitespace-pre-wrap">{c.body}</p>
