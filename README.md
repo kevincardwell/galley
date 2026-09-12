@@ -1,101 +1,178 @@
-# Galley
+<p align="center">
+  <img src="docs/media/hero.webp" alt="Galley showing a project overview: open tasks, copy approval progress, files and recent activity" width="900">
+</p>
 
-Tasks, copy and media for every website you build. One calm screen per project, self-hosted, one container.
+<h1 align="center">Galley</h1>
 
-A galley proof is the first typeset pull of a page, laid out so the words can be checked and approved before print. Galley holds the same three things for a website: what needs doing, what the site will say, and the images and video that go with it.
+<p align="center">
+  Tasks, copy, schedules, suppliers and files for every project you run.<br>
+  Self-hosted, one container, one file to back up.
+</p>
 
-- **Workspaces**: one per website, with its own accent colour, client, status and favicon.
-- **Tasks**: sections, list and board views, drag to reorder, due dates, checklists, comments, attachments.
-- **Copy**: pages of ordered sections in a clean rich-text editor with draft → review → approved, version history with word-level diffs, comments, and one-click copy as Markdown or HTML.
-- **Live collaboration**: several people can edit the same section at once with visible cursors. No websocket server or extra port needed.
-- **Assets**: drag-and-drop images, video and PDFs with thumbnails, palettes, tags, folders, and links to the task or copy section they belong to.
-- **Calendar**: month, week and agenda views of task deadlines and schedule items, drag to reschedule, and a subscribable feed for Google or Apple Calendar.
-- **Suppliers**: a shared directory of the printers, photographers and freelancers you use, linked into the projects that book them with status, cost and notes.
-- **Invite only**: no public sign-up. The first account is the admin; everyone else is invited and sees only the workspaces they are added to.
-- **Client share link**: a read-only view of copy and files for the client, revocable at any time. Turn on review mode and the client can comment and approve sections without an account.
-- **Notifications**: an in-app inbox for mentions, assignments and client feedback, with email when a mail provider is set up.
-- **Email**: send through your own SMTP server, or through Resend, Postmark, SendGrid or Mailgun when your host blocks SMTP ports. Invites go out automatically, and a delivery log shows what failed.
-- **Installable**: add it to a phone home screen from Safari or Chrome and it opens full screen, like an app.
-- **Backups**: one-click zip of everything from Admin, plus a daily schedule with retention.
-- **Export**: the whole workspace as a zip (Markdown copy, tasks CSV, original files).
+<p align="center">
+  <a href="https://github.com/kevincardwell/galley/actions/workflows/ci.yml"><img src="https://github.com/kevincardwell/galley/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/self--hosted-one%20container-2F6B4F" alt="Self-hosted">
+  <img src="https://img.shields.io/badge/Next.js-16-1C1B19" alt="Next.js 16">
+  <img src="https://img.shields.io/badge/database-SQLite-5F5C55" alt="SQLite">
+  <img src="https://img.shields.io/badge/licence-MIT-5F5C55" alt="MIT licence">
+</p>
 
-Everything lives in one SQLite file and one uploads folder. Back up by copying the data directory.
+---
 
-## Run with Docker (recommended)
+A galley proof is the first typeset pull of a page, laid out so the words can be checked before anything goes to print. Galley holds the same things for a project: what needs doing, what it will say, who you are hiring, when it happens, and the pictures that go with it.
+
+It is built for the person who runs the work: a web designer with six client sites on the go, a studio lead, someone organising an event. One screen per project, no seats to buy, no data leaving your server.
 
 ```bash
 mkdir galley && cd galley
 curl -O https://raw.githubusercontent.com/kevincardwell/galley/main/compose.yml
-# edit GALLEY_URL and GALLEY_SECRET in compose.yml
 docker compose up -d
 ```
 
-Open http://localhost:3000, create the admin account, then invite your team from **Admin**.
+Open <http://localhost:3000>, create the admin account, and tick the box to load a worked example so nothing starts empty.
 
-Data is kept in the `galley-data` volume at `/data`. To use a folder on the host instead, change the volume line to `- ./data:/data` and make sure it is writable by uid 1000 (`chown -R 1000:1000 data`).
+---
 
-Behind a reverse proxy (Caddy, nginx, Nginx Proxy Manager, Traefik): forward to port 3000, set `GALLEY_URL` to the public https URL, and raise the proxy's request body limit to at least `MAX_UPLOAD_MB`.
+## What is inside
 
-To build the image yourself instead of pulling: uncomment `build: .` in compose.yml and run `docker compose up -d --build`.
+### Every project on one page
 
-## Run locally without Docker
+Open a project and you can see where it has got to: what is overdue, how much of the copy is signed off, how many files there are, and what happened recently.
 
-Requirements: Node 22 or newer, and `ffmpeg` on your PATH if you want video posters (everything else works without it).
+<img src="docs/media/workspaces.webp" alt="The workspace index with three projects, each showing status, copy approval progress and open task counts" width="880">
+
+### Tasks that behave like a to-do list, not a ticketing system
+
+Sections you name yourself, a list or a board, drag to reorder, due dates that go amber then red, assignees, checklists, comments and attached files.
+
+<img src="docs/media/tasks.webp" alt="The task list grouped into Design, Build, Content and Launch sections with due dates and assignees" width="880">
+
+<img src="docs/media/board-dark.webp" alt="The same tasks as a board in dark mode" width="880">
+
+### Copy written where it belongs
+
+Pages and sections, each with its own draft, in review and approved state. Several people can write in the same section at once and see each other's cursors. Every save is kept, so you can compare any version with a word-level diff and put it back. One click copies clean Markdown or HTML for whatever the site is built in.
+
+<img src="docs/media/copy.webp" alt="The copy editor with a page outline, the text in a serif column, and a details pane showing status, word count, versions and comments" width="880">
+
+### A calendar that already knows your deadlines
+
+Task due dates appear automatically next to the things you schedule: site visits, photography, the print deadline, go-live. Month, week and agenda views, drag an entry to move it, and a subscribable feed so a client can follow the plan in their own calendar.
+
+<img src="docs/media/calendar.webp" alt="A month calendar showing task deadlines and timed schedule entries" width="880">
+
+### The people you hire, kept once
+
+A shared directory of printers, photographers, copywriters and freelancers, with what you booked them for on each project and what it cost.
+
+<img src="docs/media/suppliers.webp" alt="The supplier directory showing five suppliers with categories, ratings, contact details and booked totals" width="880">
+
+### Files with the detail you actually need
+
+Drag anything in. Thumbnails, dimensions, duration for video, a colour palette pulled from each image, tags, folders, and a record of which task or paragraph each file belongs to.
+
+<img src="docs/media/assets.webp" alt="The asset grid with filter chips, storage total and a details pane showing palette and tags" width="880">
+
+### A link you can send the client
+
+Read-only by default. Turn on review and they can comment on individual sections and approve them, with no account and nothing to install. You are told the moment they do.
+
+<img src="docs/media/share.webp" alt="The client share view showing approved copy, a client comment and an approve control" width="880">
+
+### On your phone, as an app
+
+Add it to the home screen from Safari or Chrome and it opens full screen with its own icon.
+
+<p>
+  <img src="docs/media/mobile-tasks.webp" alt="Galley on a phone showing the task list and the add to home screen prompt" width="300">
+</p>
+
+---
+
+## Everything else it does
+
+| | |
+|---|---|
+| **Invite only** | No public sign-up. The first account is the admin; everyone else is invited and sees only the projects they are added to. |
+| **Email** | Your own SMTP server, or Resend, Postmark, SendGrid or Mailgun when your host blocks SMTP ports. Invites send themselves. |
+| **Notifications** | An inbox for mentions, assignments and client feedback, with email when a provider is set up. |
+| **Search** | `⌘K` across tasks, copy, files and projects, scoped to what you are allowed to see. |
+| **Export** | A zip of the whole project: copy as Markdown, tasks as CSV, every original file. |
+| **Backups** | One click, or nightly with retention, from the admin panel. |
+| **Themes** | Light, dark, or follow the system. |
+| **Keyboard** | `?` lists every shortcut. |
+
+---
+
+## Running it
+
+### With Docker
+
+```bash
+mkdir galley && cd galley
+curl -O https://raw.githubusercontent.com/kevincardwell/galley/main/compose.yml
+# set GALLEY_URL and GALLEY_SECRET in compose.yml
+docker compose up -d
+```
+
+Data lives in the `galley-data` volume at `/data`. To keep it in a folder instead, change the volume to `- ./data:/data` and make it writable by uid 1000.
+
+Behind a reverse proxy: forward to port 3000, set `GALLEY_URL` to the public https address, and raise the proxy's body limit to at least `MAX_UPLOAD_MB`. The https part matters, because home screen installation needs it.
+
+To build the image yourself, uncomment `build: .` in `compose.yml`.
+
+### Without Docker
+
+Node 22 or newer, plus `ffmpeg` on the PATH if you want poster frames for video.
 
 ```bash
 git clone https://github.com/kevincardwell/galley.git
 cd galley
-npm install
-cp .env.example .env.local   # optional; defaults are fine for a laptop
-npm run dev                   # http://localhost:3000
-```
-
-For a production run on a server without Docker:
-
-```bash
 npm ci
 npm run build
 GALLEY_DATA_DIR=/srv/galley PORT=3000 npm start
 ```
 
-## Configuration
+### Settings
 
 | Variable | Default | What it does |
 |---|---|---|
-| `GALLEY_URL` | (none) | Public URL, used to build invite links and to mark cookies secure over https. |
-| `GALLEY_SECRET` | (none) | Any long random string. `openssl rand -hex 32`. |
-| `GALLEY_DATA_DIR` | `./data` locally, `/data` in Docker | Where the SQLite file and uploads live. |
-| `MAX_UPLOAD_MB` | `500` | Largest single upload. Can be changed later in Admin → Settings. |
+| `GALLEY_URL` | none | Public address, used for invite links and to mark cookies secure. |
+| `GALLEY_SECRET` | none | Any long random string: `openssl rand -hex 32`. |
+| `GALLEY_DATA_DIR` | `./data`, `/data` in Docker | Where the database and uploads live. |
+| `MAX_UPLOAD_MB` | `500` | Largest single upload. |
 | `PORT` | `3000` | Port to listen on. |
 
-Email and the backup schedule are configured in the app under Admin → Email and Admin → Backups, not with environment variables.
+Email and the backup schedule are set in the app, under Admin, not with environment variables.
 
-### Email
+### Backing up and upgrading
 
-Admin → Email takes either SMTP details (with presets for Gmail, Microsoft 365, Fastmail, Zoho, iCloud and Amazon SES) or an API key for Resend, Postmark, SendGrid or Mailgun. Send yourself a test from the same screen; recent deliveries and their errors are listed underneath. Until a provider is set, invites still work by copying the link.
-
-### Installing on a phone
-
-Galley is a progressive web app. On Android, Chrome offers to install it. On iOS, open it in Safari and choose Share, then Add to Home Screen. It then runs full screen with its own icon. This needs the site to be served over https, so set `GALLEY_URL` and put it behind a reverse proxy with a certificate.
-
-## Backup and upgrade
-
-- **Backup**: Admin → Backups makes a consistent zip of the database and every upload, on demand or daily. Or copy the data directory yourself. That is everything.
+- **Backup**: Admin → Backups writes a zip of the database and every upload, on demand or nightly. Copying the data directory does the same job.
 - **Restore**: stop Galley, unzip a backup into an empty data directory, start it again.
-- **Upgrade**: `docker compose pull && docker compose up -d`. Migrations run on start. Nothing else to do.
+- **Upgrade**: `docker compose pull && docker compose up -d`. Migrations run on start.
 
-## Development
+---
+
+## How it is built
+
+One process, one SQLite file, one uploads folder. No Postgres, no Redis, no object store, no worker container, because a tool for a handful of people should not need a fleet.
+
+- **Next.js 16** with the App Router and server actions
+- **SQLite** through Drizzle, in WAL mode, with FTS5 for search
+- **Yjs** for live collaborative editing, carried over server-sent events so there is no second port to proxy
+- **sharp** and **ffmpeg** for thumbnails, palettes and poster frames
+- **Tailwind v4** with tokens for the light and dark palettes
 
 ```bash
-npm run dev          # Next.js dev server
-npm test             # unit tests (vitest)
-npm run test:e2e     # Playwright, needs a build first: npm run build
+npm run dev          # development server
+npm test             # unit tests
+npm run test:e2e     # end-to-end, after npm run build
 npm run lint
 npm run db:generate  # after editing src/db/schema.ts
 ```
 
-The implementation plan and the original mockup are in `docs/`.
+`docs/DESIGN.md` is the design direction, `docs/PLAN.md` the original plan, and `docs/STATUS.md` the running log of what is done and what is next.
 
 ## Licence
 
-MIT
+MIT. See [LICENCE](LICENCE).

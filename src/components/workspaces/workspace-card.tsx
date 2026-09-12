@@ -55,10 +55,13 @@ export function WorkspaceCard({ ws }: { ws: WorkspaceCardData }) {
           {ws.faviconPath ? <img src={`/api/favicon/${ws.id}`} alt="" className="size-5" /> : ws.name[0]}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold">{ws.name}</span>
-          <span className="block truncate text-[13px] text-ink-2">{sub}</span>
+          {/* Two lines before truncating: project names are long and the card is narrow. */}
+          <span className="line-clamp-2 font-semibold" title={ws.name}>{ws.name}</span>
+          <span className="mt-0.5 flex items-center gap-2">
+            <Pill tone={status.tone} className="shrink-0">{status.label}</Pill>
+            <span className="truncate text-[13px] text-ink-2">{sub}</span>
+          </span>
         </span>
-        <Pill tone={status.tone} className="shrink-0">{status.label}</Pill>
       </div>
 
       <div className="flex flex-col gap-1.5">

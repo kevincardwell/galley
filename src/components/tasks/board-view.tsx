@@ -37,7 +37,7 @@ function BoardColumn({ section, index, count, collapsed, onToggleCollapse }: { s
         isOver && "border-solid border-accent-line bg-accent-soft",
       )}
     >
-      <SectionHeader section={section} index={index} count={count} collapsed={collapsed} onToggleCollapse={onToggleCollapse} className="px-1 pt-0.5" />
+      <SectionHeader section={section} index={index} count={count} collapsed={collapsed} onToggleCollapse={onToggleCollapse} className="px-1 pt-0.5" compact />
       {!collapsed && (
         <>
           <SortableContext items={section.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>

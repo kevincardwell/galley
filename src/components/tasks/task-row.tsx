@@ -18,7 +18,7 @@ function RowContent({ task, grip, highlighted, open, placeholder, overlay, class
   return (
     <div
       className={clsx(
-        "group relative grid grid-cols-[18px_16px_minmax(0,1fr)_auto] items-center gap-2.5 rounded-r px-2 py-1.5 transition-colors duration-150 ease-out",
+        "group relative grid grid-cols-[18px_16px_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1 rounded-r px-2 py-1.5 transition-colors duration-150 ease-out sm:grid-cols-[18px_16px_minmax(0,1fr)_auto]",
         !overlay && !placeholder && "hover:bg-surface-2",
         highlighted && !placeholder && "bg-surface-2",
         open && !placeholder && "bg-accent-soft",
@@ -32,9 +32,11 @@ function RowContent({ task, grip, highlighted, open, placeholder, overlay, class
       <TaskCheckbox done={done} disabled={!board.canEdit || isTempId(task.id)} label={done ? `Reopen ${task.title}` : `Complete ${task.title}`} onToggle={() => board.toggleDone(task.id)} />
       <span className="min-w-0">
         <span className={clsx("block truncate font-medium", done ? "text-ink-3 line-through decoration-ink-3/60" : "text-ink")}>{task.title}</span>
-        {subtitle && <span className={clsx("mt-px block truncate text-[13px]", done ? "text-ink-3/70" : "text-ink-3")}>{subtitle}</span>}
+        {subtitle && <span className={clsx("mt-px block truncate text-[13px] max-sm:hidden", done ? "text-ink-3/70" : "text-ink-3")}>{subtitle}</span>}
       </span>
-      <TaskMeta task={task} />
+      <span className="col-start-3 flex min-w-0 justify-start sm:col-start-4 sm:justify-end">
+        <TaskMeta task={task} />
+      </span>
     </div>
   );
 }

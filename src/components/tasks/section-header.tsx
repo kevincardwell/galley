@@ -15,9 +15,11 @@ type Props = {
   collapsed: boolean;
   onToggleCollapse: () => void;
   className?: string;
+  /** Board columns are narrow: drop the meter and shorten the count so the name survives. */
+  compact?: boolean;
 };
 
-export function SectionHeader({ section, index, count, collapsed, onToggleCollapse, className }: Props) {
+export function SectionHeader({ section, index, count, collapsed, onToggleCollapse, className, compact = false }: Props) {
   const board = useBoard();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(section.name);
@@ -75,24 +77,28 @@ export function SectionHeader({ section, index, count, collapsed, onToggleCollap
             if (e.key === "Escape") { e.stopPropagation(); setName(section.name); setEditing(false); }
           }}
           aria-label="Section name"
-          className="-mx-1 min-w-0 rounded-[4px] border border-line bg-surface px-1 text-sm font-semibold outline-none focus:ring-2 focus:ring-accent"
+          className="-mx-1 min-w-0 flex-1 rounded-[4px] border border-line bg-surface px-1 text-sm font-semibold outline-none focus:ring-2 focus:ring-accent"
         />
       ) : (
         <button
           onClick={() => { if (!locked) { setName(section.name); setEditing(true); } }}
           disabled={locked}
           title={locked ? undefined : "Rename section"}
-          className="-mx-1 min-w-0 cursor-pointer truncate rounded-[4px] px-1 text-sm font-semibold transition-colors duration-150 ease-out hover:bg-surface-2 disabled:cursor-default disabled:hover:bg-transparent"
+          className="-mx-1 min-w-0 flex-1 cursor-pointer truncate rounded-[4px] px-1 text-left text-sm font-semibold transition-colors duration-150 ease-out hover:bg-surface-2 disabled:cursor-default disabled:hover:bg-transparent"
         >
           {section.name}
         </button>
       )}
 
       <div className="flex shrink-0 items-center gap-2">
-        <span className="hidden w-12 shrink-0 sm:block">
-          <Meter value={done} max={total} tone={complete ? "done" : "accent"} label={`${section.name}: ${done} of ${total} done`} />
+        {!compact && (
+          <span className="hidden w-12 shrink-0 sm:block">
+            <Meter value={done} max={total} tone={complete ? "done" : "accent"} label={`${section.name}: ${done} of ${total} done`} />
+          </span>
+        )}
+        <span className="tnum text-xs whitespace-nowrap text-ink-3" title={`${done} of ${total} done`}>
+          {compact ? `${done}/${total}` : `${done} of ${total}`}
         </span>
-        <span className="tnum text-xs whitespace-nowrap text-ink-3">{done} of {total}</span>
       </div>
 
       {!locked && (

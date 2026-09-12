@@ -145,11 +145,11 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
         {(details?.attachments.length ?? 0) === 0 && readOnly && <p className="m-0 text-[13px] text-ink-3">No files attached.</p>}
       </Block>
 
-      <div className="mt-auto flex gap-2 border-t border-line-2 bg-surface-2 px-4 py-3 min-[900px]:sticky min-[900px]:bottom-0">
-        <Button className="flex-1" icon={copied ? "check" : "copy"} onClick={copyMd}>{copied ? "Copied" : "Copy as Markdown"}</Button>
+      <div className="mt-auto flex flex-wrap gap-2 border-t border-line-2 bg-surface-2 px-4 py-3 min-[900px]:sticky min-[900px]:bottom-0">
+        <Button className="min-w-0 flex-1 basis-32" icon={copied ? "check" : "copy"} onClick={copyMd}><span className="truncate">{copied ? "Copied" : "Copy as Markdown"}</span></Button>
         {!readOnly && (
-          <Button className="flex-1" variant={approved ? "default" : "primary"} icon={approved ? "undo" : "check"} disabled={pending} onClick={() => setStatus(approved ? "draft" : "approved")}>
-            {approved ? "Back to draft" : "Approve"}
+          <Button className="min-w-0 flex-1 basis-28" variant={approved ? "default" : "primary"} icon={approved ? "undo" : "check"} disabled={pending} onClick={() => setStatus(approved ? "draft" : "approved")}>
+            <span className="truncate">{approved ? "Back to draft" : "Approve"}</span>
           </Button>
         )}
       </div>
