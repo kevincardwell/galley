@@ -185,6 +185,71 @@ export const comments = sqliteTable("comments", {
   createdAt: integer("created_at").notNull().default(now()),
 });
 
+// ---- Suppliers (instance-wide directory, linked into the projects that use them) ----
+export const SUPPLIER_LINK_STATUSES = ["shortlisted", "enquired", "booked", "declined"] as const;
+export type SupplierLinkStatus = (typeof SUPPLIER_LINK_STATUSES)[number];
+
+export const suppliers = sqliteTable(
+  "suppliers",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    category: text("category"), // florist, caterer, photographer, printer, developer…
+    contactName: text("contact_name"),
+    email: text("email"),
+    phone: text("phone"),
+    website: text("website"),
+    address: text("address"),
+    notes: text("notes"),
+    rating: integer("rating"), // 1-5, null when unrated
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: integer("created_at").notNull().default(now()),
+    archivedAt: integer("archived_at"),
+  },
+  (t) => [index("suppliers_name").on(t.name)],
+);
+
+export const supplierTags = sqliteTable(
+  "supplier_tags",
+  { supplierId: text("supplier_id").notNull().references(() => suppliers.id, { onDelete: "cascade" }), tag: text("tag").notNull() },
+  (t) => [primaryKey({ columns: [t.supplierId, t.tag] })],
+);
+
+export const workspaceSuppliers = sqliteTable(
+  "workspace_suppliers",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+    supplierId: text("supplier_id").notNull().references(() => suppliers.id, { onDelete: "cascade" }),
+    status: text("status", { enum: SUPPLIER_LINK_STATUSES }).notNull().default("shortlisted"),
+    cost: integer("cost"), // minor units (pence)
+    note: text("note"),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: integer("created_at").notNull().default(now()),
+  },
+  (t) => [index("workspace_suppliers_ws").on(t.workspaceId), index("workspace_suppliers_supplier").on(t.supplierId)],
+);
+
+// ---- Schedule (dated run-sheet entries; the calendar also shows task due dates) ----
+export const scheduleItems = sqliteTable(
+  "schedule_items",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    startsAt: integer("starts_at").notNull(), // unix seconds
+    endsAt: integer("ends_at"),
+    allDay: integer("all_day", { mode: "boolean" }).notNull().default(false),
+    location: text("location"),
+    supplierId: text("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
+    ownerId: text("owner_id").references(() => users.id, { onDelete: "set null" }),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: integer("created_at").notNull().default(now()),
+  },
+  (t) => [index("schedule_items_ws").on(t.workspaceId, t.startsAt)],
+);
+
 // ---- Collaboration (Yjs update log, compacted into sections.ydoc) ----
 export const collabUpdates = sqliteTable(
   "collab_updates",
@@ -306,3 +371,6 @@ export type Page = typeof pages.$inferSelect;
 export type Section = typeof sections.$inferSelect;
 export type Asset = typeof assets.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
+export type Supplier = typeof suppliers.$inferSelect;
+export type WorkspaceSupplier = typeof workspaceSuppliers.$inferSelect;
+export type ScheduleItem = typeof scheduleItems.$inferSelect;

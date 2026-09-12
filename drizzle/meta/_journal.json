@@ -15,6 +15,13 @@
       "when": 1789156406027,
       "tag": "0001_collab_review_notify_backups",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789191325304,
+      "tag": "0002_suppliers_schedule",
+      "breakpoints": true
     }
   ]
 }
