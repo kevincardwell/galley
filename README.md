@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/hero.webp" alt="Galley showing a project overview: open tasks, copy approval progress, files and recent activity" width="900">
+  <img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/hero.webp" alt="Galley showing a project overview: open tasks, copy approval progress, files and recent activity" width="900">
 </p>
 
 <h1 align="center">Galley</h1>
@@ -39,52 +39,52 @@ Open <http://localhost:3000>, create the admin account, and tick the box to load
 
 Open a project and you can see where it has got to: what is overdue, how much of the copy is signed off, how many files there are, and what happened recently.
 
-<img src="docs/media/workspaces.webp" alt="The workspace index with three projects, each showing status, copy approval progress and open task counts" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/workspaces.webp" alt="The workspace index with three projects, each showing status, copy approval progress and open task counts" width="880">
 
 ### Tasks that behave like a to-do list, not a ticketing system
 
 Sections you name yourself, a list or a board, drag to reorder, due dates that go amber then red, assignees, checklists, comments and attached files.
 
-<img src="docs/media/tasks.webp" alt="The task list grouped into Design, Build, Content and Launch sections with due dates and assignees" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/tasks.webp" alt="The task list grouped into Design, Build, Content and Launch sections with due dates and assignees" width="880">
 
-<img src="docs/media/board-dark.webp" alt="The same tasks as a board in dark mode" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/board-dark.webp" alt="The same tasks as a board in dark mode" width="880">
 
 ### Copy written where it belongs
 
 Pages and sections, each with its own draft, in review and approved state. Several people can write in the same section at once and see each other's cursors. Every save is kept, so you can compare any version with a word-level diff and put it back. One click copies clean Markdown or HTML for whatever the site is built in.
 
-<img src="docs/media/copy.webp" alt="The copy editor with a page outline, the text in a serif column, and a details pane showing status, word count, versions and comments" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/copy.webp" alt="The copy editor with a page outline, the text in a serif column, and a details pane showing status, word count, versions and comments" width="880">
 
 ### A calendar that already knows your deadlines
 
 Task due dates appear automatically next to the things you schedule: site visits, photography, the print deadline, go-live. Month, week and agenda views, drag an entry to move it, and a subscribable feed so a client can follow the plan in their own calendar.
 
-<img src="docs/media/calendar.webp" alt="A month calendar showing task deadlines and timed schedule entries" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/calendar.webp" alt="A month calendar showing task deadlines and timed schedule entries" width="880">
 
 ### The people you hire, kept once
 
 A shared directory of printers, photographers, copywriters and freelancers, with what you booked them for on each project and what it cost.
 
-<img src="docs/media/suppliers.webp" alt="The supplier directory showing five suppliers with categories, ratings, contact details and booked totals" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/suppliers.webp" alt="The supplier directory showing five suppliers with categories, ratings, contact details and booked totals" width="880">
 
 ### Files with the detail you actually need
 
 Drag anything in. Thumbnails, dimensions, duration for video, a colour palette pulled from each image, tags, folders, and a record of which task or paragraph each file belongs to.
 
-<img src="docs/media/assets.webp" alt="The asset grid with filter chips, storage total and a details pane showing palette and tags" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/assets.webp" alt="The asset grid with filter chips, storage total and a details pane showing palette and tags" width="880">
 
 ### A link you can send the client
 
 Read-only by default. Turn on review and they can comment on individual sections and approve them, with no account and nothing to install. You are told the moment they do.
 
-<img src="docs/media/share.webp" alt="The client share view showing approved copy, a client comment and an approve control" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/share.webp" alt="The client share view showing approved copy, a client comment and an approve control" width="880">
 
 ### On your phone, as an app
 
 Add it to the home screen from Safari or Chrome and it opens full screen with its own icon.
 
 <p>
-  <img src="docs/media/mobile-tasks.webp" alt="Galley on a phone showing the task list and the add to home screen prompt" width="300">
+  <img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/mobile-tasks.webp" alt="Galley on a phone showing the task list and the add to home screen prompt" width="300">
 </p>
 
 ---
@@ -129,6 +129,17 @@ Data lives in the `galley-data` volume at `/data`. To keep it in a folder instea
 Behind a reverse proxy: forward to port 3000, set `GALLEY_URL` to the public https address, and raise the proxy's body limit to at least `MAX_UPLOAD_MB`. The https part matters, because home screen installation needs it.
 
 To build the image yourself, uncomment `build: .` in `compose.yml`.
+
+### On Unraid
+
+Galley ships an Unraid template. Until it appears in Community Applications, add it by hand:
+
+1. In Unraid, open **Docker**, then **Add Container**.
+2. Paste this into **Template**:
+   `https://raw.githubusercontent.com/kevincardwell/galley/main/unraid/galley.xml`
+3. Check the appdata path and the port, then **Apply**.
+
+The data path defaults to `/mnt/user/appdata/galley` and holds the database, uploads and backups, so that one folder is your backup. Set **Public URL** to the address you actually reach it on, especially behind a reverse proxy.
 
 ### Without Docker
 

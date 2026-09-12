@@ -64,7 +64,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Update the Docker Hub description
-        if: steps.hub.outputs.enabled == 'true' && startsWith(github.ref, 'refs/tags/v')
+        if: steps.hub.outputs.enabled == 'true' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}

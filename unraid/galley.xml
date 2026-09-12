@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Galley</Name>
+  <Repository>kevincardwell/galley:latest</Repository>
+  <Registry>https://hub.docker.com/r/kevincardwell/galley</Registry>
+  <Branch>
+    <Tag>latest</Tag>
+    <TagDescription>Current release</TagDescription>
+  </Branch>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/kevincardwell/galley/issues</Support>
+  <Project>https://github.com/kevincardwell/galley</Project>
+  <Overview>
+    Galley is a self-hosted home for the work around a project: what needs doing, what it will say, who you are hiring, when it happens, and the files that go with it.
+
+    Each project gets its own space with tasks, a copy editor with approval states and version history, a calendar of deadlines and scheduled entries, a shared supplier directory, and an asset library with thumbnails and colour palettes. You can hand a client a read-only link, or let them comment on and approve individual sections without an account.
+
+    Everything lives in one SQLite file and one uploads folder inside the appdata path, so backing it up is a folder copy. Access is invite only: the first account you create is the admin, and everyone else sees only the projects they are added to.
+
+    After the container starts, open the WebUI and create the admin account. Tick the box on that screen to load a worked example so nothing starts empty.
+
+    If you put this behind a reverse proxy, set the Public URL variable to the address people will actually use. Installing it to a phone home screen needs https.
+  </Overview>
+  <Category>Productivity: Cloud: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/kevincardwell/galley/main/unraid/galley.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/kevincardwell/galley/main/public/icon-512.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <Config
+    Name="WebUI Port"
+    Target="3000"
+    Default="3000"
+    Mode="tcp"
+    Description="Port for the web interface."
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">3000</Config>
+
+  <Config
+    Name="Data"
+    Target="/data"
+    Default="/mnt/user/appdata/galley"
+    Mode="rw"
+    Description="Holds the database, uploads and backups. Back this folder up."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/galley</Config>
+
+  <Config
+    Name="Public URL"
+    Target="GALLEY_URL"
+    Default="http://[IP]:[PORT:3000]"
+    Mode=""
+    Description="The address people use to reach Galley, used for invite links and to mark cookies secure. Use your https address if it sits behind a reverse proxy."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="false"></Config>
+
+  <Config
+    Name="Max upload (MB)"
+    Target="MAX_UPLOAD_MB"
+    Default="500"
+    Mode=""
+    Description="Largest single file upload. Raise your reverse proxy body limit to match."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">500</Config>
+
+  <Config
+    Name="Trusted proxy hops"
+    Target="TRUSTED_PROXY_HOPS"
+    Default="1"
+    Mode=""
+    Description="How many reverse proxies sit in front, so login rate limiting can find the real client address. Use 0 when nothing proxies it."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">1</Config>
+
+  <Config
+    Name="Time zone"
+    Target="TZ"
+    Default="Europe/London"
+    Mode=""
+    Description="Used for due dates, the calendar and the nightly backup time."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">Europe/London</Config>
+</Container>

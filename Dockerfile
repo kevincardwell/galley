@@ -23,7 +23,7 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     GALLEY_DATA_DIR=/data
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl tini \
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl tini tzdata \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /data && chown node:node /data
 COPY --from=build --chown=node:node /app/.next/standalone ./
