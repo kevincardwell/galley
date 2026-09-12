@@ -12,11 +12,11 @@ export default async function AdminInvitesPage() {
   const emailOn = isEmailConfigured();
   return (
     <div className="overflow-auto px-4 pt-4 pb-8 sm:px-6 sm:pt-5">
-      <div className="mb-4"><Hint>Invite links last seven days. {emailOn ? "New invites are emailed; you can still copy the link to resend it." : "Nothing is emailed until SMTP is set up in Settings; copy the link and send it yourself."}</Hint></div>
+      <div className="mb-4"><Hint>Invite links last seven days. {emailOn ? "New invites are emailed straight away, and you can send one again from the row." : "Nothing is emailed until you pick a provider on the Email tab; copy the link and send it yourself."}</Hint></div>
       {invites.length === 0 ? (
         <Empty icon="mail" title="No invites yet" hint="Use “Invite someone” above or the form on the People tab." />
       ) : (
-        <InvitesTable invites={invites} baseUrl={baseUrl} />
+        <InvitesTable invites={invites} baseUrl={baseUrl} emailConfigured={emailOn} />
       )}
     </div>
   );

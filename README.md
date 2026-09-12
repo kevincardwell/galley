@@ -13,7 +13,9 @@ A galley proof is the first typeset pull of a page, laid out so the words can be
 - **Suppliers**: a shared directory of the printers, photographers and freelancers you use, linked into the projects that book them with status, cost and notes.
 - **Invite only**: no public sign-up. The first account is the admin; everyone else is invited and sees only the workspaces they are added to.
 - **Client share link**: a read-only view of copy and files for the client, revocable at any time. Turn on review mode and the client can comment and approve sections without an account.
-- **Notifications**: an in-app inbox for mentions, assignments and client feedback, with email when SMTP is set up.
+- **Notifications**: an in-app inbox for mentions, assignments and client feedback, with email when a mail provider is set up.
+- **Email**: send through your own SMTP server, or through Resend, Postmark, SendGrid or Mailgun when your host blocks SMTP ports. Invites go out automatically, and a delivery log shows what failed.
+- **Installable**: add it to a phone home screen from Safari or Chrome and it opens full screen, like an app.
 - **Backups**: one-click zip of everything from Admin, plus a daily schedule with retention.
 - **Export**: the whole workspace as a zip (Markdown copy, tasks CSV, original files).
 
@@ -66,7 +68,15 @@ GALLEY_DATA_DIR=/srv/galley PORT=3000 npm start
 | `MAX_UPLOAD_MB` | `500` | Largest single upload. Can be changed later in Admin → Settings. |
 | `PORT` | `3000` | Port to listen on. |
 
-Email (SMTP) and the backup schedule are configured in the app under Admin → Settings and Admin → Backups, not with environment variables.
+Email and the backup schedule are configured in the app under Admin → Email and Admin → Backups, not with environment variables.
+
+### Email
+
+Admin → Email takes either SMTP details (with presets for Gmail, Microsoft 365, Fastmail, Zoho, iCloud and Amazon SES) or an API key for Resend, Postmark, SendGrid or Mailgun. Send yourself a test from the same screen; recent deliveries and their errors are listed underneath. Until a provider is set, invites still work by copying the link.
+
+### Installing on a phone
+
+Galley is a progressive web app. On Android, Chrome offers to install it. On iOS, open it in Safari and choose Share, then Add to Home Screen. It then runs full screen with its own icon. This needs the site to be served over https, so set `GALLEY_URL` and put it behind a reverse proxy with a certificate.
 
 ## Backup and upgrade
 

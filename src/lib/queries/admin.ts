@@ -29,6 +29,7 @@ export type InviteRow = {
   workspace: { id: string; name: string; accent: string } | null;
   inviterName: string | null;
   expiresAt: number;
+  emailedAt: number | null;
   acceptedAt: number | null;
   revokedAt: number | null;
   createdAt: number;
@@ -160,6 +161,7 @@ export function listInvites(onlyPending = false): InviteRow[] {
     workspace: wsId && wsName && wsAccent ? { id: wsId, name: wsName, accent: wsAccent } : null,
     inviterName,
     expiresAt: invite.expiresAt,
+    emailedAt: invite.emailedAt,
     acceptedAt: invite.acceptedAt,
     revokedAt: invite.revokedAt,
     createdAt: invite.createdAt,

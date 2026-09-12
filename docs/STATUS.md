@@ -33,6 +33,12 @@ A collaborator's brief asked for tasks-against-an-event with deadlines and notes
 - **Bug found and fixed**: listWorkspacesFor interpolated a Drizzle column into a correlated subquery, which SQLite bound to the subquery's own table, so every workspace card count was 0. Regression test in tests/unit/workspace-counts.test.ts. Do not interpolate `${schema.x.y}` inside a raw `sql` subquery; name the table literally.
 - Guidelines pass (web-design-guidelines skill) added overscroll containment, touch-action, theme-color meta and balanced headings; dnd-kit contexts now carry stable ids (hydration warnings gone).
 
+## Email providers and installable app 2026-09-12
+- **Mail**: src/lib/email/providers.ts is the catalogue (SMTP + Resend, Postmark, SendGrid, Mailgun) and src/lib/email/index.ts does the sending. Settings live under `settings.mail`; the old `settings.smtp` shape is migrated on read in src/lib/settings.ts so existing installs keep working. Admin → Email has the picker, SMTP presets, a test send and the last 100 attempts (mail_log table). Invites email on create and can be resent from the Invites tab; invites.emailedAt records it. Verified end to end against a local SMTP sink, including the failure message.
+- **PWA**: manifest.ts (icons 192/512 plus maskable, shortcuts), public/sw.js, /offline, install banner in src/components/shell/install-app.tsx, iOS meta tags and safe-area padding. The worker is network-first for pages and cache-first only for /_next/static.
+  TRAP: it registers in production ONLY. Dev chunk URLs are not content-hashed, so a cache-first worker serves yesterday's JavaScript after a rebuild; that cost an hour chasing a phantom React error. The component also unregisters any stale worker when NODE_ENV is not production.
+  Verified in a production build: worker activated and controlling, manifest valid, offline fallback renders with the server stopped.
+
 ## Not yet done (pick up here)
 1. **Docker image not yet built.** `docker build` was refused: this user is not in the `docker` group. Run `sudo usermod -aG docker $USER` and log back in (or use `sudo docker compose up -d --build`), then click through inside the container (ffmpeg posters, volume permissions).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.

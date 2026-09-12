@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth/current";
 import { Sidebar } from "@/components/shell/sidebar";
 import { MobileNav } from "@/components/shell/mobile-nav";
+import { InstallApp } from "@/components/shell/install-app";
 import { CommandPalette } from "@/components/shell/command-palette";
 import { ShortcutsSheet } from "@/components/shell/shortcuts-sheet";
 
@@ -18,6 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar user={user} />
       <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col bg-surface outline-none">{children}</main>
       <CommandPalette />
+      <InstallApp />
       <ShortcutsSheet />
     </div>
   );

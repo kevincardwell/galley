@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC = [/^\/login/, /^\/setup/, /^\/invite\//, /^\/share\//, /^\/api\/health/, /^\/api\/file\//, /^\/api\/calendar\//, /^\/_next\//, /^\/favicon/];
+const PUBLIC = [/^\/login/, /^\/setup/, /^\/invite\//, /^\/share\//, /^\/sw\.js$/, /^\/offline$/, /^\/manifest\.webmanifest$/, /^\/api\/health/, /^\/api\/file\//, /^\/api\/calendar\//, /^\/_next\//, /^\/favicon/];
 const COOKIE = "galley_session";
 
 export function proxy(req: NextRequest) {

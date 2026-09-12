@@ -1,8 +1,9 @@
 "use client";
+import { useState } from "react";
 import { IconButton } from "@/components/ui/icon";
 import { Pill } from "@/components/ui/pill";
 import { Tooltip } from "@/components/ui/tooltip";
-import { revokeInvite } from "@/actions/admin";
+import { resendInvite, revokeInvite } from "@/actions/admin";
 import type { InviteRow } from "@/lib/queries/admin";
 import { timeAgo } from "@/lib/format";
 import { CopyIconButton } from "./copy-button";
@@ -22,8 +23,10 @@ function expiry(i: InviteRow) {
   return `expires ${new Date(i.expiresAt * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 }
 
-export function InvitesTable({ invites, baseUrl }: { invites: InviteRow[]; baseUrl: string }) {
+export function InvitesTable({ invites, baseUrl, emailConfigured }: { invites: InviteRow[]; baseUrl: string; emailConfigured: boolean }) {
   const revoke = useAdminAction();
+  const resend = useAdminAction();
+  const [sentTo, setSentTo] = useState<string | null>(null);
   return (
     <>
       <Table>
@@ -44,11 +47,25 @@ export function InvitesTable({ invites, baseUrl }: { invites: InviteRow[]; baseU
                 ) : <span className="text-ink-3">—</span>}
               </Td>
               <Td className="text-ink-2">{i.inviterName ?? <span className="text-ink-3">someone</span>}</Td>
-              <Td className="whitespace-nowrap text-ink-2">{timeAgo(i.createdAt)}</Td>
+              <Td className="whitespace-nowrap text-ink-2">
+                {timeAgo(i.createdAt)}
+                <span className="block text-xs text-ink-3">{i.emailedAt ? `emailed ${timeAgo(i.emailedAt)}` : "link only"}</span>
+              </Td>
               <Td num>
                 {i.state === "pending" && (
                   <RowActions>
                     <CopyIconButton value={`${baseUrl}/invite/${i.token}`} />
+                    {emailConfigured && (
+                      <Tooltip label={i.emailedAt ? "Send the invite again" : "Email this invite"}>
+                        <IconButton
+                          name="mail"
+                          label={`${i.emailedAt ? "Send again" : "Email"} the invite for ${i.name || i.email}`}
+                          title=""
+                          disabled={resend.pending}
+                          onClick={() => { setSentTo(null); resend.run(() => resendInvite(i.id), (d: { email: string }) => setSentTo(d.email)); }}
+                        />
+                      </Tooltip>
+                    )}
                     <Tooltip label="Revoke invite">
                       <IconButton name="trash" tone="danger" label={`Revoke the invite for ${i.name || i.email}`} title="" disabled={revoke.pending} onClick={() => revoke.run(() => revokeInvite(i.id))} />
                     </Tooltip>
@@ -59,7 +76,9 @@ export function InvitesTable({ invites, baseUrl }: { invites: InviteRow[]; baseU
           ))}
         </tbody>
       </Table>
+      {sentTo && <p role="status" className="m-0 mt-2 text-sm text-done">Invite emailed to {sentTo}.</p>}
       <InlineError>{revoke.error}</InlineError>
+      <InlineError>{resend.error}</InlineError>
     </>
   );
 }

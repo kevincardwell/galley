@@ -33,6 +33,7 @@ export const invites = sqliteTable("invites", {
   expiresAt: integer("expires_at").notNull(),
   acceptedAt: integer("accepted_at"),
   revokedAt: integer("revoked_at"),
+  emailedAt: integer("emailed_at"),
   createdAt: integer("created_at").notNull().default(now()),
 });
 
@@ -278,6 +279,21 @@ export const notifications = sqliteTable(
     createdAt: integer("created_at").notNull().default(now()),
   },
   (t) => [index("notifications_user").on(t.userId, t.readAt)],
+);
+
+// ---- Mail log (last sends, so an admin can debug delivery without server access) ----
+export const mailLog = sqliteTable(
+  "mail_log",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    to: text("to").notNull(),
+    subject: text("subject").notNull(),
+    provider: text("provider").notNull(),
+    ok: integer("ok", { mode: "boolean" }).notNull(),
+    error: text("error"),
+    createdAt: integer("created_at").notNull().default(now()),
+  },
+  (t) => [index("mail_log_created").on(t.createdAt)],
 );
 
 // ---- Backups ----

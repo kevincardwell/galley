@@ -48,6 +48,10 @@
   input, select, textarea { font: inherit; color: inherit; }
   kbd { font: 12px var(--ui); color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
   .tnum { font-variant-numeric: tabular-nums; }
+  /* Installed to a home screen there is no browser chrome, so keep clear of the notch and the bar. */
+  @media (display-mode: standalone) {
+    body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  }
   /* Stops a scroll inside a modal or drawer from chaining to the page behind it. */
   dialog, [data-scroll-lock] { overscroll-behavior: contain; }
   /* Removes the 300ms tap delay without disabling pinch zoom. */

@@ -11,7 +11,8 @@ export function AdminTabs({ pendingInvites }: { pendingInvites: number }) {
   const tabs: Tab[] = [
     { href: "/admin", label: "People", icon: "users", exact: true },
     { href: "/admin/workspaces", label: "Workspaces", icon: "folder" },
-    { href: "/admin/invites", label: "Invites", icon: "mail", n: pendingInvites > 0 ? `${pendingInvites} pending` : undefined },
+    { href: "/admin/invites", label: "Invites", icon: "inbox", n: pendingInvites > 0 ? `${pendingInvites} pending` : undefined },
+    { href: "/admin/email", label: "Email", icon: "mail" },
     { href: "/admin/storage", label: "Storage", icon: "storage" },
     { href: "/admin/backups", label: "Backups", icon: "database" },
     { href: "/admin/settings", label: "Settings", icon: "settings" },

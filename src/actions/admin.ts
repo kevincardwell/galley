@@ -14,6 +14,7 @@ import { getSettings, saveSettings, type BackupSettings, type InstanceSettings }
 import { storage } from "@/lib/storage";
 import { resolveBaseUrl } from "@/lib/queries/admin";
 import { isEmailConfigured, sendEmail } from "@/lib/email";
+import { MAIL_PROVIDERS, requiredFields, type MailSettings } from "@/lib/email/providers";
 import { inviteEmail, testEmail } from "@/lib/email/templates";
 import { createBackup, deleteBackup, pruneBackups, type BackupRow } from "@/lib/backup";
 
@@ -48,7 +49,7 @@ const inviteInput = z.object({
 });
 export type CreateInviteInput = z.input<typeof inviteInput>;
 
-export async function createInvite(input: CreateInviteInput): Promise<Result<{ url: string; inviteId: string; emailed: boolean }>> {
+export async function createInvite(input: CreateInviteInput): Promise<Result<{ url: string; inviteId: string; emailed: boolean; emailError: string | null }>> {
   const admin = await requireAdmin();
   const parsed = inviteInput.safeParse(input);
   if (!parsed.success) return fail(firstIssue(parsed.error));
@@ -78,13 +79,17 @@ export async function createInvite(input: CreateInviteInput): Promise<Result<{ u
     .run();
   const url = `${await resolveBaseUrl()}/invite/${token}`;
   let emailed = false;
+  let emailError: string | null = null;
   if (isEmailConfigured()) {
     const mail = inviteEmail({ instanceName: getSettings().instanceName, url, inviterName: admin.name, workspaceName, expiresDays: INVITE_DAYS });
-    emailed = (await sendEmail({ to: parsed.data.email, ...mail })).ok;
+    const sent = await sendEmail({ to: parsed.data.email, ...mail });
+    emailed = sent.ok;
+    if (sent.ok) db.update(schema.invites).set({ emailedAt: nowS() }).where(eq(schema.invites.id, id)).run();
+    else emailError = sent.error;
   }
   logAudit({ actorId: admin.id, action: "invite.created", subjectType: "invite", subjectId: id, meta: { email: parsed.data.email, workspaceId: workspaceId || null, isAdmin: isAdmin ?? false, emailed } });
   refresh();
-  return ok({ url, inviteId: id, emailed });
+  return ok({ url, inviteId: id, emailed, emailError });
 }
 
 export async function revokeInvite(inviteId: string): Promise<Result> {
@@ -255,16 +260,6 @@ const settingsInput = z.object({
     .transform((v) => v.replace(/\/+$/, "")),
   maxUploadMb: z.coerce.number().int("Whole megabytes only").min(1, "At least 1 MB").max(100000, "That is more than 100 GB"),
   sessionDays: z.coerce.number().int("Whole days only").min(1, "At least 1 day").max(365, "At most a year"),
-  smtp: z
-    .object({
-      host: z.string().trim().max(200),
-      port: z.coerce.number().int().min(1).max(65535),
-      user: z.string().trim().max(200),
-      pass: z.string().max(200),
-      from: z.string().trim().max(200),
-    })
-    .nullable()
-    .optional(),
 });
 export type SaveSettingsInput = z.input<typeof settingsInput>;
 
@@ -272,9 +267,9 @@ export async function saveInstanceSettings(input: SaveSettingsInput): Promise<Re
   const admin = await requireAdmin();
   const parsed = settingsInput.safeParse(input);
   if (!parsed.success) return fail(firstIssue(parsed.error));
-  const smtp = parsed.data.smtp && parsed.data.smtp.host ? parsed.data.smtp : null;
-  const next = saveSettings({ ...parsed.data, smtp });
-  logAudit({ actorId: admin.id, action: "settings.saved", subjectType: "settings", subjectId: "instance", meta: { instanceName: next.instanceName, baseUrl: next.baseUrl, maxUploadMb: next.maxUploadMb, sessionDays: next.sessionDays, smtp: !!next.smtp } });
+  // Mail lives on its own screen now; this action must not touch it.
+  const next = saveSettings(parsed.data);
+  logAudit({ actorId: admin.id, action: "settings.saved", subjectType: "settings", subjectId: "instance", meta: { instanceName: next.instanceName, baseUrl: next.baseUrl, maxUploadMb: next.maxUploadMb, sessionDays: next.sessionDays } });
   refresh();
   return ok(next);
 }
@@ -284,12 +279,79 @@ export async function sendTestEmail(to: string): Promise<Result<{ to: string }>>
   const admin = await requireAdmin();
   const parsedTo = email.safeParse(to || admin.email);
   if (!parsedTo.success) return fail(firstIssue(parsedTo.error));
-  if (!isEmailConfigured()) return fail("Save SMTP settings with a host and a from address first.");
+  if (!isEmailConfigured()) return fail("Choose a provider and save it first.");
   const mail = testEmail({ instanceName: getSettings().instanceName });
   const sent = await sendEmail({ to: parsedTo.data, ...mail });
   logAudit({ actorId: admin.id, action: "settings.test_email", subjectType: "settings", subjectId: "instance", meta: { to: parsedTo.data, ok: sent.ok } });
   if (!sent.ok) return fail(`Could not send: ${sent.error}`);
   return ok({ to: parsedTo.data });
+}
+
+/** Send the invite again to the same address, e.g. after fixing the mail settings. */
+export async function resendInvite(inviteId: string): Promise<Result<{ email: string }>> {
+  const admin = await requireAdmin();
+  const invite = db.select().from(schema.invites).where(eq(schema.invites.id, inviteId)).get();
+  if (!invite) return fail("That invite no longer exists.");
+  if (invite.acceptedAt) return fail("That invite was already accepted.");
+  if (invite.revokedAt) return fail("That invite was revoked.");
+  if (invite.expiresAt < nowS()) return fail("That invite has expired. Create a new one.");
+  if (!isEmailConfigured()) return fail("Email is not set up. Copy the link and send it yourself.");
+  const workspaceName = invite.workspaceId
+    ? (db.select({ name: schema.workspaces.name }).from(schema.workspaces).where(eq(schema.workspaces.id, invite.workspaceId)).get()?.name ?? null)
+    : null;
+  const url = `${await resolveBaseUrl()}/invite/${invite.token}`;
+  const mail = inviteEmail({ instanceName: getSettings().instanceName, url, inviterName: admin.name, workspaceName, expiresDays: INVITE_DAYS });
+  const sent = await sendEmail({ to: invite.email, ...mail });
+  logAudit({ actorId: admin.id, action: "invite.resent", subjectType: "invite", subjectId: inviteId, meta: { to: invite.email, ok: sent.ok } });
+  if (!sent.ok) return fail(`Could not send: ${sent.error}`);
+  db.update(schema.invites).set({ emailedAt: nowS() }).where(eq(schema.invites.id, inviteId)).run();
+  refresh();
+  return ok({ email: invite.email });
+}
+
+const mailInput = z.object({
+  provider: z.enum(MAIL_PROVIDERS),
+  from: z.string().trim().max(200),
+  replyTo: z.string().trim().max(200),
+  host: z.string().trim().max(200),
+  port: z.coerce.number().int().min(1).max(65535),
+  user: z.string().trim().max(200),
+  pass: z.string().max(400),
+  apiKey: z.string().trim().max(400),
+  domain: z.string().trim().max(200),
+  euRegion: z.boolean(),
+});
+
+export async function saveMailSettings(input: z.input<typeof mailInput>): Promise<Result<{ configured: boolean }>> {
+  const admin = await requireAdmin();
+  const parsed = mailInput.safeParse(input);
+  if (!parsed.success) return fail(firstIssue(parsed.error));
+  const v = parsed.data;
+  const current = getSettings().mail;
+  const mail: MailSettings = {
+    provider: v.provider,
+    from: v.from,
+    replyTo: v.replyTo,
+    // A blank secret means "keep the one you already saved", so the form never has to echo it back.
+    smtp: { host: v.host, port: v.port, user: v.user, pass: v.pass || current.smtp.pass },
+    apiKey: v.apiKey || current.apiKey,
+    domain: v.domain,
+    euRegion: v.euRegion,
+  };
+  if (mail.provider !== "none") {
+    const missing = requiredFields(mail.provider).filter((f) =>
+      f === "from" ? !mail.from : f === "host" ? !mail.smtp.host : f === "apiKey" ? !mail.apiKey : !mail.domain,
+    );
+    const names: Record<string, string> = { from: "a from address", host: "a server address", apiKey: "an API key", domain: "a sending domain" };
+    if (missing.length) return fail(`Add ${missing.map((m) => names[m]).join(" and ")}.`);
+    if (mail.from && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail.from.replace(/^.*</, "").replace(/>$/, ""))) {
+      return fail("The from address does not look like an email address.");
+    }
+  }
+  saveSettings({ mail });
+  logAudit({ actorId: admin.id, action: "settings.mail_saved", subjectType: "settings", subjectId: "instance", meta: { provider: mail.provider } });
+  refresh();
+  return ok({ configured: isEmailConfigured(mail) });
 }
 
 // ---- Backups ----
