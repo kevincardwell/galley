@@ -38,7 +38,7 @@ export default async function WorkspaceCalendarPage({
   const { members, suppliers } = scheduleOptions(ws.id);
   const detail = one(sp.item) ? itemDetail(one(sp.item)!) : null;
   const openItem = detail && detail.workspaceId === ws.id ? detail : null;
-  const feedUrl = ws.shareToken ? `${await resolveBaseUrl()}/api/calendar/${ws.shareToken}` : null;
+  const feedUrl = ws.calendarToken ? `${await resolveBaseUrl()}/api/calendar/${ws.calendarToken}` : null;
 
   return (
     <CalendarScreen

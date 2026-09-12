@@ -54,7 +54,7 @@ export async function parseMultipartUpload(request: Request, opts: ParseOptions)
 
   let bb: Busboy.Busboy;
   try {
-    bb = Busboy({ headers: { "content-type": contentType }, limits: { fieldSize: opts.maxFieldBytes ?? 64 * 1024 } });
+    bb = Busboy({ headers: { "content-type": contentType }, limits: { fieldSize: 64 * 1024, fields: 8, fieldNameSize: 100, files: 32, parts: 48 } });
   } catch {
     throw new NotMultipartError();
   }

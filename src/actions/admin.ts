@@ -1,7 +1,7 @@
 "use server";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db, schema, UPLOAD_DIR } from "@/db/client";
@@ -127,8 +127,19 @@ function findUser(userId: string) {
   return db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
 }
 
+/** True when an admin other than `exceptUserId` exists, so the instance can never be left locked out. */
+async function hasAnotherAdmin(exceptUserId: string): Promise<boolean> {
+  return !!db
+    .select({ id: schema.users.id })
+    .from(schema.users)
+    .where(and(eq(schema.users.isAdmin, true), ne(schema.users.id, exceptUserId), isNull(schema.users.deactivatedAt)))
+    .limit(1)
+    .get();
+}
+
 export async function setUserAdmin(userId: string, isAdmin: boolean): Promise<Result> {
   const admin = await requireAdmin();
+  if (!isAdmin && !(await hasAnotherAdmin(userId))) return fail("That is the only admin left. Make someone else an admin first.");
   if (userId === admin.id && !isAdmin) return fail("You cannot remove your own admin role.");
   const target = findUser(userId);
   if (!target) return fail("That person no longer exists.");
@@ -140,6 +151,7 @@ export async function setUserAdmin(userId: string, isAdmin: boolean): Promise<Re
 
 export async function deactivateUser(userId: string): Promise<Result> {
   const admin = await requireAdmin();
+  if (!(await hasAnotherAdmin(userId))) return fail("That is the only admin left. Make someone else an admin first.");
   if (userId === admin.id) return fail("You cannot deactivate yourself.");
   const target = findUser(userId);
   if (!target) return fail("That person no longer exists.");
@@ -179,6 +191,7 @@ export async function resetPassword(userId: string, newPassword: string): Promis
 
 export async function deleteUser(userId: string): Promise<Result> {
   const admin = await requireAdmin();
+  if (!(await hasAnotherAdmin(userId))) return fail("That is the only admin left. Make someone else an admin first.");
   if (userId === admin.id) return fail("You cannot delete yourself.");
   const target = findUser(userId);
   if (!target) return fail("That person no longer exists.");

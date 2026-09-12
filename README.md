@@ -111,9 +111,18 @@ Add it to the home screen from Safari or Chrome and it opens full screen with it
 ```bash
 mkdir galley && cd galley
 curl -O https://raw.githubusercontent.com/kevincardwell/galley/main/compose.yml
-# set GALLEY_URL and GALLEY_SECRET in compose.yml
+# set GALLEY_URL in compose.yml
 docker compose up -d
 ```
+
+Images are published for `linux/amd64` and `linux/arm64` on every release:
+
+| Registry | Image |
+|---|---|
+| GitHub | `ghcr.io/kevincardwell/galley:latest` |
+| Docker Hub | `kevincardwell/galley:latest` |
+
+Pin a version with a tag such as `:0.1.0` if you would rather upgrade deliberately.
 
 Data lives in the `galley-data` volume at `/data`. To keep it in a folder instead, change the volume to `- ./data:/data` and make it writable by uid 1000.
 
@@ -138,9 +147,9 @@ GALLEY_DATA_DIR=/srv/galley PORT=3000 npm start
 | Variable | Default | What it does |
 |---|---|---|
 | `GALLEY_URL` | none | Public address, used for invite links and to mark cookies secure. |
-| `GALLEY_SECRET` | none | Any long random string: `openssl rand -hex 32`. |
 | `GALLEY_DATA_DIR` | `./data`, `/data` in Docker | Where the database and uploads live. |
 | `MAX_UPLOAD_MB` | `500` | Largest single upload. |
+| `TRUSTED_PROXY_HOPS` | `1` | How many reverse proxies sit in front, so the real client address can be found for rate limiting. |
 | `PORT` | `3000` | Port to listen on. |
 
 Email and the backup schedule are set in the app, under Admin, not with environment variables.
@@ -148,6 +157,7 @@ Email and the backup schedule are set in the app, under Admin, not with environm
 ### Backing up and upgrading
 
 - **Backup**: Admin → Backups writes a zip of the database and every upload, on demand or nightly. Copying the data directory does the same job.
+- **Treat backups as secrets.** The database holds your SMTP password or provider API key in plain text, along with password hashes, session tokens and share links. Store backups somewhere you would store a password.
 - **Restore**: stop Galley, unzip a backup into an empty data directory, start it again.
 - **Upgrade**: `docker compose pull && docker compose up -d`. Migrations run on start.
 

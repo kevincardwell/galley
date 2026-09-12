@@ -97,8 +97,10 @@ export async function archiveSupplier(id: string, archived: boolean): Promise<Re
   return ok(undefined);
 }
 
+/** Instance-wide and destructive across every project, so this one is admin-only. */
 export async function deleteSupplier(id: string): Promise<Result> {
-  await requireUser();
+  const user = await requireUser();
+  if (!user.isAdmin) return fail("Only an instance admin can delete a supplier. Archive it instead.");
   const existing = db.select({ id: schema.suppliers.id }).from(schema.suppliers).where(eq(schema.suppliers.id, id)).get();
   if (!existing) return fail("That supplier is no longer here");
   // Tags and project links go with it (foreign keys cascade).

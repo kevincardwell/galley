@@ -8,9 +8,9 @@ import { Pill } from "@/components/ui/pill";
 import { InlineError } from "./bits";
 import { useAdminAction } from "./use-action";
 import { saveMailSettings, sendTestEmail } from "@/actions/admin";
-import { MAIL_PROVIDERS, PROVIDER_HINTS, PROVIDER_LABELS, SMTP_PRESETS, type MailProvider, type MailSettings } from "@/lib/email/providers";
+import { MAIL_PROVIDERS, PROVIDER_HINTS, PROVIDER_LABELS, SMTP_PRESETS, type MailProvider, type PublicMailSettings } from "@/lib/email/providers";
 
-type Props = { mail: MailSettings; configured: boolean; hasSecret: { smtpPass: boolean; apiKey: boolean }; adminEmail: string };
+type Props = { mail: PublicMailSettings; configured: boolean; hasSecret: { smtpPass: boolean; apiKey: boolean }; adminEmail: string };
 
 export function MailForm({ mail, configured, hasSecret, adminEmail }: Props) {
   const save = useAdminAction();

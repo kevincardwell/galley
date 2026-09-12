@@ -6,12 +6,21 @@ import { db, schema } from "@/db/client";
 import { newId } from "@/lib/ids";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createSession, destroySession } from "@/lib/auth/session";
+import { currentUser } from "@/lib/auth/current";
 import { hasAnyUser } from "@/lib/settings";
 import { logAudit } from "@/lib/activity";
 import { clearFailures, isThrottled, recordFailure } from "@/lib/auth/throttle";
 import { createSampleWorkspace } from "@/lib/seed/sample";
 
 export type FormState = { error?: string } | undefined;
+
+/** A real argon2id hash of a value nobody can guess, used to keep failed logins constant-time. */
+const DUMMY_HASH = "$argon2id$v=19$m=19456,t=2,p=1$Z2FsbGV5LWR1bW15LXNhbHQ$0hVZ1i0nQ0Vv0y1Qn5b2Zr8Yx9kZJj1kq0m3kQ8k1zY";
+
+/** Marks an invite used. Separate so both redemption paths record it the same way. */
+function acceptInvite(id: string) {
+  db.update(schema.invites).set({ acceptedAt: Math.floor(Date.now() / 1000) }).where(eq(schema.invites.id, id)).run();
+}
 
 const credentials = z.object({ email: z.string().email().toLowerCase(), password: z.string().min(8, "Use at least 8 characters") });
 
@@ -43,7 +52,11 @@ export async function loginAction(_: FormState, form: FormData): Promise<FormSta
   if (!parsed.success) return { error: "Check your email and password." };
   if (await isThrottled(parsed.data.email)) return { error: "Too many attempts. Try again in a few minutes." };
   const user = db.select().from(schema.users).where(eq(schema.users.email, parsed.data.email)).get();
-  if (!user || user.deactivatedAt || !(await verifyPassword(user.passwordHash, parsed.data.password))) {
+  // Always spend the same argon2 time, so an unknown address cannot be told apart by how fast we answer.
+  const ok = user && !user.deactivatedAt
+    ? await verifyPassword(user.passwordHash, parsed.data.password)
+    : await verifyPassword(DUMMY_HASH, parsed.data.password);
+  if (!user || user.deactivatedAt || !ok) {
     await recordFailure(parsed.data.email);
     return { error: "That email and password do not match." };
   }
@@ -51,7 +64,7 @@ export async function loginAction(_: FormState, form: FormData): Promise<FormSta
   logAudit({ actorId: user.id, action: "auth.login", subjectType: "user", subjectId: user.id });
   await createSession(user.id);
   const next = String(form.get("next") || "");
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
+  redirect(/^\/(?![/\\])/.test(next) ? next : "/");
 }
 
 export async function logoutAction() {
@@ -71,19 +84,48 @@ export async function acceptInviteAction(_: FormState, form: FormData): Promise<
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
 
   const existing = db.select().from(schema.users).where(eq(schema.users.email, invite.email)).get();
-  const userId = existing?.id ?? newId();
-  if (!existing) {
-    db.insert(schema.users)
-      .values({ id: userId, email: invite.email, name: parsed.data.name, passwordHash: await hashPassword(parsed.data.password), isAdmin: invite.isAdmin })
-      .run();
+
+  // An invite must never be a way into an account that already exists: the password typed here
+  // is not that account's password. Only the signed-in owner of the address may redeem it.
+  if (existing) {
+    const signedIn = await currentUser();
+    if (signedIn?.id !== existing.id) {
+      return { error: "That email already has an account. Sign in first, then open this link again." };
+    }
+    if (invite.workspaceId) {
+      db.insert(schema.memberships)
+        .values({ workspaceId: invite.workspaceId, userId: existing.id, role: invite.workspaceRole ?? "editor", addedBy: invite.invitedBy })
+        .onConflictDoNothing()
+        .run();
+    }
+    acceptInvite(invite.id);
+    logAudit({ actorId: existing.id, action: "invite.accepted", subjectType: "invite", subjectId: invite.id });
+    redirect("/");
   }
-  if (invite.workspaceId) {
-    db.insert(schema.memberships)
-      .values({ workspaceId: invite.workspaceId, userId, role: invite.workspaceRole ?? "editor", addedBy: invite.invitedBy })
-      .onConflictDoNothing()
+
+  const userId = newId();
+  const passwordHash = await hashPassword(parsed.data.password);
+  // One transaction, and the accept is conditional, so two simultaneous redemptions cannot both win.
+  const claimed = db.transaction((tx) => {
+    const res = tx
+      .update(schema.invites)
+      .set({ acceptedAt: Math.floor(Date.now() / 1000) })
+      .where(and(eq(schema.invites.id, invite.id), isNull(schema.invites.acceptedAt), isNull(schema.invites.revokedAt)))
       .run();
-  }
-  db.update(schema.invites).set({ acceptedAt: Math.floor(Date.now() / 1000) }).where(eq(schema.invites.id, invite.id)).run();
+    if (res.changes === 0) return false;
+    tx.insert(schema.users)
+      .values({ id: userId, email: invite.email, name: parsed.data.name, passwordHash, isAdmin: invite.isAdmin })
+      .run();
+    if (invite.workspaceId) {
+      tx.insert(schema.memberships)
+        .values({ workspaceId: invite.workspaceId, userId, role: invite.workspaceRole ?? "editor", addedBy: invite.invitedBy })
+        .onConflictDoNothing()
+        .run();
+    }
+    return true;
+  });
+  if (!claimed) return { error: "This invite link has already been used. Ask an admin for a new one." };
+
   logAudit({ actorId: userId, action: "invite.accepted", subjectType: "invite", subjectId: invite.id });
   await createSession(userId);
   redirect("/");

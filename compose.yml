@@ -6,12 +6,11 @@ services:
     container_name: galley
     restart: unless-stopped
     ports:
+      # Bind to localhost when a reverse proxy sits in front, which is the usual setup.
       - "3000:3000"
     environment:
       # Public URL people use to reach Galley (used in invite links).
       GALLEY_URL: http://localhost:3000
-      # Any long random string. `openssl rand -hex 32`
-      GALLEY_SECRET: change-me
       # Largest single upload, in megabytes.
       MAX_UPLOAD_MB: 500
     volumes:

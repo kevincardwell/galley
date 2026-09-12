@@ -27,6 +27,15 @@ export const MAIL_DEFAULTS: MailSettings = {
   euRegion: false,
 };
 
+/** What the admin form is allowed to see: the same shape minus anything secret. */
+export type PublicMailSettings = Omit<MailSettings, "apiKey" | "smtp"> & { smtp: Omit<MailSettings["smtp"], "pass"> };
+
+export function publicMailSettings(mail: MailSettings): PublicMailSettings {
+  const { apiKey: _apiKey, smtp, ...rest } = mail;
+  const { pass: _pass, ...smtpRest } = smtp;
+  return { ...rest, smtp: smtpRest };
+}
+
 export const PROVIDER_LABELS: Record<MailProvider, string> = {
   none: "Do not send email",
   smtp: "SMTP server",

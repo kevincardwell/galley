@@ -5,7 +5,7 @@ import { db, schema, DATA_DIR } from "@/db/client";
 import { currentUser } from "@/lib/auth/current";
 import { accessFor } from "@/lib/permissions";
 
-const TYPES: Record<string, string> = { ".png": "image/png", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".ico": "image/x-icon" };
+const TYPES: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon", ".webp": "image/webp" };
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,5 +15,11 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!ws?.faviconPath) return new Response(null, { status: 404 });
   const abs = path.join(DATA_DIR, ws.faviconPath);
   if (!fs.existsSync(abs)) return new Response(null, { status: 404 });
-  return new Response(fs.readFileSync(abs), { headers: { "content-type": TYPES[path.extname(abs)] ?? "application/octet-stream", "cache-control": "private, max-age=86400" } });
+  return new Response(fs.readFileSync(abs), { headers: {
+      "content-type": TYPES[path.extname(abs)] ?? "application/octet-stream",
+      "cache-control": "private, max-age=86400",
+      "x-content-type-options": "nosniff",
+      // Belt and braces: even if a non-raster file ever lands here it can load nothing.
+      "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    } });
 }

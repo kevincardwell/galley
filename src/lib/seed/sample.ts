@@ -16,7 +16,7 @@ import type { SectionStatus, TaskStatus } from "@/db/schema";
  * inside one transaction, then the images are queued for thumbnails and palettes.
  */
 
-const WORKSPACE = { name: "Marlow & Finch Joinery", clientName: "Tom Marlow", url: "https://marlowandfinch.co.uk", accent: "#2F6B4F" } as const;
+const WORKSPACE = { name: "Marlow & Finch Joinery", clientName: "Tom Marlow", url: "https://marlowandfinch.example", accent: "#2F6B4F" } as const;
 
 // ---------------------------------------------------------------- tiptap helpers
 
@@ -142,7 +142,7 @@ const PAGES: SeedPage[] = [
         content: doc(
           h(1, "Get in touch"),
           p("Email is best during the day because we are usually holding something heavy. Ring in the evening and you will get Tom."),
-          p("hello@marlowandfinch.co.uk · 01394 000 000"),
+          p("hello@marlowandfinch.example · 01394 000 000"),
         ),
       },
       {
@@ -183,7 +183,7 @@ const TASKS: SeedTask[] = [
   { section: "Build", title: "Contact form to hello@ with a spam check", status: "todo", due: 8 },
   { section: "Content", title: "Write the About page", body: "Tom's boatbuilding years are the hook. Two short paragraphs, no CV.", status: "doing", assign: true, due: 1 },
   { section: "Content", title: "Photograph the walnut table before it leaves", status: "todo", due: -1 },
-  { section: "Launch", title: "Point marlowandfinch.co.uk at the new host", status: "todo", due: 21 },
+  { section: "Launch", title: "Point marlowandfinch.example at the new host", status: "todo", due: 21 },
   { section: "Launch", title: "Ask Tom for two client testimonials", status: "todo" },
 ];
 
@@ -275,11 +275,11 @@ type SampleSupplier = {
 
 /** A small, believable address book so the directory is not empty on a fresh install. */
 const SAMPLE_SUPPLIERS: SampleSupplier[] = [
-  { name: "Thames Print & Bind", category: "Printer", contactName: "Ruth Ellery", email: "hello@thamesprint.co.uk", phone: "01628 447 210", website: "https://thamesprint.co.uk", notes: "Litho and digital. Two-day turnaround on uncoated stock. Ask for Ruth for anything over 500 copies.", rating: 5, tags: ["print", "local"], status: "booked", cost: 48000, note: "Brochure and business cards, 500 each." },
-  { name: "Alder & Frame Photography", category: "Photographer", contactName: "Niamh Alder", email: "studio@alderframe.co.uk", phone: "07812 664 031", website: "https://alderframe.co.uk", notes: "Interiors and maker portraits. Brings her own lighting. Half day is plenty for a workshop shoot.", rating: 5, tags: ["photography", "interiors"], status: "booked", cost: 65000, note: "Half day at the workshop, includes 40 edited images." },
-  { name: "Ridgeway Copywriting", category: "Copywriter", contactName: "Sam Okafor", email: "sam@ridgewaycopy.co.uk", phone: "07440 118 902", website: "https://ridgewaycopy.co.uk", notes: "Good on trade and craft businesses. Works from a brief and a transcript.", rating: 4, tags: ["copy"], status: "enquired", cost: 32000, note: "Quote for Home and About pages." },
-  { name: "Beacon Hosting", category: "Hosting", contactName: "Support desk", email: "support@beaconhosting.uk", phone: "0330 221 4480", website: "https://beaconhosting.uk", notes: "UK data centre, daily backups included. Migration help is free on business plans.", rating: 4, tags: ["hosting", "infrastructure"], status: "shortlisted", cost: 18000, note: "Business plan, billed yearly." },
-  { name: "Quill Signwriting", category: "Signwriter", contactName: "Peter Quill", email: "peter@quillsigns.co.uk", phone: "01494 772 118", website: "https://quillsigns.co.uk", notes: "Hand-painted fascia work. Long lead time in summer.", rating: 3, tags: ["signage"], status: "declined", cost: null, note: "Out of scope for this phase." },
+  { name: "Thames Print & Bind", category: "Printer", contactName: "Ruth Ellery", email: "hello@thamesprint.example", phone: "01628 447 210", website: "https://thamesprint.example", notes: "Litho and digital. Two-day turnaround on uncoated stock. Ask for Ruth for anything over 500 copies.", rating: 5, tags: ["print", "local"], status: "booked", cost: 48000, note: "Brochure and business cards, 500 each." },
+  { name: "Alder & Frame Photography", category: "Photographer", contactName: "Niamh Alder", email: "studio@alderframe.example", phone: "07812 664 031", website: "https://alderframe.example", notes: "Interiors and maker portraits. Brings her own lighting. Half day is plenty for a workshop shoot.", rating: 5, tags: ["photography", "interiors"], status: "booked", cost: 65000, note: "Half day at the workshop, includes 40 edited images." },
+  { name: "Ridgeway Copywriting", category: "Copywriter", contactName: "Sam Okafor", email: "sam@ridgewaycopy.example", phone: "07440 118 902", website: "https://ridgewaycopy.example", notes: "Good on trade and craft businesses. Works from a brief and a transcript.", rating: 4, tags: ["copy"], status: "enquired", cost: 32000, note: "Quote for Home and About pages." },
+  { name: "Beacon Hosting", category: "Hosting", contactName: "Support desk", email: "support@beaconhosting.example", phone: "0330 221 4480", website: "https://beaconhosting.example", notes: "UK data centre, daily backups included. Migration help is free on business plans.", rating: 4, tags: ["hosting", "infrastructure"], status: "shortlisted", cost: 18000, note: "Business plan, billed yearly." },
+  { name: "Quill Signwriting", category: "Signwriter", contactName: "Peter Quill", email: "peter@quillsigns.example", phone: "01494 772 118", website: "https://quillsigns.example", notes: "Hand-painted fascia work. Long lead time in summer.", rating: 3, tags: ["signage"], status: "declined", cost: null, note: "Out of scope for this phase." },
 ];
 
 type SampleScheduleItem = {

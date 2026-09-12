@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/auth/current";
 import { getSettings } from "@/lib/settings";
 import { isEmailConfigured, recentMail } from "@/lib/email";
-import { PROVIDER_LABELS } from "@/lib/email/providers";
+import { PROVIDER_LABELS, publicMailSettings } from "@/lib/email/providers";
 import { MailForm } from "@/components/admin/mail-form";
 import { Section } from "@/components/ui/page";
 import { Icon } from "@/components/ui/icon";
@@ -21,7 +21,7 @@ export default async function AdminEmailPage() {
         With this set up, invites are emailed the moment you create one, and people are told about mentions, tasks assigned to them and client feedback.
       </p>
       <MailForm
-        mail={mail}
+        mail={publicMailSettings(mail)}
         configured={isEmailConfigured(mail)}
         hasSecret={{ smtpPass: !!mail.smtp.pass, apiKey: !!mail.apiKey }}
         adminEmail={admin.email}

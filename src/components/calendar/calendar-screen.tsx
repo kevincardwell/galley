@@ -183,7 +183,7 @@ export function CalendarScreen(props: Props) {
           }
         />
 
-        {feedUrl && <FeedLink url={feedUrl} />}
+        {workspace && canEdit && <FeedLink url={feedUrl} workspaceId={workspace.id} canManage={canEdit} />}
 
         {view === "agenda" ? (
           agenda

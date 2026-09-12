@@ -85,6 +85,18 @@ export async function deleteWorkspace(workspaceId: string) {
   redirect("/");
 }
 
+/**
+ * The calendar feed is a separate opt-in with its own token: a client share link shows copy and
+ * files, while the feed would expose the whole run sheet and every task deadline.
+ */
+export async function toggleCalendarFeed(workspaceId: string, enable: boolean) {
+  const user = await requireUser();
+  const { workspace } = assertAccess(user, workspaceId, "manage");
+  db.update(schema.workspaces).set({ calendarToken: enable ? newToken() : null }).where(eq(schema.workspaces.id, workspace.id)).run();
+  logAudit({ actorId: user.id, action: enable ? "calendar_feed.enabled" : "calendar_feed.disabled", subjectType: "workspace", subjectId: workspace.id });
+  revalidatePath(`/w/${workspace.slug}`, "layout");
+}
+
 export async function toggleShareLink(workspaceId: string, enable: boolean) {
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, "manage");

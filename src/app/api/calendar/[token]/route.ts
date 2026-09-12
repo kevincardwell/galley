@@ -48,7 +48,7 @@ function fold(line: string): string {
 export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const ws = token
-    ? db.select().from(schema.workspaces).where(eq(schema.workspaces.shareToken, token)).get()
+    ? db.select().from(schema.workspaces).where(eq(schema.workspaces.calendarToken, token)).get()
     : undefined;
   if (!ws) return new Response("Not found", { status: 404 });
 

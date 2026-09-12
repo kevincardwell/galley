@@ -39,6 +39,18 @@ A collaborator's brief asked for tasks-against-an-event with deadlines and notes
   TRAP: it registers in production ONLY. Dev chunk URLs are not content-hashed, so a cache-first worker serves yesterday's JavaScript after a rebuild; that cost an hour chasing a phantom React error. The component also unregisters any stale worker when NODE_ENV is not production.
   Verified in a production build: worker activated and controlling, manifest valid, offline fallback renders with the server stopped.
 
+## Security audit 2026-09-12 (before going public)
+Three parallel audits: auth/authorisation, files/SSRF/tokens, injection/deps/headers. Fixed:
+- CRITICAL: accepting an invite for an address that already had an account created a session for that account with no password check. Now only the signed-in owner can redeem it, and redemption is one conditional transaction (no TOCTOU). Regression test: tests/unit/invite-security.test.ts.
+- HIGH: SMTP password and provider API key were serialised into the admin pages' client payload. Both pages now receive a non-secret projection (publicMailSettings). Verified by grepping the rendered HTML.
+- HIGH: favicon fetch was a request-forgery hole (any signed-in user, redirects followed, no address checks). Now http(s) only, public addresses only via DNS resolution, redirect: manual, 256 KB streaming cap, and no SVG. Regression test: tests/unit/favicon-ssrf.test.ts.
+- HIGH: login throttle trusted the leftmost X-Forwarded-For. Now counts back TRUSTED_PROXY_HOPS from the right, adds a per-address counter alongside the per-account one, and evicts oldest-first so the map is bounded.
+- MEDIUM: /api/search returned 500 for a query of only punctuation. MEDIUM: session cookie lost Secure behind a TLS proxy unless GALLEY_URL was set; now secure by default in production. MEDIUM: the client share token also unlocked the whole calendar feed; the feed has its own calendarToken now, opt-in from the calendar screen. MEDIUM: added a Content-Security-Policy (unsafe-eval only in dev, for React's debug build). MEDIUM: multipart limits on fields/files/parts.
+- LOW: supplier deletion is admin-only; last-admin lockout is refused on demote/deactivate/delete; expired sessions are reaped; share tokens compared in constant time; open redirect via /\ blocked; export used the filename extension instead of the stored one so renamed assets were silently skipped.
+- Removed GALLEY_SECRET: it was documented as if it signed cookies but nothing read it. Session security is the 238-bit token.
+- npm audit: 0 production vulnerabilities. Dev-only: 4 moderate in drizzle-kit's esbuild chain, not reachable at runtime.
+Known and accepted: mail credentials are stored in plain text in the database (documented in the README, and backups are flagged as secrets); no per-workspace storage quota; CSP allows inline scripts until a nonce is threaded through the proxy.
+
 ## Not yet done (pick up here)
 1. **Docker image not yet built.** `docker build` was refused: this user is not in the `docker` group. Run `sudo usermod -aG docker $USER` and log back in (or use `sudo docker compose up -d --build`), then click through inside the container (ffmpeg posters, volume permissions).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.

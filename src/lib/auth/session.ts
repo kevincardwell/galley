@@ -1,6 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { eq, lt } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { newToken } from "@/lib/ids";
 import { getSettings } from "@/lib/settings";
@@ -8,6 +8,7 @@ import { getSettings } from "@/lib/settings";
 export const SESSION_COOKIE = "galley_session";
 
 export async function createSession(userId: string) {
+  if (Math.random() < 0.05) db.delete(schema.sessions).where(lt(schema.sessions.expiresAt, Math.floor(Date.now() / 1000))).run();
   const id = newToken();
   const days = getSettings().sessionDays || 30;
   const expiresAt = Math.floor(Date.now() / 1000) + days * 86400;
@@ -16,7 +17,9 @@ export async function createSession(userId: string) {
   jar.set(SESSION_COOKIE, id, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production" && process.env.GALLEY_URL?.startsWith("https"),
+    // Secure by default in production. Only an explicitly http:// GALLEY_URL turns it off, so a
+    // site behind a TLS-terminating proxy is protected even when the variable was never set.
+    secure: process.env.NODE_ENV === "production" && !process.env.GALLEY_URL?.startsWith("http://"),
     path: "/",
     expires: new Date(expiresAt * 1000),
   });

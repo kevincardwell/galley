@@ -65,6 +65,7 @@ export const workspaces = sqliteTable("workspaces", {
   accent: text("accent").notNull().default("#2F6B4F"),
   faviconPath: text("favicon_path"),
   shareToken: text("share_token").unique(),
+  calendarToken: text("calendar_token").unique(),
   shareReview: integer("share_review", { mode: "boolean" }).notNull().default(false),
   createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: integer("created_at").notNull().default(now()),

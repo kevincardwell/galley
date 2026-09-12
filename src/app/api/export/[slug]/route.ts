@@ -1,4 +1,5 @@
 import path from "node:path";
+import { variantExt } from "@/lib/media/paths";
 import { PassThrough, Readable } from "node:stream";
 import { ZipArchive } from "archiver";
 import { asc, eq } from "drizzle-orm";
@@ -82,14 +83,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
   // Assets: originals straight from disk, skipping anything not on the volume.
   const assets = db
-    .select({ id: schema.assets.id, filename: schema.assets.filename })
+    .select({ id: schema.assets.id, filename: schema.assets.filename, mime: schema.assets.mime })
     .from(schema.assets)
     .where(eq(schema.assets.workspaceId, ws.id))
     .orderBy(asc(schema.assets.createdAt))
     .all();
   const usedFiles = new Set<string>();
   for (const a of assets) {
-    const file = storage.pathFor(ws.id, a.id, "original", path.extname(a.filename));
+    const file = storage.pathFor(ws.id, a.id, "original", variantExt(a, "original"));
     if (!storage.exists(file)) continue;
     let name = safeName(a.filename);
     if (usedFiles.has(name)) {

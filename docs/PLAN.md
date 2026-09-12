@@ -100,7 +100,7 @@ Real-time cursors, Slack/email notifications, time tracking, invoicing, custom f
 ```
 
 **Why these choices**
-- **Next.js + server actions**: one codebase, forms work without hand-written REST, streaming for big lists. Kevin Cardwell already runs Next.js sites, so the mental model is shared.
+- **Next.js + server actions**: one codebase, forms work without hand-written REST, streaming for big lists. The maintainer already runs Next.js sites, so the mental model is shared.
 - **SQLite via better-sqlite3**: zero-config, single-file backup, fast enough for tens of thousands of rows and a handful of concurrent users, which is this product's ceiling. WAL mode for concurrent readers. FTS5 gives search for free.
 - **Drizzle**: typed schema, SQL-shaped, migrations checked into the repo and run on container start.
 - **Tiptap**: ProseMirror-based, stores JSON, lets us restrict the mark set hard so copy stays clean for pasting into any CMS.

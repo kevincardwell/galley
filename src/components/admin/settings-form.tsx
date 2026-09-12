@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { saveInstanceSettings } from "@/actions/admin";
-import type { InstanceSettings } from "@/lib/settings";
+/** Deliberately not the whole settings object: it holds the SMTP password and API key. */
+type VisibleSettings = { instanceName: string; baseUrl: string; maxUploadMb: number; sessionDays: number };
 import { Hint, InlineError } from "./bits";
 import { useAdminAction } from "./use-action";
 
@@ -13,7 +14,7 @@ function str(fd: FormData, key: string) {
   return String(fd.get(key) ?? "");
 }
 
-export function InstanceSettingsForm({ settings }: { settings: InstanceSettings }) {
+export function InstanceSettingsForm({ settings }: { settings: VisibleSettings }) {
   const { pending, error, run } = useAdminAction();
   const [saved, setSaved] = useState(false);
   return (

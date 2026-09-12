@@ -17,9 +17,17 @@ export async function GET(req: Request) {
   if (q && visible.length) {
     const ids = visible.map((w) => w.id);
     const match = q.replace(/["*]/g, " ").split(/\s+/).filter(Boolean).map((t) => `"${t}"*`).join(" ");
-    const rows = sqlite
-      .prepare(`select workspace_id, kind, subject_id, title from search_fts where search_fts match ? and workspace_id in (${ids.map(() => "?").join(",")}) order by rank limit 20`)
-      .all(match, ...ids) as { workspace_id: string; kind: string; subject_id: string; title: string }[];
+    // A query of only punctuation leaves nothing to match on, and FTS5 raises a syntax error on "".
+    let rows: { workspace_id: string; kind: string; subject_id: string; title: string }[] = [];
+    if (match) {
+      try {
+        rows = sqlite
+          .prepare(`select workspace_id, kind, subject_id, title from search_fts where search_fts match ? and workspace_id in (${ids.map(() => "?").join(",")}) order by rank limit 20`)
+          .all(match, ...ids) as typeof rows;
+      } catch {
+        rows = []; // an expression FTS5 cannot parse simply finds nothing
+      }
+    }
     for (const r of rows) {
       const w = byId.get(r.workspace_id)!;
       if (r.kind === "task") hits.push({ kind: "task", title: r.title, subtitle: w.name, href: `/w/${w.slug}/tasks?task=${r.subject_id}` });

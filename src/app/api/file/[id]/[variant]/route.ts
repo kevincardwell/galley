@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { timingSafeEqual } from "node:crypto";
 import fsp from "node:fs/promises";
 import { Readable } from "node:stream";
 import { eq } from "drizzle-orm";
@@ -35,6 +36,14 @@ function parseRange(header: string | null, size: number): { start: number; end: 
   return { start, end };
 }
 
+/** Constant-time string compare, so a share token cannot be probed byte by byte. */
+function timingSafeEqualStr(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string; variant: string }> }) {
   const { id, variant } = await params;
   if (!isVariant(variant)) return notFound();
@@ -48,7 +57,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   let allowed = false;
   if (share) {
     const ws = db.select({ token: schema.workspaces.shareToken }).from(schema.workspaces).where(eq(schema.workspaces.id, asset.workspaceId)).get();
-    allowed = !!ws?.token && ws.token === share;
+    allowed = !!ws?.token && timingSafeEqualStr(ws.token, share);
   }
   if (!allowed) {
     const user = await currentUser();
