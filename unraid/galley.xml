@@ -24,7 +24,22 @@
 
     If you put this behind a reverse proxy, set the Public URL variable to the address people will actually use. Installing it to a phone home screen needs https.
   </Overview>
-  <Category>Productivity: Cloud: Tools:</Category>
+  <Category>Productivity: Tools:Utilities</Category>
+  <Description>
+    Each project gets its own space with tasks, a copy editor, a calendar, suppliers and files.
+
+    **Tasks** live in sections you name, as a list or a board, with drag to reorder, due dates, assignees, checklists, comments and attachments.
+
+    **Copy** is written as pages of sections, each with a draft, in review and approved state. Several people can write in the same section at once and see each other's cursors. Every save is kept, with a word-level diff and one-click restore, and it copies out as clean Markdown or HTML.
+
+    **The calendar** shows task deadlines next to scheduled entries such as site visits and print deadlines, in month, week or agenda view, with drag to reschedule and a subscribable feed.
+
+    **Suppliers** is a shared directory of the printers, photographers and freelancers you use, linked into the projects that book them with status, cost and notes.
+
+    **Files** get thumbnails, dimensions, video posters, colour palettes, tags and folders, and record which task or paragraph they belong to.
+
+    You can hand a client a read-only link, or let them comment on and approve individual sections without an account. Access is invite only, email goes out through your own SMTP server or a provider such as Resend or Postmark, and backups run on demand or nightly from the admin panel.
+  </Description>
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/kevincardwell/galley/main/unraid/galley.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/kevincardwell/galley/main/public/icon-512.png</Icon>

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<CommunityApplications>
+  <Profile>
+    Galley is a self-hosted home for the work around a project: what needs doing, what it will say, who you are hiring, when it happens, and the files that go with it. It is aimed at web designers, studios and anyone running client work or events, and it runs as a single container with one SQLite file and one uploads folder inside appdata.
+
+    This repository maintains one application, Galley. Issues and questions are handled on GitHub, and the image is published to both Docker Hub and the GitHub Container Registry for amd64 and arm64.
+  </Profile>
+  <Icon>https://raw.githubusercontent.com/kevincardwell/galley/main/public/icon-512.png</Icon>
+  <WebPage>https://github.com/kevincardwell/galley</WebPage>
+</CommunityApplications>
