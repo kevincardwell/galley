@@ -9,7 +9,7 @@ export function AdminHeaderActions({ workspaces }: { workspaces: WorkspaceOption
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="primary" onClick={() => setOpen(true)}>Invite someone</Button>
+      <Button variant="primary" icon="plus" onClick={() => setOpen(true)}>Invite someone</Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Invite someone">
         {open && <InviteForm workspaces={workspaces} idPrefix="dlg" onDone={() => setOpen(false)} />}
       </Dialog>

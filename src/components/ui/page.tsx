@@ -9,7 +9,7 @@ export function PageHeader({ title, eyebrow, count, action, description, classNa
       <div className="min-w-0 flex-1">
         {eyebrow && <p className="m-0 mb-0.5 text-xs font-medium text-ink-3">{eyebrow}</p>}
         <div className="flex items-baseline gap-2">
-          <h1 className="m-0 text-[22px] leading-tight font-semibold tracking-tight">{title}</h1>
+          <h1 className="m-0 text-[22px] leading-tight font-semibold tracking-tight text-balance">{title}</h1>
           {count !== undefined && <span className="tnum text-sm text-ink-3">{count}</span>}
         </div>
         {description && <p className="m-0 mt-1 max-w-[68ch] text-ink-2">{description}</p>}

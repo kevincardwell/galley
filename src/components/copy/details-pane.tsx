@@ -5,7 +5,9 @@ import { clsx } from "@/lib/clsx";
 import { timeAgo } from "@/lib/format";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 import { Pill } from "@/components/ui/pill";
+import { Stat } from "@/components/ui/stat";
 import { Textarea } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import { AttachPicker } from "@/components/assets/attach-picker";
@@ -30,6 +32,8 @@ type Props = {
 const SAVE_LABEL: Record<SaveState, string> = { idle: "", dirty: "Unsaved", saving: "Saving…", saved: "Saved", conflict: "Conflict", error: "Could not save" };
 const STATUSES: SectionStatus[] = ["draft", "review", "approved"];
 
+const PANE = "details flex min-w-0 flex-col overflow-x-hidden border-line bg-surface-2 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-l max-[899px]:border-t";
+
 /** Right column: everything about the active section that is not the words themselves. */
 export function DetailsPane({ workspaceId, section, details, saveState, stats, readOnly, selfName, onCopyMarkdown, onSaveNow }: Props) {
   const [pending, start] = useTransition();
@@ -37,8 +41,8 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
 
   if (!section) {
     return (
-      <aside className="details border-line bg-surface-2 p-4 text-ink-3 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-l max-[899px]:border-t">
-        <p className="m-0">Pick a section to see its status, history and comments.</p>
+      <aside className={PANE}>
+        <p className="m-0 p-4 text-ink-3">Pick a section to see its status, history and comments.</p>
       </aside>
     );
   }
@@ -67,91 +71,102 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
   };
 
   return (
-    <aside className="details flex min-w-0 flex-col gap-5 overflow-x-hidden border-line bg-surface-2 p-4 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-l max-[899px]:border-t">
-      <div>
-        <div className="mb-2 flex items-baseline justify-between gap-2">
-          <TitleField key={section.id} id={section.id} title={section.title} readOnly={readOnly} />
-          <span className={clsx("tnum shrink-0 text-xs", saveState === "conflict" || saveState === "error" ? "text-review" : "text-ink-3")} aria-live="polite">
-            {SAVE_LABEL[saveState]}
-          </span>
-        </div>
-        <dl className="tnum m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[13px]">
-          <dt className="m-0 text-ink-2 col-span-2">Status</dt>
-          <dd className="m-0 col-span-2 -mt-1">
-            {readOnly ? (
-              <Pill tone={statusTone(section.status)}>{STATUS_LABEL[section.status]}</Pill>
-            ) : (
-              <div role="radiogroup" aria-label="Status" className="flex w-full overflow-hidden rounded-r border border-line bg-surface">
-                {STATUSES.map((s) => {
-                  const on = s === section.status;
-                  const tone = statusTone(s);
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      disabled={pending}
-                      onClick={() => setStatus(s)}
-                      className={clsx(
-                        "flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border-r border-line px-2 py-1 text-xs font-medium transition-colors last:border-r-0",
-                        on ? (tone === "done" ? "bg-done-soft text-done" : tone === "review" ? "bg-review-soft text-review" : "bg-surface-2 text-ink") : "text-ink-2 hover:bg-surface-2",
-                      )}
-                    >
-                      <span className={clsx("size-1.5 rounded-full", on ? "bg-current" : "bg-ink-3")} />
-                      {STATUS_LABEL[s]}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </dd>
-          {details?.shareReview && (
-            <>
-              <dt className="m-0 text-ink-2">Client</dt>
-              <dd className="m-0 min-w-0">
-                {details.clientApprovedAt ? (
-                  <Pill tone="done" className="max-w-full">
-                    <span className="truncate">
-                      Approved by {details.clientApprovedBy ?? "the client"}, {timeAgo(details.clientApprovedAt)}
-                    </span>
-                  </Pill>
-                ) : (
-                  <span className="text-ink-3">Not yet approved by client</span>
-                )}
-              </dd>
-            </>
-          )}
-          <dt className="m-0 text-ink-2">Words</dt>
-          <dd className="m-0">{words}</dd>
-          <dt className="m-0 text-ink-2">Characters</dt>
-          <dd className="m-0">{chars}</dd>
-          <dt className="m-0 text-ink-2">Last edit</dt>
-          <dd className="m-0">
-            {who}, {timeAgo(section.updatedAt)}
-          </dd>
-        </dl>
+    <aside className={PANE}>
+      <div className="flex items-baseline justify-between gap-2 px-4 py-3.5">
+        <TitleField key={section.id} id={section.id} title={section.title} readOnly={readOnly} />
+        <span className={clsx("tnum shrink-0 text-xs", saveState === "conflict" || saveState === "error" ? "text-review" : "text-ink-3")} aria-live="polite">
+          {SAVE_LABEL[saveState]}
+        </span>
       </div>
 
-      <Versions key={`v-${section.id}`} sectionId={section.id} current={section.version} currentText={tiptapToText(section.content)} versions={details?.versions ?? []} readOnly={readOnly} selfName={selfName} />
+      <Block title="Status">
+        {readOnly ? (
+          <Pill tone={statusTone(section.status)}>{STATUS_LABEL[section.status]}</Pill>
+        ) : (
+          <div role="radiogroup" aria-label="Status" className="flex w-full overflow-hidden rounded-r border border-line bg-surface">
+            {STATUSES.map((s) => {
+              const on = s === section.status;
+              const tone = statusTone(s);
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  disabled={pending}
+                  onClick={() => setStatus(s)}
+                  className={clsx(
+                    "flex flex-1 cursor-pointer items-center justify-center gap-1.5 border-r border-line px-2 py-1 text-xs font-medium whitespace-nowrap transition-colors duration-150 ease-out last:border-r-0 disabled:cursor-not-allowed",
+                    on ? (tone === "done" ? "bg-done-soft text-done" : tone === "review" ? "bg-review-soft text-review" : "bg-surface-2 text-ink") : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+                  )}
+                >
+                  <span className={clsx("size-1.5 rounded-full", on ? "bg-current" : "bg-ink-3")} />
+                  {STATUS_LABEL[s]}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {details?.shareReview && (
+          <div className="mt-2.5 min-w-0">
+            <p className="m-0 mb-1 text-xs text-ink-3">Client</p>
+            {details.clientApprovedAt ? (
+              <Pill tone="done" className="max-w-full">
+                <span className="truncate">Approved by {details.clientApprovedBy ?? "the client"}, {timeAgo(details.clientApprovedAt)}</span>
+              </Pill>
+            ) : (
+              <p className="m-0 text-[13px] text-ink-3">Not yet approved by client</p>
+            )}
+          </div>
+        )}
+      </Block>
 
-      <Comments key={`c-${section.id}`} sectionId={section.id} comments={details?.comments ?? []} readOnly={readOnly} selfName={selfName} />
+      <Block title="Progress">
+        <div className="flex gap-6">
+          <Stat label="Words" value={words} />
+          <Stat label="Characters" value={chars} />
+        </div>
+        <p className="m-0 mt-2.5 flex items-center gap-1.5 text-xs text-ink-3">
+          <Icon name="clock" size={13} />
+          <span className="truncate">Last edit by {who}, {timeAgo(section.updatedAt)}</span>
+        </p>
+      </Block>
 
-      <div>
-        <h3 className="m-0 mb-2 text-xs font-medium text-ink-3">Attachments</h3>
+      <Block title="Versions">
+        <Versions key={`v-${section.id}`} sectionId={section.id} current={section.version} currentText={tiptapToText(section.content)} versions={details?.versions ?? []} readOnly={readOnly} selfName={selfName} />
+      </Block>
+
+      <Block title="Comments" aside={details?.comments.length ? <span className="tnum text-xs text-ink-3">{details.comments.length}</span> : undefined}>
+        <Comments key={`c-${section.id}`} sectionId={section.id} comments={details?.comments ?? []} readOnly={readOnly} selfName={selfName} />
+      </Block>
+
+      <Block title="Attachments" aside={details?.attachments.length ? <span className="tnum text-xs text-ink-3">{details.attachments.length}</span> : undefined}>
         <AttachPicker workspaceId={workspaceId} sectionId={section.id} attached={details?.attachments ?? []} readOnly={readOnly} />
         {(details?.attachments.length ?? 0) === 0 && readOnly && <p className="m-0 text-[13px] text-ink-3">No files attached.</p>}
-      </div>
+      </Block>
 
-      <div className="mt-auto flex gap-2 pt-2">
-        <Button className="flex-1" onClick={copyMd}>{copied ? "Copied" : "Copy as Markdown"}</Button>
+      <div className="mt-auto flex gap-2 border-t border-line-2 bg-surface-2 px-4 py-3 min-[900px]:sticky min-[900px]:bottom-0">
+        <Button className="flex-1" icon={copied ? "check" : "copy"} onClick={copyMd}>{copied ? "Copied" : "Copy as Markdown"}</Button>
         {!readOnly && (
-          <Button className="flex-1" variant={approved ? "default" : "primary"} disabled={pending} onClick={() => setStatus(approved ? "draft" : "approved")}>
+          <Button className="flex-1" variant={approved ? "default" : "primary"} icon={approved ? "undo" : "check"} disabled={pending} onClick={() => setStatus(approved ? "draft" : "approved")}>
             {approved ? "Back to draft" : "Approve"}
           </Button>
         )}
       </div>
     </aside>
+  );
+}
+
+/** One labelled part of the pane: eyebrow, optional figure on the right, content. */
+function Block({ title, aside, children }: { title: string; aside?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="border-t border-line-2 px-4 py-4">
+      <div className="mb-2 flex items-center gap-2">
+        <h3 className="m-0 text-xs font-medium text-ink-3">{title}</h3>
+        {aside && <div className="ml-auto flex items-center gap-2">{aside}</div>}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -187,7 +202,7 @@ function TitleField({ id, title, readOnly }: { id: string; title: string; readOn
       onBlur={commit}
       onKeyDown={onKey}
       aria-label="Section title"
-      className="-mx-1.5 min-w-0 flex-1 rounded-r border border-transparent bg-transparent px-1.5 py-0.5 text-sm font-semibold text-ink outline-none transition-colors hover:border-line focus:border-accent-line focus:bg-surface"
+      className="-mx-1.5 min-w-0 flex-1 rounded-r border border-transparent bg-transparent px-1.5 py-0.5 text-sm font-semibold text-ink outline-none transition-colors duration-150 ease-out hover:border-line focus:border-accent-line focus:bg-surface"
     />
   );
 }
@@ -202,8 +217,7 @@ function Versions({ sectionId, current, currentText, versions, readOnly, selfNam
   const latest = versions[0];
   const nowText = latest && latest.version === current ? latest.plainText : currentText;
   return (
-    <div>
-      <h3 className="m-0 mb-2 text-xs font-medium text-ink-3">Versions</h3>
+    <>
       {versions.length === 0 ? (
         <p className="m-0 text-[13px] text-ink-3">No saves yet.</p>
       ) : (
@@ -219,7 +233,7 @@ function Versions({ sectionId, current, currentText, versions, readOnly, selfNam
                     type="button"
                     onClick={() => setOpenId(v.id)}
                     title={`Compare version ${v.version} with the current copy`}
-                    className="-mx-1 min-w-0 truncate rounded-r px-1 text-left text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+                    className="-mx-1 min-w-0 cursor-pointer truncate rounded-r px-1 text-left text-ink-2 transition-colors duration-150 ease-out hover:bg-surface hover:text-ink"
                   >
                     <span className="tnum text-ink-3">v{v.version}</span> {name(v.authorName)}
                   </button>
@@ -233,14 +247,14 @@ function Versions({ sectionId, current, currentText, versions, readOnly, selfNam
                           type="button"
                           disabled={pending}
                           onClick={() => start(async () => { await restoreVersion(sectionId, v.id); setConfirmId(null); })}
-                          className="font-medium text-accent hover:underline"
+                          className="cursor-pointer font-medium text-accent hover:underline"
                         >
                           Restore?
                         </button>
-                        <button type="button" onClick={() => setConfirmId(null)} className="text-ink-3 hover:text-ink">No</button>
+                        <button type="button" onClick={() => setConfirmId(null)} className="cursor-pointer text-ink-3 hover:text-ink">No</button>
                       </span>
                     ) : (
-                      <button type="button" onClick={() => setConfirmId(v.id)} className="text-ink-3 hover:text-accent">Restore</button>
+                      <button type="button" onClick={() => setConfirmId(v.id)} className="cursor-pointer text-ink-3 transition-colors duration-150 ease-out hover:text-accent">Restore</button>
                     )
                   )}
                 </span>
@@ -250,7 +264,7 @@ function Versions({ sectionId, current, currentText, versions, readOnly, selfNam
         </ul>
       )}
       <VersionDiff sectionId={sectionId} version={opened} currentText={nowText} open={opened !== null} onClose={() => setOpenId(null)} readOnly={readOnly} selfName={selfName} />
-    </div>
+    </>
   );
 }
 
@@ -277,7 +291,7 @@ function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: stri
     <li key={c.id} className={clsx("rounded-r border border-line bg-surface p-2.5 text-[13px]", c.resolvedAt ? "opacity-60" : null)}>
       <div className="mb-1.5 flex items-center gap-2 text-ink-2">
         {c.guestName ? (
-          <span className="shrink-0 rounded-full border border-line bg-surface-2 px-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-3">client</span>
+          <span className="shrink-0 rounded-full border border-line bg-surface-2 px-1.5 text-[10px] font-medium tracking-wide text-ink-3">Client</span>
         ) : (
           <Avatar name={c.authorName ?? "?"} size={18} muted={c.authorName !== selfName} />
         )}
@@ -287,7 +301,7 @@ function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: stri
       <p className="m-0 whitespace-pre-wrap">{c.body}</p>
       {!readOnly && (
         <div className="mt-2 flex gap-2.5 text-xs font-medium">
-          <button type="button" disabled={pending} onClick={() => start(() => resolveComment(c.id))} className="text-accent hover:underline">
+          <button type="button" disabled={pending} onClick={() => start(() => resolveComment(c.id))} className="cursor-pointer text-accent hover:underline disabled:cursor-not-allowed">
             {c.resolvedAt ? "Reopen" : "Resolve"}
           </button>
         </div>
@@ -295,8 +309,7 @@ function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: stri
     </li>
   );
   return (
-    <div>
-      <h3 className="m-0 mb-2 text-xs font-medium text-ink-3">Comments</h3>
+    <>
       {comments.length === 0 && <p className="m-0 mb-2 text-[13px] text-ink-3">{readOnly ? "No comments." : "Nothing yet. Leave a note for the writer."}</p>}
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {open.map(item)}
@@ -312,6 +325,6 @@ function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: stri
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }

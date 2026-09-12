@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { formatBytes } from "@/lib/format";
+import { Icon } from "@/components/ui/icon";
 import type { AssetItem } from "@/lib/media/types";
 import { fileUrl, previewUrl } from "./urls";
 
@@ -50,8 +51,22 @@ export function Lightbox({ items, index, onIndex, onClose }: Props) {
           <span className="min-w-0 truncate font-medium text-white">{asset.filename}</span>
           <span className="tnum shrink-0">{asset.width && asset.height ? `${asset.width} × ${asset.height} · ` : ""}{formatBytes(asset.bytes)}</span>
           {many && <span className="tnum ml-auto shrink-0">{index + 1} / {items.length}</span>}
-          <a href={fileUrl(asset, "original", { download: "1" })} className="rounded-r border border-white/25 px-2.5 py-1 hover:bg-white/10" download>Download</a>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-r border border-white/25 px-2.5 py-1 hover:bg-white/10">Esc</button>
+          <a
+            href={fileUrl(asset, "original", { download: "1" })}
+            download
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-r border border-white/25 px-2.5 py-1 transition-colors duration-150 hover:bg-white/10"
+          >
+            <Icon name="download" size={14} /> Download
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            title="Close (Esc)"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-r border border-white/25 px-2.5 py-1 transition-colors duration-150 hover:bg-white/10"
+          >
+            <Icon name="x" size={14} /> Esc
+          </button>
         </header>
         <div className="relative flex min-h-0 flex-1 items-center justify-center px-14 pb-6" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
           {asset.kind === "image" && (
@@ -64,24 +79,16 @@ export function Lightbox({ items, index, onIndex, onClose }: Props) {
           {asset.kind === "pdf" && <iframe key={asset.id} src={fileUrl(asset, "original")} title={asset.filename} className="h-full w-full max-w-5xl rounded-r border-0 bg-white" />}
           {many && (
             <>
-              <button type="button" onClick={prev} aria-label="Previous" className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/25 p-2 hover:bg-white/10">
-                <Arrow dir="left" />
+              <button type="button" onClick={prev} aria-label="Previous" title="Previous" className="absolute top-1/2 left-3 -translate-y-1/2 cursor-pointer rounded-full border border-white/25 p-2 transition-colors duration-150 hover:bg-white/10">
+                <Icon name="chevron-left" size={18} strokeWidth={2} />
               </button>
-              <button type="button" onClick={next} aria-label="Next" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/25 p-2 hover:bg-white/10">
-                <Arrow dir="right" />
+              <button type="button" onClick={next} aria-label="Next" title="Next" className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer rounded-full border border-white/25 p-2 transition-colors duration-150 hover:bg-white/10">
+                <Icon name="chevron-right" size={18} strokeWidth={2} />
               </button>
             </>
           )}
         </div>
       </div>
     </dialog>
-  );
-}
-
-function Arrow({ dir }: { dir: "left" | "right" }) {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      {dir === "left" ? <path d="M15 5l-7 7 7 7" /> : <path d="M9 5l7 7-7 7" />}
-    </svg>
   );
 }

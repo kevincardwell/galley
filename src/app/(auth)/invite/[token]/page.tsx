@@ -2,6 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { acceptInviteAction } from "@/actions/auth";
 import { AuthForm } from "@/components/auth-form";
+import { Icon } from "@/components/ui/icon";
 
 export const metadata = { title: "Join" };
 
@@ -20,9 +21,12 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const invite = findLiveInvite(token);
   if (!invite) {
     return (
-      <div>
-        <h1 className="m-0 text-lg font-semibold">This invite has expired</h1>
-        <p className="mb-0 text-ink-2">Ask the person who invited you to send a new link.</p>
+      <div className="flex flex-col items-center text-center">
+        <span className="mb-3 grid size-10 place-items-center rounded-full bg-surface-2 text-ink-3">
+          <Icon name="clock" size={18} />
+        </span>
+        <h1 className="m-0 text-lg leading-tight font-semibold tracking-tight">This invite has expired</h1>
+        <p className="m-0 mt-1.5 text-[13px] text-ink-2">Ask the person who invited you to send a new link.</p>
       </div>
     );
   }

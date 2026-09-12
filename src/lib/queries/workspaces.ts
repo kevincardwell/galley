@@ -3,16 +3,22 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import type { User } from "@/db/schema";
 
-/** Workspaces the user is allowed to see, with a few counts for the grid. */
+/**
+ * Workspaces the user is allowed to see, with a few counts for the grid.
+ *
+ * The correlated subqueries name `workspaces.id` literally: interpolating the Drizzle column
+ * (`${schema.workspaces.id}`) renders a bare `"id"`, which SQLite binds to the subquery's own
+ * table, so every count silently returned 0.
+ */
 export function listWorkspacesFor(user: User, includeArchived = false) {
   const base = db
     .select({
       ws: schema.workspaces,
-      openTasks: sql<number>`(select count(*) from tasks t where t.workspace_id = ${schema.workspaces.id} and t.status != 'done')`,
-      approvedSections: sql<number>`(select count(*) from sections s where s.workspace_id = ${schema.workspaces.id} and s.status = 'approved')`,
-      totalSections: sql<number>`(select count(*) from sections s where s.workspace_id = ${schema.workspaces.id})`,
-      assetCount: sql<number>`(select count(*) from assets a where a.workspace_id = ${schema.workspaces.id})`,
-      lastActivity: sql<number | null>`(select max(created_at) from activity ac where ac.workspace_id = ${schema.workspaces.id})`,
+      openTasks: sql<number>`(select count(*) from tasks t where t.workspace_id = workspaces.id and t.status != 'done')`,
+      approvedSections: sql<number>`(select count(*) from sections s where s.workspace_id = workspaces.id and s.status = 'approved')`,
+      totalSections: sql<number>`(select count(*) from sections s where s.workspace_id = workspaces.id)`,
+      assetCount: sql<number>`(select count(*) from assets a where a.workspace_id = workspaces.id)`,
+      lastActivity: sql<number | null>`(select max(created_at) from activity ac where ac.workspace_id = workspaces.id)`,
     })
     .from(schema.workspaces);
 

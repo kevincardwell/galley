@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 import { sweepOrphanFiles } from "@/actions/admin";
 import { formatBytes } from "@/lib/format";
 import { InlineError } from "./bits";
@@ -12,7 +13,8 @@ export function SweepButton() {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Button
-        disabled={pending}
+        icon="refresh"
+        loading={pending}
         onClick={() => {
           setResult(null);
           run(sweepOrphanFiles, (d) => setResult(d.count === 0 ? "Nothing to sweep. Every file on disk belongs to an asset." : `Removed ${d.count} orphaned ${d.count === 1 ? "folder" : "folders"}, freeing ${formatBytes(d.bytes)}.`));
@@ -20,7 +22,7 @@ export function SweepButton() {
       >
         {pending ? "Sweeping…" : "Sweep orphaned files"}
       </Button>
-      {result && <span role="status" className="text-sm text-done">{result}</span>}
+      {result && <span role="status" className="flex items-center gap-1.5 text-sm text-done"><Icon name="check-circle" size={14} />{result}</span>}
       <InlineError>{error}</InlineError>
     </div>
   );

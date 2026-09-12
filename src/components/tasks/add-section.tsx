@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { clsx } from "@/lib/clsx";
 import { useBoard } from "./board-context";
-import { PlusIcon } from "./icons";
+import { Icon } from "@/components/ui/icon";
 
 export function AddSection({ className }: { className?: string }) {
   const board = useBoard();
@@ -21,8 +21,8 @@ export function AddSection({ className }: { className?: string }) {
   };
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className={clsx("inline-flex items-center gap-1.5 rounded-r px-2 py-1.5 text-[13px] text-ink-3 transition-colors duration-150 hover:bg-surface-2 hover:text-ink", className)}>
-        <PlusIcon size={12} /> Add section
+      <button onClick={() => setOpen(true)} className={clsx("inline-flex cursor-pointer items-center gap-1.5 rounded-r px-2 py-1.5 text-[13px] text-ink-3 transition-colors duration-150 ease-out hover:bg-surface-2 hover:text-ink", className)}>
+        <Icon name="plus" size={13} /> Add section
       </button>
     );
   }

@@ -1,13 +1,14 @@
 "use client";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Icon, IconButton } from "@/components/ui/icon";
 import { Pill } from "@/components/ui/pill";
+import { Tooltip } from "@/components/ui/tooltip";
 import { revokeInvite } from "@/actions/admin";
 import type { InviteRow, Person, WorkspaceOption } from "@/lib/queries/admin";
 import { timeAgo } from "@/lib/format";
-import { CopyButton } from "./copy-button";
-import { InlineError, ROLE_LABEL, Table, Td, Th, WsDot } from "./bits";
+import { CopyIconButton } from "./copy-button";
+import { InlineError, ROLE_LABEL, RowActions, Table, Td, Th, Tr, WsDot } from "./bits";
 import { PersonDialog } from "./person-dialog";
 import { useAdminAction } from "./use-action";
 
@@ -24,13 +25,13 @@ export function PeopleTable({ people, invites, workspaces, selfId, baseUrl }: { 
     <>
       <Table>
         <thead>
-          <tr><Th>Person</Th><Th>Role</Th><Th>Workspaces</Th><Th>Last seen</Th><Th className="text-right"> </Th></tr>
+          <tr><Th>Person</Th><Th>Role</Th><Th>Workspaces</Th><Th>Last seen</Th><Th num><span className="sr-only">Actions</span></Th></tr>
         </thead>
         <tbody>
           {people.map((p) => {
             const deactivated = !!p.deactivatedAt;
             return (
-              <tr key={p.id} className={deactivated ? "text-ink-3" : undefined}>
+              <Tr key={p.id} muted={deactivated}>
                 <Td>
                   <span className="flex items-center gap-2.5">
                     <Avatar name={p.name} size={26} muted={deactivated || p.id !== selfId} />
@@ -57,15 +58,23 @@ export function PeopleTable({ people, invites, workspaces, selfId, baseUrl }: { 
                   )}
                 </Td>
                 <Td className="whitespace-nowrap text-ink-2">{timeAgo(p.lastSeenAt)}</Td>
-                <Td className="whitespace-nowrap text-right"><Button size="sm" variant="ghost" onClick={() => setOpenId(p.id)}>Manage</Button></Td>
-              </tr>
+                <Td num>
+                  <RowActions>
+                    <Tooltip label={`Manage ${p.name}`}>
+                      <IconButton name="sliders" label={`Manage ${p.name}`} title="" onClick={() => setOpenId(p.id)} />
+                    </Tooltip>
+                  </RowActions>
+                </Td>
+              </Tr>
             );
           })}
           {invites.map((i) => (
-            <tr key={i.id} className="text-ink-2">
+            <Tr key={i.id} className="text-ink-2">
               <Td>
                 <span className="flex items-center gap-2.5">
-                  <span aria-hidden className="grid size-[26px] shrink-0 place-items-center rounded-full border-[1.5px] border-dashed border-ink-3 text-xs text-ink-3">?</span>
+                  <span aria-hidden className="grid size-[26px] shrink-0 place-items-center rounded-full border-[1.5px] border-dashed border-ink-3 text-ink-3">
+                    <Icon name="mail" size={12} />
+                  </span>
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{i.name || i.email}</span>
                     <span className="block truncate text-xs text-ink-3">{i.name ? `${i.email} · ` : ""}Invited by {i.inviterName ?? "someone"}, {daysLeft(i.expiresAt)}</span>
@@ -79,13 +88,15 @@ export function PeopleTable({ people, invites, workspaces, selfId, baseUrl }: { 
                 ) : <span className="text-ink-3">—</span>}
               </Td>
               <Td className="text-ink-3">—</Td>
-              <Td className="whitespace-nowrap text-right">
-                <span className="inline-flex gap-1">
-                  <CopyButton size="sm" variant="ghost" label="Copy link" value={`${baseUrl}/invite/${i.token}`} />
-                  <Button size="sm" variant="ghost" disabled={revoke.pending} onClick={() => revoke.run(() => revokeInvite(i.id))}>Revoke</Button>
-                </span>
+              <Td num>
+                <RowActions>
+                  <CopyIconButton value={`${baseUrl}/invite/${i.token}`} />
+                  <Tooltip label="Revoke invite">
+                    <IconButton name="trash" tone="danger" label={`Revoke the invite for ${i.name || i.email}`} title="" disabled={revoke.pending} onClick={() => revoke.run(() => revokeInvite(i.id))} />
+                  </Tooltip>
+                </RowActions>
               </Td>
-            </tr>
+            </Tr>
           ))}
         </tbody>
       </Table>

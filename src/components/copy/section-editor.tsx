@@ -11,7 +11,7 @@ import { copyExtensions } from "@/lib/collab/extensions";
 import { createSseProvider, type CollabConnection, type CollabStatus, type Peer, type SseProvider } from "@/lib/collab/client";
 import { colorFor } from "@/lib/collab/colors";
 import { tiptapToText, wordCount, type TiptapDoc } from "@/lib/copy/serialize";
-import { statusTone, type SectionRow } from "@/lib/copy/types";
+import { STATUS_LABEL, statusTone, type SectionRow } from "@/lib/copy/types";
 import { StatusDot } from "./status-dot";
 import { Toolbar } from "./toolbar";
 
@@ -104,13 +104,14 @@ export function SectionEditor({ section, active, readOnly, autoFocus, selfName, 
     >
       <div
         className={clsx(
-          "mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-3",
-          "min-[900px]:absolute min-[900px]:top-4 min-[900px]:mb-0 min-[900px]:w-[100px] min-[900px]:justify-end min-[900px]:text-right",
+          "mb-2 flex items-center gap-1.5 border-b border-line-2 pb-1.5 text-xs font-medium transition-colors duration-150 ease-out",
+          active ? "text-ink-2" : "text-ink-3",
+          "min-[900px]:absolute min-[900px]:top-4 min-[900px]:mb-0 min-[900px]:w-[100px] min-[900px]:justify-end min-[900px]:border-b-0 min-[900px]:pb-0 min-[900px]:text-right",
           editing ? "min-[900px]:-left-[102px]" : "min-[900px]:-left-[118px]",
         )}
       >
         <span className="truncate">{section.title}</span>
-        <StatusDot tone={statusTone(section.status)} />
+        <StatusDot tone={statusTone(section.status)} title={STATUS_LABEL[section.status]} />
       </div>
 
       {status === "offline" && (

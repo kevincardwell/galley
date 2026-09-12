@@ -3,7 +3,7 @@ import { useState } from "react";
 import { clsx } from "@/lib/clsx";
 import { useBoard, isTempId } from "./board-context";
 import { TaskCheckbox } from "./task-checkbox";
-import { PlusIcon, XIcon } from "./icons";
+import { Icon, IconButton } from "@/components/ui/icon";
 import type { ChecklistItem, TaskItem } from "./types";
 
 export function Checklist({ task, readOnly }: { task: TaskItem; readOnly: boolean }) {
@@ -23,7 +23,7 @@ export function Checklist({ task, readOnly }: { task: TaskItem; readOnly: boolea
       </ul>
       {!readOnly && (
         <div className="mt-1 flex items-center gap-2">
-          <PlusIcon size={12} className="shrink-0 text-ink-3" />
+          <Icon name="plus" size={13} className="text-ink-3" />
           <input
             value={draft}
             placeholder="Add a step"
@@ -60,7 +60,7 @@ function Row({ item, taskId, readOnly }: { item: ChecklistItem; taskId: string; 
         className={clsx("min-w-0 flex-1 rounded-[4px] border border-transparent bg-transparent px-1 py-1 text-[13px] focus:border-line focus:bg-surface focus:outline-none", item.done && "text-ink-3 line-through")}
       />
       {!readOnly && (
-        <button onClick={() => board.deleteChecklistItem(taskId, item.id)} aria-label={`Remove ${item.text}`} className="grid size-5 place-items-center rounded text-ink-3 opacity-0 transition-opacity duration-150 hover:text-late group-hover:opacity-100 focus-visible:opacity-100"><XIcon size={12} /></button>
+        <IconButton name="x" size={13} tone="danger" label={`Remove ${item.text}`} title="Remove step" onClick={() => board.deleteChecklistItem(taskId, item.id)} className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" />
       )}
     </li>
   );

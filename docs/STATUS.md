@@ -25,6 +25,14 @@ Dialogs centred (Tailwind preflight had zeroed dialog margin). Added: mobile top
 8. Uploads streamed to disk with busboy (src/lib/media/multipart.ts).
 Verified in browser: collab save, share review, diff, backups, notifications inbox, shortcut sheet; upload via curl. e2e updated for the sample-workspace first run.
 
+## Suppliers, calendar and design pass 2026-09-12
+A collaborator's brief asked for tasks-against-an-event with deadlines and notes (already present), a supplier directory (missing) and calendar schedules (missing). Both built:
+- **Suppliers**: instance-wide directory at /suppliers with a per-project tab (/w/<slug>/suppliers). Status shortlisted/enquired/booked/declined, cost in pence formatted as GBP, notes, tags, rating, archive. See src/components/suppliers/shared.ts for the one place currency lives.
+- **Calendar**: /calendar (all projects) and /w/<slug>/calendar with month, week and agenda views, task due dates plus schedule_items, drag to reschedule, and an .ics feed at /api/calendar/<shareToken> (proxy.ts allows it through unauthenticated; the token guards it).
+- **Design system**: docs/DESIGN.md is the direction. Lucide icons via src/components/ui/icon.tsx (never inline svg), plus page.tsx (Screen/PageHeader/Section), meter.tsx, stat.tsx, tooltip.tsx, upgraded button.tsx and empty.tsx. Every screen was restyled against it.
+- **Bug found and fixed**: listWorkspacesFor interpolated a Drizzle column into a correlated subquery, which SQLite bound to the subquery's own table, so every workspace card count was 0. Regression test in tests/unit/workspace-counts.test.ts. Do not interpolate `${schema.x.y}` inside a raw `sql` subquery; name the table literally.
+- Guidelines pass (web-design-guidelines skill) added overscroll containment, touch-action, theme-color meta and balanced headings; dnd-kit contexts now carry stable ids (hydration warnings gone).
+
 ## Not yet done (pick up here)
 1. **Docker image not yet built.** `docker build` was refused: this user is not in the `docker` group. Run `sudo usermod -aG docker $USER` and log back in (or use `sudo docker compose up -d --build`), then click through inside the container (ffmpeg posters, volume permissions).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.

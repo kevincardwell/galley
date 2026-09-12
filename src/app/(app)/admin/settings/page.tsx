@@ -6,7 +6,7 @@ export default async function AdminSettingsPage() {
   await requireAdmin();
   const settings = getSettings();
   return (
-    <div className="overflow-auto px-6 pb-8 pt-5">
+    <div className="overflow-auto px-4 pt-4 pb-8 sm:px-6 sm:pt-5">
       <InstanceSettingsForm settings={settings} />
     </div>
   );

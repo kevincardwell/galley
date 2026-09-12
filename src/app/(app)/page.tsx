@@ -1,55 +1,85 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth/current";
 import { listWorkspacesFor } from "@/lib/queries/workspaces";
-import { Pill } from "@/components/ui/pill";
 import { Empty } from "@/components/ui/empty";
-import { timeAgo } from "@/lib/format";
+import { Screen, PageHeader } from "@/components/ui/page";
 import { NewWorkspaceButton } from "@/components/workspaces/new-workspace";
+import { WorkspaceCard } from "@/components/workspaces/workspace-card";
+import { WorkspaceFilters, workspacesHref } from "@/components/workspaces/workspace-filters";
 
-const STATUS_LABEL: Record<string, string> = { planning: "Planning", building: "Building", review: "In review", live: "Live", archived: "Archived" };
+const STATUSES = ["planning", "building", "review", "live"];
 
-export default async function HomePage() {
+type Search = { q?: string; status?: string; archived?: string };
+
+export default async function HomePage({ searchParams }: { searchParams: Promise<Search> }) {
+  const sp = await searchParams;
   const user = await requireUser();
-  const rows = listWorkspacesFor(user);
+  const archived = sp.archived === "1";
+  const q = (sp.q ?? "").trim();
+  const status = STATUSES.includes(sp.status ?? "") ? sp.status! : "";
+
+  const all = listWorkspacesFor(user, archived);
+  const needle = q.toLowerCase();
+  const rows = all.filter(({ ws }) => {
+    if (status && ws.status !== status) return false;
+    if (!needle) return true;
+    return `${ws.name} ${ws.clientName ?? ""} ${ws.url ?? ""}`.toLowerCase().includes(needle);
+  });
+  const filtering = Boolean(q || status || archived);
+
   return (
-    <div className="px-6 py-5">
-      <div className="mb-5 flex items-center gap-3">
-        <h1 className="m-0 text-xl font-semibold tracking-tight">Workspaces</h1>
-        <span className="tnum text-ink-3">{rows.length}</span>
-        <div className="ml-auto"><NewWorkspaceButton /></div>
-      </div>
-      {rows.length === 0 ? (
+    <Screen>
+      <PageHeader title="Workspaces" count={rows.length} action={<NewWorkspaceButton />} />
+      {all.length > 0 && <WorkspaceFilters q={q} status={status} archived={archived} />}
+
+      {all.length === 0 ? (
         <Empty
+          icon="sparkles"
           title="No workspaces yet"
           hint={user.isAdmin ? "Create one for each website you are working on." : "Ask an admin to add you to a workspace."}
           action={<NewWorkspaceButton />}
         />
+      ) : rows.length === 0 ? (
+        <Empty
+          icon="search"
+          title="Nothing matches those filters"
+          hint="Try a different name, or widen the status filter."
+          action={
+            filtering ? (
+              <Link
+                href={workspacesHref({})}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-r border border-line bg-surface px-3 py-1.5 font-medium transition-colors duration-150 ease-out hover:bg-surface-2"
+              >
+                Clear filters
+              </Link>
+            ) : undefined
+          }
+        />
       ) : (
-        <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 p-0">
+        <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-3 p-0">
           {rows.map(({ ws, openTasks, approvedSections, totalSections, assetCount, lastActivity }) => (
             <li key={ws.id}>
-              <Link href={`/w/${ws.slug}`} className="block rounded-[10px] border border-line bg-surface p-4 transition-colors hover:border-ink-3" style={{ ["--accent" as string]: ws.accent }}>
-                <div className="flex items-center gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-accent font-serif text-base font-semibold text-accent-ink">
-                    {ws.faviconPath ? <img src={`/api/favicon/${ws.id}`} alt="" className="size-5" /> : ws.name[0]}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate font-semibold">{ws.name}</span>
-                    <span className="block truncate text-xs text-ink-2">{ws.clientName || ws.url?.replace(/^https?:\/\//, "") || "—"}</span>
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-xs text-ink-2">
-                  <Pill tone="accent">{STATUS_LABEL[ws.status]}</Pill>
-                  <span className="tnum">{openTasks} open</span>
-                  <span className="tnum">{approvedSections}/{totalSections} approved</span>
-                  <span className="tnum">{assetCount} files</span>
-                </div>
-                <div className="mt-2 text-xs text-ink-3">{lastActivity ? `Active ${timeAgo(lastActivity)}` : "No activity yet"}</div>
-              </Link>
+              <WorkspaceCard
+                ws={{
+                  id: ws.id,
+                  slug: ws.slug,
+                  name: ws.name,
+                  accent: ws.accent,
+                  status: ws.archivedAt ? "archived" : ws.status,
+                  clientName: ws.clientName,
+                  url: ws.url,
+                  faviconPath: ws.faviconPath,
+                  openTasks,
+                  approvedSections,
+                  totalSections,
+                  assetCount,
+                  lastActivity,
+                }}
+              />
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </Screen>
   );
 }

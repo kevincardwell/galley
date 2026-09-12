@@ -8,14 +8,24 @@ import type { AssetFolder, AssetItem } from "@/lib/media/types";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/field";
+import { Icon, IconButton } from "@/components/ui/icon";
+import { Tooltip } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";
 import { deleteAsset, moveToFolder, renameAsset, setTags } from "@/actions/assets";
-import { KindIcon } from "./asset-tile";
+import { KIND_ICON, KIND_LABEL, KindIcon } from "./asset-tile";
 import { fileUrl, previewUrl } from "./urls";
 
 type Props = { asset: AssetItem; folders: AssetFolder[]; shareToken: string | null; canEdit: boolean; onDeleted: () => void; onOpen: () => void };
 
-const H = ({ children }: { children: React.ReactNode }) => <h3 className="m-0 mb-2 text-xs font-medium text-ink-3">{children}</h3>;
+/** One labelled block of the inspector, hairline-separated from the one above it. */
+function Block({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <section className={clsx("border-t border-line-2 pt-4 first:border-t-0 first:pt-0", className)}>
+      <h3 className="m-0 mb-2 text-xs font-medium text-ink-3">{label}</h3>
+      {children}
+    </section>
+  );
+}
 
 export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onOpen }: Props) {
   const [pending, start] = useTransition();
@@ -34,28 +44,67 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <button type="button" onClick={onOpen} className="group relative block w-full overflow-hidden rounded-r border border-line-2 bg-surface" title="Open" aria-label="Open in viewer">
+    <div className="flex flex-col gap-4">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="group relative block w-full cursor-pointer overflow-hidden rounded-r border border-line-2 bg-surface transition-colors duration-150 hover:border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        title="Open in viewer"
+        aria-label={`Open ${asset.filename} in viewer`}
+      >
         <Preview asset={asset} />
+        <span className="pointer-events-none absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/80 px-2.5 py-1 text-xs font-medium text-surface">
+            <Icon name="eye" size={13} /> Open
+          </span>
+        </span>
       </button>
 
-      <section>
-        <H>File</H>
+      <div className="flex items-center gap-0.5">
+        <Tooltip label="Download">
+          <a
+            href={fileUrl(asset, "original", { download: "1" })}
+            download={asset.filename}
+            title=""
+            aria-label={`Download ${asset.filename}`}
+            className="inline-grid size-7 cursor-pointer place-items-center rounded-r text-ink-3 transition-colors duration-150 hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <Icon name="download" />
+          </a>
+        </Tooltip>
+        <Tooltip label={copied === "link" ? "Copied" : "Copy link"}>
+          <IconButton name="link" label="Copy link to this file" title="" className="hover:bg-surface" onClick={() => copy(link(), "link")} />
+        </Tooltip>
+        {canEdit && (
+          <Tooltip label="Delete">
+            <IconButton name="trash" tone="danger" label={`Delete ${asset.filename}`} title="" onClick={() => setConfirm(true)} />
+          </Tooltip>
+        )}
+        <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-3">
+          <Icon name={KIND_ICON[asset.kind]} size={13} />
+          {KIND_LABEL[asset.kind]}
+        </span>
+      </div>
+
+      <Block label="File">
         <Filename asset={asset} canEdit={canEdit} />
-        <dl className="tnum m-0 mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px]">
+        <dl className="tnum m-0 mt-2.5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px]">
           <dt className="text-ink-3">Size</dt><dd className="m-0">{formatBytes(asset.bytes)}</dd>
           {asset.width && asset.height && (<><dt className="text-ink-3">Dimensions</dt><dd className="m-0">{asset.width} × {asset.height}</dd></>)}
           {asset.durationMs != null && (<><dt className="text-ink-3">Duration</dt><dd className="m-0">{formatDuration(asset.durationMs)}</dd></>)}
           <dt className="text-ink-3">Uploaded</dt><dd className="m-0">{asset.uploadedByName ?? "Someone"}, {timeAgo(asset.createdAt)}</dd>
         </dl>
-        {asset.processError && <p className="m-0 mt-2 text-xs text-late">{asset.processError}</p>}
-        {!asset.processedAt && !asset.processError && <p className="m-0 mt-2 text-xs text-ink-3">Making thumbnails…</p>}
-      </section>
+        {asset.processError && (
+          <p className="m-0 mt-2 flex items-start gap-1.5 text-xs text-late"><Icon name="alert" size={13} className="mt-px" />{asset.processError}</p>
+        )}
+        {!asset.processedAt && !asset.processError && (
+          <p className="m-0 mt-2 flex items-center gap-1.5 text-xs text-ink-3"><Icon name="spinner" size={13} className="animate-spin" />Making thumbnails…</p>
+        )}
+      </Block>
 
       {asset.palette && asset.palette.length > 0 && (
-        <section>
-          <H>Palette</H>
-          <div className="flex gap-1.5">
+        <Block label="Palette">
+          <div className="flex flex-wrap items-center gap-1.5">
             {asset.palette.map((hex) => (
               <button
                 key={hex}
@@ -63,23 +112,24 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
                 title={copied === hex ? "Copied" : hex}
                 aria-label={`Copy ${hex}`}
                 onClick={() => copy(hex, hex)}
-                className={clsx("size-6 rounded border border-black/10 transition-transform duration-150 hover:scale-110", copied === hex && "ring-2 ring-accent ring-offset-1 ring-offset-surface-2")}
+                className={clsx(
+                  "size-6 cursor-pointer rounded border border-line-2 transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface-2",
+                  copied === hex && "ring-2 ring-accent ring-offset-1 ring-offset-surface-2",
+                )}
                 style={{ background: hex }}
               />
             ))}
-            <span aria-live="polite" className="ml-1 self-center text-[11px] text-ink-3">{copied && asset.palette.includes(copied) ? `${copied} copied` : "Click to copy"}</span>
+            <span aria-live="polite" className="ml-1 text-[11px] text-ink-3">{copied && asset.palette.includes(copied) ? `${copied} copied` : "Click to copy"}</span>
           </div>
-        </section>
+        </Block>
       )}
 
-      <section>
-        <H>Tags</H>
+      <Block label="Tags">
         <TagsEditor asset={asset} canEdit={canEdit} />
-      </section>
+      </Block>
 
       {(folders.length > 0 || asset.folderId) && (
-        <section>
-          <H>Folder</H>
+        <Block label="Folder">
           <Select
             aria-label="Folder"
             value={asset.folderId ?? ""}
@@ -89,45 +139,29 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
             <option value="">No folder</option>
             {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
           </Select>
-        </section>
+        </Block>
       )}
 
-      <section>
-        <H>Used in</H>
+      <Block label="Used in">
         {asset.usedIn.length === 0 ? (
           <p className="m-0 text-[13px] text-ink-3">Not attached to anything yet.</p>
         ) : (
-          <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13px]">
+          <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px]">
             {asset.usedIn.map((u) => (
-              <li key={`${u.type}-${u.id}`} className="flex gap-1.5 text-ink-2">
-                <span className="shrink-0 text-ink-3">{u.type === "task" ? "Task:" : "Copy:"}</span>
-                <Link href={u.href} className="min-w-0 truncate font-medium text-ink hover:underline">{u.title}</Link>
+              <li key={`${u.type}-${u.id}`}>
+                <Link href={u.href} className="group flex items-center gap-1.5 text-ink-2 hover:text-ink">
+                  <Icon name={u.type === "task" ? "checklist" : "text"} size={13} className="text-ink-3" />
+                  <span className="min-w-0 truncate font-medium text-ink group-hover:underline">{u.title}</span>
+                </Link>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Block>
 
-      <div className="mt-auto flex flex-col gap-2 pt-2">
-        <div className="flex gap-2">
-          <a
-            href={fileUrl(asset, "original", { download: "1" })}
-            download={asset.filename}
-            className="inline-flex flex-1 items-center justify-center rounded-r border border-line bg-surface px-3 py-1.5 font-medium transition-colors hover:bg-surface-2"
-          >
-            Download
-          </a>
-          <Button className="flex-1" onClick={() => copy(link(), "link")}>{copied === "link" ? "Copied" : "Copy link"}</Button>
-        </div>
-        {shareToken ? (
-          <p className="m-0 text-[11px] text-ink-3">The link works for anyone with the client share link.</p>
-        ) : (
-          <p className="m-0 text-[11px] text-ink-3">The link works for workspace members. Turn on the client share link to make it public.</p>
-        )}
-        {canEdit && (
-          <Button variant="danger" onClick={() => setConfirm(true)}>Delete</Button>
-        )}
-      </div>
+      <p className="m-0 border-t border-line-2 pt-3 text-[11px] text-ink-3">
+        {shareToken ? "The copied link works for anyone with the client share link." : "The copied link works for workspace members. Turn on the client share link to make it public."}
+      </p>
 
       <Dialog open={confirm} onClose={() => setConfirm(false)} title="Delete this file?">
         <p className="m-0 mb-4 text-ink-2">
@@ -136,7 +170,7 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
         </p>
         <div className="flex justify-end gap-2">
           <Button onClick={() => setConfirm(false)}>Cancel</Button>
-          <Button variant="danger" disabled={pending} onClick={() => start(async () => { await deleteAsset(asset.id); setConfirm(false); onDeleted(); })}>Delete</Button>
+          <Button variant="danger" icon="trash" loading={pending} onClick={() => start(async () => { await deleteAsset(asset.id); setConfirm(false); onDeleted(); })}>Delete</Button>
         </div>
       </Dialog>
     </div>
@@ -152,8 +186,9 @@ function Preview({ asset }: { asset: AssetItem }) {
     );
   }
   return (
-    <div className="flex items-center justify-center text-ink-3" style={{ aspectRatio: "4 / 3" }}>
-      <KindIcon kind={asset.kind} />
+    <div className="flex flex-col items-center justify-center gap-2 bg-surface-2 text-ink-3" style={{ aspectRatio: "4 / 3" }}>
+      <KindIcon kind={asset.kind} size={26} />
+      <span className="text-xs">{KIND_LABEL[asset.kind]}</span>
     </div>
   );
 }
@@ -201,12 +236,22 @@ function TagsEditor({ asset, canEdit }: { asset: AssetItem; canEdit: boolean }) 
     if (e.key === "Backspace" && draft === "" && asset.tags.length) save(asset.tags.slice(0, -1));
   };
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       {asset.tags.map((t) => (
-        <span key={t} className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-px text-xs text-ink-2">
+        <span key={t} className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2 py-px text-xs text-ink-2">
+          <Icon name="tag" size={11} className="text-ink-3" />
           {t}
           {canEdit && (
-            <button type="button" aria-label={`Remove tag ${t}`} disabled={pending} onClick={() => save(asset.tags.filter((x) => x !== t))} className="text-ink-3 hover:text-ink">×</button>
+            <button
+              type="button"
+              aria-label={`Remove tag ${t}`}
+              title={`Remove tag ${t}`}
+              disabled={pending}
+              onClick={() => save(asset.tags.filter((x) => x !== t))}
+              className="-mr-0.5 inline-grid size-4 cursor-pointer place-items-center rounded-full text-ink-3 transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
+            >
+              <Icon name="x" size={11} />
+            </button>
           )}
         </span>
       ))}
@@ -218,7 +263,7 @@ function TagsEditor({ asset, canEdit }: { asset: AssetItem; canEdit: boolean }) 
           onBlur={add}
           placeholder={asset.tags.length ? "Add tag" : "Add a tag, Enter to save"}
           aria-label="Add tag"
-          className="min-w-24 flex-1 rounded bg-transparent px-1 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="min-w-24 flex-1 rounded-r bg-transparent px-1 py-0.5 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       )}
       {!canEdit && asset.tags.length === 0 && <span className="text-[13px] text-ink-3">No tags.</span>}

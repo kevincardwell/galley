@@ -12,6 +12,8 @@ export type BoardApi = {
   members: Member[];
   openId: string | null;
   highlightId: string | null;
+  /** The task currently being dragged, if any. */
+  draggingId: string | null;
   focusRequest: FocusRequest | null;
   open: (id: string | null) => void;
   setHighlight: (id: string | null) => void;

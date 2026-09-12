@@ -1,11 +1,12 @@
 "use client";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon";
 import { Pill } from "@/components/ui/pill";
+import { Tooltip } from "@/components/ui/tooltip";
 import { revokeInvite } from "@/actions/admin";
 import type { InviteRow } from "@/lib/queries/admin";
 import { timeAgo } from "@/lib/format";
-import { CopyButton } from "./copy-button";
-import { InlineError, Table, Td, Th, WsDot } from "./bits";
+import { CopyIconButton } from "./copy-button";
+import { InlineError, RowActions, Table, Td, Th, Tr, WsDot } from "./bits";
 import { useAdminAction } from "./use-action";
 
 function StatePill({ state }: { state: InviteRow["state"] }) {
@@ -27,11 +28,11 @@ export function InvitesTable({ invites, baseUrl }: { invites: InviteRow[]; baseU
     <>
       <Table>
         <thead>
-          <tr><Th>Invitee</Th><Th>Status</Th><Th>Workspace</Th><Th>Invited by</Th><Th>Sent</Th><Th> </Th></tr>
+          <tr><Th>Invitee</Th><Th>Status</Th><Th>Workspace</Th><Th>Invited by</Th><Th>Sent</Th><Th num><span className="sr-only">Actions</span></Th></tr>
         </thead>
         <tbody>
           {invites.map((i) => (
-            <tr key={i.id} className={i.state === "pending" ? undefined : "text-ink-3"}>
+            <Tr key={i.id} muted={i.state !== "pending"}>
               <Td>
                 <span className="block truncate font-medium">{i.name || i.email}</span>
                 <span className="block truncate text-xs text-ink-3">{i.name ? `${i.email} · ` : ""}{expiry(i)}{i.isAdmin ? " · instance admin" : ""}</span>
@@ -44,15 +45,17 @@ export function InvitesTable({ invites, baseUrl }: { invites: InviteRow[]; baseU
               </Td>
               <Td className="text-ink-2">{i.inviterName ?? <span className="text-ink-3">someone</span>}</Td>
               <Td className="whitespace-nowrap text-ink-2">{timeAgo(i.createdAt)}</Td>
-              <Td className="whitespace-nowrap text-right">
+              <Td num>
                 {i.state === "pending" && (
-                  <span className="inline-flex gap-1">
-                    <CopyButton size="sm" variant="ghost" label="Copy link" value={`${baseUrl}/invite/${i.token}`} />
-                    <Button size="sm" variant="ghost" disabled={revoke.pending} onClick={() => revoke.run(() => revokeInvite(i.id))}>Revoke</Button>
-                  </span>
+                  <RowActions>
+                    <CopyIconButton value={`${baseUrl}/invite/${i.token}`} />
+                    <Tooltip label="Revoke invite">
+                      <IconButton name="trash" tone="danger" label={`Revoke the invite for ${i.name || i.email}`} title="" disabled={revoke.pending} onClick={() => revoke.run(() => revokeInvite(i.id))} />
+                    </Tooltip>
+                  </RowActions>
                 )}
               </Td>
-            </tr>
+            </Tr>
           ))}
         </tbody>
       </Table>

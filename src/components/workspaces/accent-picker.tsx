@@ -15,11 +15,11 @@ export function AccentPicker({ name, defaultValue = ACCENTS[0] }: { name: string
           onClick={() => setV(c)}
           aria-label={c}
           aria-pressed={v === c}
-          className="size-6 rounded-full border-2 border-transparent aria-pressed:border-ink"
+          className="size-6 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 ease-out hover:border-ink-3 aria-pressed:border-ink"
           style={{ background: c }}
         />
       ))}
-      <input type="color" value={v} onChange={(e) => setV(e.target.value)} aria-label="Custom colour" className="size-6 cursor-pointer rounded border border-line bg-transparent p-0" />
+      <input type="color" value={v} onChange={(e) => setV(e.target.value)} aria-label="Custom colour" title="Custom colour" className="size-6 cursor-pointer rounded border border-line bg-transparent p-0" />
     </div>
   );
 }

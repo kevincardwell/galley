@@ -15,6 +15,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <AuthForm
       action={loginAction}
       title="Sign in"
+      intro="Use the email and password your studio set up for you."
       hidden={{ next }}
       fields={[
         { name: "email", label: "Email", type: "email", autoComplete: "email" },

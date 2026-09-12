@@ -6,7 +6,7 @@ import { clsx } from "@/lib/clsx";
 import { formatDue } from "@/lib/format";
 import { toggleDone } from "@/actions/tasks";
 import { TaskCheckbox } from "./task-checkbox";
-import { ArrowRightIcon } from "./icons";
+import { Icon } from "@/components/ui/icon";
 import type { MyTaskGroup } from "./types";
 
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -63,7 +63,7 @@ export function MyTasksList({ initialGroups }: { initialGroups: MyTaskGroup[] })
                   {due.label && (
                     <span className={clsx("tnum shrink-0 text-xs", done ? "text-ink-3" : due.tone === "late" ? "font-medium text-late" : due.tone === "soon" ? "font-medium text-review" : "text-ink-2")}>{due.label}</span>
                   )}
-                  <Link href={`/w/${g.workspace.slug}/tasks?task=${t.id}`} aria-label={`Open ${t.title}`} className="grid size-6 place-items-center rounded text-ink-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink"><ArrowRightIcon /></Link>
+                  <Link href={`/w/${g.workspace.slug}/tasks?task=${t.id}`} aria-label={`Open ${t.title}`} className="grid size-6 cursor-pointer place-items-center rounded text-ink-3 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 hover:text-ink focus-visible:opacity-100"><Icon name="arrow-right" size={14} /></Link>
                 </li>
               );
             })}

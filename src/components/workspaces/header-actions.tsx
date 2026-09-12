@@ -40,15 +40,33 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
   const url = typeof window !== "undefined" && shareToken ? `${window.location.origin}/share/${shareToken}` : "";
   return (
     <div className="flex gap-2">
-      {canManage && <Button onClick={() => setOpen(true)}>Share with client</Button>}
-      <a href={`/api/export/${slug}`} download className="inline-flex items-center rounded-r border border-accent bg-accent px-3 py-1.5 font-medium text-accent-ink hover:brightness-95">Export</a>
+      {canManage && (
+        <Button icon="share" size="sm" onClick={() => setOpen(true)} title="Share a read-only link with the client">
+          Share
+        </Button>
+      )}
+      <Button
+        icon="download"
+        size="sm"
+        title="Download a zip of the copy, tasks and files"
+        onClick={() => {
+          // A route handler, not a page: hand it to the browser as a download.
+          const a = document.createElement("a");
+          a.href = `/api/export/${slug}`;
+          a.download = "";
+          a.click();
+        }}
+      >
+        Export
+      </Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Share with client">
         <p className="m-0 mb-3 text-ink-2">Anyone with the link can read the copy and browse the files. They cannot edit anything or see tasks.</p>
         {shareToken ? (
           <div className="flex flex-col gap-3">
             <div className="flex gap-2">
-              <input id="share-url" readOnly value={url} className="min-w-0 flex-1 rounded-r border border-line bg-surface-2 px-2.5 py-1.5 text-sm" />
+              <input id="share-url" readOnly value={url} aria-label="Share link" className="min-w-0 flex-1 rounded-r border border-line bg-surface-2 px-2.5 py-1.5 text-[13px]" />
               <Button
+                icon={copied ? "check" : "copy"}
                 onClick={() => {
                   navigator.clipboard
                     .writeText(url)
@@ -67,14 +85,14 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
               </span>
             </label>
             <div className="flex justify-between">
-              <Button variant="danger" disabled={pending} onClick={() => start(() => toggleShareLink(workspaceId, false))}>Turn off link</Button>
+              <Button variant="danger" icon="link" loading={pending} onClick={() => start(() => toggleShareLink(workspaceId, false))}>Turn off link</Button>
               <Button onClick={() => setOpen(false)}>Done</Button>
             </div>
           </div>
         ) : (
           <div className="flex justify-end gap-2">
             <Button onClick={() => setOpen(false)}>Cancel</Button>
-            <Button variant="primary" disabled={pending} onClick={() => start(() => toggleShareLink(workspaceId, true))}>Create link</Button>
+            <Button variant="primary" icon="link" loading={pending} onClick={() => start(() => toggleShareLink(workspaceId, true))}>Create link</Button>
           </div>
         )}
       </Dialog>

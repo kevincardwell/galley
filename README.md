@@ -9,6 +9,8 @@ A galley proof is the first typeset pull of a page, laid out so the words can be
 - **Copy**: pages of ordered sections in a clean rich-text editor with draft → review → approved, version history with word-level diffs, comments, and one-click copy as Markdown or HTML.
 - **Live collaboration**: several people can edit the same section at once with visible cursors. No websocket server or extra port needed.
 - **Assets**: drag-and-drop images, video and PDFs with thumbnails, palettes, tags, folders, and links to the task or copy section they belong to.
+- **Calendar**: month, week and agenda views of task deadlines and schedule items, drag to reschedule, and a subscribable feed for Google or Apple Calendar.
+- **Suppliers**: a shared directory of the printers, photographers and freelancers you use, linked into the projects that book them with status, cost and notes.
 - **Invite only**: no public sign-up. The first account is the admin; everyone else is invited and sees only the workspaces they are added to.
 - **Client share link**: a read-only view of copy and files for the client, revocable at any time. Turn on review mode and the client can comment and approve sections without an account.
 - **Notifications**: an in-app inbox for mentions, assignments and client feedback, with email when SMTP is set up.

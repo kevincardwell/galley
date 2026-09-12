@@ -3,8 +3,10 @@ import { useEffect, useRef, useState, useTransition, type KeyboardEvent } from "
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clsx } from "@/lib/clsx";
+import { Icon, IconButton } from "@/components/ui/icon";
+import { Meter } from "@/components/ui/meter";
 import { createPage, createSection, deletePage, deleteSection, renamePage, renameSection } from "@/actions/copy";
-import { pageTone, statusTone, type PageRow, type SectionRow } from "@/lib/copy/types";
+import { STATUS_LABEL, pageTone, statusTone, type PageRow, type SectionRow } from "@/lib/copy/types";
 import { StatusDot } from "./status-dot";
 
 type Editing = { kind: "page" | "section"; id: string } | null;
@@ -21,6 +23,8 @@ type Props = {
   onSelect: (id: string) => void;
   onSectionCreated: (id: string) => void;
 };
+
+const PAGE_TONE_LABEL = { done: "All sections approved", review: "Some sections in review", draft: "Still in draft" } as const;
 
 /** Left column: every page, with the current page's sections nested under it. */
 export function Outline({ slug, workspaceId, pages, currentPageId, sections, activeId, readOnly, onSelect, onSectionCreated }: Props) {
@@ -78,8 +82,9 @@ export function Outline({ slug, workspaceId, pages, currentPageId, sections, act
       <ul className="m-0 list-none p-0">
         {pages.map((p) => {
           const current = p.id === currentPageId;
+          const tone = pageTone(p.counts);
           return (
-            <li key={p.id}>
+            <li key={p.id} className="mb-0.5">
               {editing?.kind === "page" && editing.id === p.id ? (
                 <InlineInput
                   defaultValue={p.title}
@@ -95,47 +100,78 @@ export function Outline({ slug, workspaceId, pages, currentPageId, sections, act
                     e.preventDefault();
                     setEditing({ kind: "page", id: p.id });
                   }}
-                  className={clsx("flex items-center justify-between gap-2 rounded-r px-2 py-[5px] transition-colors", current ? "bg-accent-soft text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink")}
+                  className={clsx(
+                    "flex cursor-pointer flex-col gap-1 rounded-r px-2 py-1.5 transition-colors duration-150 ease-out",
+                    current ? "bg-accent-soft text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+                  )}
                   aria-current={current ? "page" : undefined}
                   title={readOnly ? undefined : "Double-click to rename"}
                 >
-                  <span className="truncate">{p.title}</span>
-                  <StatusDot tone={pageTone(p.counts)} />
+                  <span className="flex items-center gap-2">
+                    <Icon name="text" size={14} className={current ? "text-accent" : "text-ink-3"} />
+                    <span className="min-w-0 flex-1 truncate">{p.title}</span>
+                    <StatusDot tone={tone} title={PAGE_TONE_LABEL[tone]} />
+                  </span>
+                  {p.counts.total > 0 && (
+                    <div className="flex items-center gap-1.5 pl-[22px]">
+                      <Meter
+                        value={p.counts.approved}
+                        max={p.counts.total}
+                        tone={p.counts.approved === p.counts.total ? "done" : "accent"}
+                        label={`${p.title}: ${p.counts.approved} of ${p.counts.total} sections approved`}
+                        className="min-w-0 flex-1"
+                        height={3}
+                      />
+                      <span className="tnum text-[11px] text-ink-3">{p.counts.approved}/{p.counts.total}</span>
+                    </div>
+                  )}
                 </Link>
               )}
               {current && (
-                <ul className="mb-1 ml-3 mt-0.5 list-none border-l border-line-2 p-0">
-                  {sections.map((s) => (
-                    <li key={s.id}>
-                      {editing?.kind === "section" && editing.id === s.id ? (
-                        <InlineInput
-                          small
-                          defaultValue={s.title}
-                          onCommit={(v) => commitRename("section", s.id, v, s.title)}
-                          onCancel={() => setEditing(null)}
-                          onDelete={() => remove("section", s.id, s.title)}
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => onSelect(s.id)}
-                          onDoubleClick={() => !readOnly && setEditing({ kind: "section", id: s.id })}
-                          className={clsx("flex w-full items-center justify-between gap-2 rounded-r px-2 py-[3px] text-left text-[13px] transition-colors", s.id === activeId ? "bg-accent-soft text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink")}
-                          aria-current={s.id === activeId ? "true" : undefined}
-                        >
-                          <span className="truncate">{s.title}</span>
-                          <StatusDot tone={statusTone(s.status)} />
-                        </button>
-                      )}
-                    </li>
-                  ))}
+                <ul className="mt-1 mb-1 ml-3 list-none border-l border-line-2 p-0">
+                  {sections.map((s) => {
+                    const active = s.id === activeId;
+                    return (
+                      <li key={s.id}>
+                        {editing?.kind === "section" && editing.id === s.id ? (
+                          <InlineInput
+                            small
+                            defaultValue={s.title}
+                            onCommit={(v) => commitRename("section", s.id, v, s.title)}
+                            onCancel={() => setEditing(null)}
+                            onDelete={() => remove("section", s.id, s.title)}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onSelect(s.id)}
+                            onDoubleClick={() => !readOnly && setEditing({ kind: "section", id: s.id })}
+                            className={clsx(
+                              "-ml-px flex w-full cursor-pointer items-center justify-between gap-2 rounded-r border-l-2 px-2 py-1 text-left text-[13px] transition-colors duration-150 ease-out",
+                              active ? "border-accent bg-accent-soft font-medium text-ink" : "border-transparent text-ink-2 hover:bg-surface-2 hover:text-ink",
+                            )}
+                            aria-current={active ? "true" : undefined}
+                          >
+                            <span className="truncate">{s.title}</span>
+                            <StatusDot tone={statusTone(s.status)} title={STATUS_LABEL[s.status]} />
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
                   {!readOnly && (
                     <li>
                       {adding === "section" ? (
                         <InlineInput small placeholder="Section title" onCommit={(v) => commitAdd("section", v)} onCancel={() => setAdding(null)} />
                       ) : (
-                        <button type="button" disabled={pending} onClick={() => setAdding("section")} className="w-full rounded-r px-2 py-[3px] text-left text-[13px] text-ink-3 hover:bg-surface-2 hover:text-ink">
-                          + Add section
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => setAdding("section")}
+                          className="ml-0.5 flex w-full cursor-pointer items-center gap-1.5 rounded-r px-2 py-1 text-left text-[13px] text-ink-3 transition-colors duration-150 ease-out hover:bg-surface-2 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Icon name="plus" size={13} />
+                          Add section
                         </button>
                       )}
                     </li>
@@ -151,8 +187,14 @@ export function Outline({ slug, workspaceId, pages, currentPageId, sections, act
           {adding === "page" ? (
             <InlineInput placeholder="Page title" onCommit={(v) => commitAdd("page", v)} onCancel={() => setAdding(null)} />
           ) : (
-            <button type="button" disabled={pending} onClick={() => setAdding("page")} className="w-full rounded-r px-2 py-[5px] text-left text-ink-3 hover:bg-surface-2 hover:text-ink">
-              + Add page
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setAdding("page")}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-r px-2 py-1.5 text-left text-ink-3 transition-colors duration-150 ease-out hover:bg-surface-2 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Icon name="plus" size={14} />
+              Add page
             </button>
           )}
         </div>
@@ -200,13 +242,11 @@ function InlineInput({
         placeholder={placeholder}
         onKeyDown={onKey}
         onBlur={() => setTimeout(() => finish(true), 0)}
-        className={clsx("min-w-0 flex-1 rounded-r border border-accent-line bg-surface px-1.5 py-0.5 text-ink outline-none", small && "text-[13px]")}
+        className={clsx("min-w-0 flex-1 rounded-r border border-accent-line bg-surface px-1.5 py-0.5 text-ink outline-none focus:ring-2 focus:ring-accent", small && "text-[13px]")}
         aria-label={placeholder ?? "Rename"}
       />
       {onDelete && (
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onDelete} title="Delete" aria-label="Delete" className="grid size-6 shrink-0 place-items-center rounded-r text-ink-3 hover:bg-late-soft hover:text-late">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 2l8 8M10 2l-8 8" /></svg>
-        </button>
+        <IconButton name="trash" size={13} tone="danger" label="Delete" title="Delete" onMouseDown={(e) => e.preventDefault()} onClick={onDelete} />
       )}
     </div>
   );

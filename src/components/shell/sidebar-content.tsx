@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { User } from "@/db/schema";
 import { listWorkspacesFor } from "@/lib/queries/workspaces";
 import { Avatar } from "@/components/ui/avatar";
+import { IconButton } from "@/components/ui/icon";
 import { logoutAction } from "@/actions/auth";
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationBell } from "@/components/notifications/bell";
@@ -17,33 +18,37 @@ export function SidebarContent({ user }: { user: User }) {
   const workspaces = listWorkspacesFor(user).map((w) => ({ id: w.ws.id, slug: w.ws.slug, name: w.ws.name, accent: w.ws.accent, open: w.openTasks }));
   return (
     <>
-      <Link href="/" className="flex items-center gap-2 px-2 py-1 font-semibold tracking-tight">
+      <Link
+        href="/"
+        className="flex cursor-pointer items-center gap-2 rounded-r px-2 py-1 font-semibold tracking-tight transition-colors duration-150 ease-out hover:text-ink"
+      >
         <span className="relative inline-block size-[18px] rounded bg-ink after:absolute after:inset-[5px] after:border-b-2 after:border-l-2 after:border-surface" />
         Galley
       </Link>
+
       <SidebarNav workspaces={workspaces} isAdmin={user.isAdmin} />
-      <div className="mt-auto flex items-center gap-2 px-2 pt-1.5 pb-8 text-ink-2">
-        <Avatar name={user.name} />
-        <span className="min-w-0 flex-1 leading-tight">
-          <Link href="/me/account" className="block truncate text-ink hover:underline" title="Account settings">{user.name}</Link>
-          <span className="block text-xs text-ink-3">{user.isAdmin ? "Admin" : "Member"}</span>
-        </span>
-        <NotificationBell unread={unreadCountFor(user.id)} />
-        <ThemeToggle />
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            aria-label="Sign out"
-            title="Sign out"
-            className="grid size-6 place-items-center rounded text-ink-3 hover:bg-surface hover:text-ink"
+
+      <div className="mt-auto flex flex-col gap-1 px-1 pt-2 pb-14">
+        <div className="flex items-center gap-1.5">
+          <Link
+            href="/me/account"
+            title="Account settings"
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-r px-1 py-1 transition-colors duration-150 ease-out hover:bg-surface"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M6 2.5H3.5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1H6" />
-              <path d="M10.5 11 13.5 8l-3-3" />
-              <path d="M13.5 8H6.5" />
-            </svg>
-          </button>
-        </form>
+            <Avatar name={user.name} size={26} />
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block truncate text-[13px] font-medium text-ink">{user.name}</span>
+              <span className="block truncate text-xs text-ink-3">{user.isAdmin ? "Admin" : "Member"}</span>
+            </span>
+          </Link>
+          <NotificationBell unread={unreadCountFor(user.id)} />
+        </div>
+        <div className="flex items-center gap-0.5 border-t border-line-2 px-1 pt-1.5">
+          <ThemeToggle />
+          <form action={logoutAction}>
+            <IconButton type="submit" name="logout" label="Sign out" className="hover:bg-surface" />
+          </form>
+        </div>
       </div>
     </>
   );

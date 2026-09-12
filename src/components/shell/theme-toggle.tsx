@@ -1,5 +1,7 @@
 "use client";
 import { useSyncExternalStore } from "react";
+import { IconButton } from "@/components/ui/icon";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const KEY = "galley-theme";
 const listeners = new Set<() => void>();
@@ -11,12 +13,22 @@ function write(next: string) {
 }
 const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
 
+const NAME: Record<string, string> = { "": "system", dark: "dark", light: "light" };
+
+/** Cycles system → dark → light. The tooltip always names the mode you are in now. */
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribe, read, () => "");
   const next = theme === "" ? "dark" : theme === "dark" ? "light" : "";
+  const label = `Theme: ${NAME[theme] ?? "system"}`;
   return (
-    <button onClick={() => write(next)} className="rounded px-1.5 py-1 text-xs text-ink-3 hover:bg-surface hover:text-ink" title={`Theme: ${theme || "system"}`}>
-      {theme === "dark" ? "Dark" : theme === "light" ? "Light" : "Auto"}
-    </button>
+    <Tooltip label={`${label} — switch to ${NAME[next] ?? "system"}`}>
+      <IconButton
+        name={theme === "dark" ? "moon" : "sun"}
+        label={label}
+        title={undefined}
+        onClick={() => write(next)}
+        className="hover:bg-surface"
+      />
+    </Tooltip>
   );
 }

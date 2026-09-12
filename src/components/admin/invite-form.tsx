@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/field";
+import { Icon } from "@/components/ui/icon";
 import { createInvite, createUser, setMembership } from "@/actions/admin";
 import type { WorkspaceRole } from "@/db/schema";
 import type { WorkspaceOption } from "@/lib/queries/admin";
@@ -66,13 +67,13 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
           <input id={id("admin")} type="checkbox" checked={isAdmin} onChange={(e) => setIsAdmin(e.target.checked)} className="accent-accent" />
           Make instance admin
         </label>
-        <Button type="submit" variant="primary" className="mt-1" disabled={busy}>{invite.pending ? "Creating…" : "Create invite link"}</Button>
+        <Button type="submit" variant="primary" icon="mail" className="mt-1" loading={invite.pending} disabled={busy}>{invite.pending ? "Creating…" : "Create invite link"}</Button>
         <InlineError>{invite.error}</InlineError>
         {link ? (
           <div className="flex flex-col gap-2">
-            {link.emailed && <p role="status" className="m-0 text-sm text-done">Invite emailed to {link.to}</p>}
+            {link.emailed && <p role="status" className="m-0 flex items-center gap-1.5 text-sm text-done"><Icon name="check-circle" size={14} />Invite emailed to {link.to}</p>}
             <div className="flex gap-2">
-              <input id={id("link")} readOnly value={link.url} onFocus={(e) => e.currentTarget.select()} className="min-w-0 flex-1 rounded-r border border-line bg-surface px-2.5 py-1.5 text-sm" />
+              <input id={id("link")} readOnly value={link.url} onFocus={(e) => e.currentTarget.select()} aria-label="Invite link" className="min-w-0 flex-1 rounded-r border border-line bg-surface px-2.5 py-1.5 text-sm text-ink-2 focus:ring-2 focus:ring-accent focus:outline-none" />
               <CopyButton value={link.url} />
             </div>
             <Hint small>{link.emailed ? "You can also paste this link to them directly." : "No email was sent (SMTP is not set up). Paste this link to them."}</Hint>
@@ -84,8 +85,9 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
       </form>
 
       <details className="group border-t border-line-2 pt-3">
-        <summary className="cursor-pointer list-none text-sm text-ink-2 hover:text-ink">
-          <span className="mr-1.5 inline-block transition-transform duration-150 ease-out group-open:rotate-90">›</span>Or set a password now
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm text-ink-2 transition-colors duration-150 hover:text-ink">
+          <Icon name="chevron-right" size={14} className="transition-transform duration-150 ease-out group-open:rotate-90" />
+          Or set a password now
         </summary>
         <form
           className="mt-2.5 flex flex-col gap-2.5"
@@ -109,9 +111,9 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
         >
           <Hint small>Uses the name, email, workspace and role above. Tell them the password yourself.</Hint>
           <Label htmlFor={id("password")}>Password<Input id={id("password")} type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" /></Label>
-          <Button type="submit" disabled={busy}>{account.pending ? "Creating…" : "Create account"}</Button>
+          <Button type="submit" icon="key" loading={account.pending} disabled={busy}>{account.pending ? "Creating…" : "Create account"}</Button>
           <InlineError>{account.error}</InlineError>
-          {created && <p className="m-0 text-sm text-done">{created}</p>}
+          {created && <p role="status" className="m-0 flex items-start gap-1.5 text-sm text-done"><Icon name="check-circle" size={14} className="mt-0.5" />{created}</p>}
         </form>
       </details>
     </div>

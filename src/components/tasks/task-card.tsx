@@ -28,8 +28,8 @@ function CardContent({ task, highlighted, open, placeholder, overlay }: CardProp
       <div className="flex items-start gap-2">
         <TaskCheckbox className="mt-0.5" done={done} disabled={!board.canEdit || isTempId(task.id)} label={done ? `Reopen ${task.title}` : `Complete ${task.title}`} onToggle={() => board.toggleDone(task.id)} />
         <span className="min-w-0 flex-1">
-          <span className={clsx("block leading-snug", done && "text-ink-3 line-through decoration-ink-3/60")}>{task.title}</span>
-          {subtitle && <span className={clsx("mt-0.5 block truncate text-xs", done ? "text-ink-3/70" : "text-ink-3")}>{subtitle}</span>}
+          <span className={clsx("block font-medium leading-snug", done ? "text-ink-3 line-through decoration-ink-3/60" : "text-ink")}>{task.title}</span>
+          {subtitle && <span className={clsx("mt-0.5 block truncate text-[13px]", done ? "text-ink-3/70" : "text-ink-3")}>{subtitle}</span>}
         </span>
       </div>
       <TaskMeta task={task} className="justify-end" />

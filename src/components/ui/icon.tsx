@@ -1,7 +1,7 @@
 import {
   Activity, AlertCircle, Archive, ArrowLeft, ArrowRight, ArrowUpRight, Bell, Building2, CalendarDays, Check, CheckCircle2,
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, Clock, Copy, Database, Download, ExternalLink, Eye, File,
-  FileText, Filter, Folder, FolderOpen, Globe, GripVertical, Hash, HardDrive, Inbox, Image as ImageIcon, Info, KeyRound,
+  FileText, Filter, Folder, FolderOpen, Globe, GripVertical, Hash, HardDrive, House, Inbox, Image as ImageIcon, Info, KeyRound,
   LayoutGrid, Link2, List, ListChecks, LoaderCircle, LogOut, Mail, MapPin, Menu, MessageSquare, Moon, MoreHorizontal,
   Paperclip, Pencil, Phone, Play, Plus, RefreshCw, Rows3, Search, Settings, Share2, Shield, SlidersHorizontal, Sparkles,
   Star, Sun, Tag, Trash2, TriangleAlert, Undo2, Upload, User, Users, X, Zap,
@@ -15,7 +15,7 @@ export const icons = {
   "check-circle": CheckCircle2, "chevron-down": ChevronDown, "chevron-left": ChevronLeft, "chevron-right": ChevronRight,
   "chevron-up": ChevronUp, clock: Clock, copy: Copy, database: Database, dot: CircleDot, download: Download,
   external: ExternalLink, eye: Eye, file: File, filter: Filter, folder: Folder, "folder-open": FolderOpen, globe: Globe,
-  grip: GripVertical, hash: Hash, image: ImageIcon, inbox: Inbox, info: Info, key: KeyRound, link: Link2, list: List,
+  grip: GripVertical, hash: Hash, home: House, image: ImageIcon, inbox: Inbox, info: Info, key: KeyRound, link: Link2, list: List,
   checklist: ListChecks, spinner: LoaderCircle, logout: LogOut, mail: Mail, menu: Menu, message: MessageSquare,
   moon: Moon, more: MoreHorizontal, paperclip: Paperclip, pencil: Pencil, phone: Phone, pin: MapPin, play: Play,
   plus: Plus, refresh: RefreshCw, rows: Rows3, search: Search, settings: Settings, share: Share2, shield: Shield,

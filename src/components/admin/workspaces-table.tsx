@@ -5,11 +5,13 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/field";
+import { Icon, IconButton } from "@/components/ui/icon";
 import { Pill } from "@/components/ui/pill";
+import { Tooltip } from "@/components/ui/tooltip";
 import { archiveWorkspace, deleteWorkspace, removeMembership, setMembership } from "@/actions/admin";
 import type { AdminWorkspace, PersonOption } from "@/lib/queries/admin";
 import { formatBytes, timeAgo } from "@/lib/format";
-import { InlineError, STATUS_LABEL, Table, Td, Th, WsDot } from "./bits";
+import { InlineError, RowActions, STATUS_LABEL, Table, Td, Th, Tr, WsDot } from "./bits";
 import { MembershipEditor } from "./membership-editor";
 import { useAdminAction } from "./use-action";
 
@@ -25,13 +27,13 @@ export function WorkspacesTable({ workspaces, people, selfId }: { workspaces: Ad
     <>
       <Table>
         <thead>
-          <tr><Th>Workspace</Th><Th>Client</Th><Th>Status</Th><Th>Members</Th><Th className="text-right">Open tasks</Th><Th className="text-right">Storage</Th><Th>Created</Th><Th> </Th></tr>
+          <tr><Th>Workspace</Th><Th>Client</Th><Th>Status</Th><Th>Members</Th><Th num>Open tasks</Th><Th num>Storage</Th><Th>Created</Th><Th num><span className="sr-only">Actions</span></Th></tr>
         </thead>
         <tbody>
           {workspaces.map((w) => (
-            <tr key={w.id} className={w.archivedAt ? "text-ink-3" : undefined}>
+            <Tr key={w.id} muted={!!w.archivedAt}>
               <Td>
-                <Link href={`/w/${w.slug}`} className="flex items-center gap-2 font-medium hover:underline" style={{ ["--accent" as string]: w.accent }}>
+                <Link href={`/w/${w.slug}`} className="flex cursor-pointer items-center gap-2 font-medium hover:underline" style={{ ["--accent" as string]: w.accent }}>
                   <WsDot accent={w.accent} />{w.name}
                 </Link>
               </Td>
@@ -47,11 +49,17 @@ export function WorkspacesTable({ workspaces, people, selfId }: { workspaces: Ad
                   <span className="tnum text-ink-2">{w.members.length}</span>
                 </span>
               </Td>
-              <Td className="text-right">{w.openTasks}</Td>
-              <Td className="text-right text-ink-2">{formatBytes(w.bytes)}</Td>
+              <Td num>{w.openTasks}</Td>
+              <Td num className="text-ink-2">{formatBytes(w.bytes)}</Td>
               <Td className="whitespace-nowrap text-ink-2">{timeAgo(w.createdAt)}</Td>
-              <Td className="whitespace-nowrap text-right"><Button size="sm" variant="ghost" onClick={() => setOpenId(w.id)}>Manage</Button></Td>
-            </tr>
+              <Td num>
+                <RowActions>
+                  <Tooltip label={`Manage ${w.name}`}>
+                    <IconButton name="sliders" label={`Manage ${w.name}`} title="" onClick={() => setOpenId(w.id)} />
+                  </Tooltip>
+                </RowActions>
+              </Td>
+            </Tr>
           ))}
         </tbody>
       </Table>
@@ -80,7 +88,7 @@ function WorkspaceBody({ ws, people, selfId, onClose }: { ws: AdminWorkspace; pe
       </div>
 
       <section className="border-t border-line-2 pt-4">
-        <h3 className="m-0 mb-2 text-xs font-medium text-ink-3">Members</h3>
+        <h3 className="m-0 mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-3"><Icon name="users" size={13} />Members</h3>
         <MembershipEditor
           rows={ws.members.map((m) => ({ id: m.userId, label: m.name, sub: m.email, lead: <Avatar name={m.name} muted={m.userId !== selfId} />, role: m.role }))}
           options={people.map((p) => ({ id: p.id, label: `${p.name} (${p.email})` }))}
@@ -92,12 +100,12 @@ function WorkspaceBody({ ws, people, selfId, onClose }: { ws: AdminWorkspace; pe
       </section>
 
       <section className="border-t border-line-2 pt-4">
-        <h3 className="m-0 mb-2 text-xs font-medium text-ink-3">Archive or delete</h3>
+        <h3 className="m-0 mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-3"><Icon name="archive" size={13} />Archive or delete</h3>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" disabled={archive.pending} onClick={() => archive.run(() => archiveWorkspace(ws.id, !archived))}>
+          <Button size="sm" icon={archived ? "undo" : "archive"} loading={archive.pending} onClick={() => archive.run(() => archiveWorkspace(ws.id, !archived))}>
             {archive.pending ? "Saving…" : archived ? "Restore workspace" : "Archive workspace"}
           </Button>
-          {!confirmDelete && <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>Delete workspace</Button>}
+          {!confirmDelete && <Button size="sm" variant="danger" icon="trash" onClick={() => setConfirmDelete(true)}>Delete workspace</Button>}
         </div>
         <p className="mb-0 mt-2 text-xs text-ink-3">Archiving hides it from the list and keeps everything. Deleting removes tasks, copy and every uploaded file for good.</p>
         <InlineError>{archive.error}</InlineError>
@@ -113,7 +121,7 @@ function WorkspaceBody({ ws, people, selfId, onClose }: { ws: AdminWorkspace; pe
             <Input id="wd-del" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" />
             <div className="flex justify-end gap-2">
               <Button size="sm" type="button" onClick={() => setConfirmDelete(false)}>Keep it</Button>
-              <Button size="sm" type="submit" variant="danger" disabled={typed !== ws.name || del.pending}>{del.pending ? "Deleting…" : "Delete for good"}</Button>
+              <Button size="sm" type="submit" variant="danger" icon="trash" loading={del.pending} disabled={typed !== ws.name}>{del.pending ? "Deleting…" : "Delete for good"}</Button>
             </div>
             <InlineError>{del.error}</InlineError>
           </form>

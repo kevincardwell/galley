@@ -9,10 +9,10 @@ export default async function AdminWorkspacesPage() {
   const workspaces = await listAdminWorkspaces();
   const people = listPersonOptions();
   return (
-    <div className="overflow-auto px-6 pb-8 pt-5">
-      <div className="mb-3.5"><Hint>Every workspace on this instance, including archived ones. Add or remove members and set their role from Manage.</Hint></div>
+    <div className="overflow-auto px-4 pt-4 pb-8 sm:px-6 sm:pt-5">
+      <div className="mb-4"><Hint>Every workspace on this instance, including archived ones. Add or remove members and set their role from the manage button on each row.</Hint></div>
       {workspaces.length === 0 ? (
-        <Empty title="No workspaces yet" hint="Create one from the Workspaces home page." />
+        <Empty icon="folder" title="No workspaces yet" hint="Create one from the Workspaces home page." />
       ) : (
         <WorkspacesTable workspaces={workspaces} people={people} selfId={user.id} />
       )}

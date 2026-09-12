@@ -2,6 +2,7 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/field";
+import { IconButton } from "@/components/ui/icon";
 import type { Result } from "@/actions/admin";
 import type { WorkspaceRole } from "@/db/schema";
 import { InlineError } from "./bits";
@@ -46,14 +47,21 @@ export function MembershipEditor({ rows, options, addLabel, emptyText, onSet, on
       ) : (
         <ul className="m-0 list-none divide-y divide-line-2 border-y border-line-2 p-0">
           {rows.map((r) => (
-            <li key={r.id} className="flex items-center gap-2.5 py-2">
+            <li key={r.id} className="group flex items-center gap-2.5 py-2">
               {r.lead}
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{r.label}</span>
                 {r.sub && <span className="block truncate text-xs text-ink-3">{r.sub}</span>}
               </span>
               <RoleSelect value={r.role} disabled={pending} onChange={(next) => run(() => onSet(r.id, next))} />
-              <Button size="sm" variant="ghost" disabled={pending || r.id === lockedId} onClick={() => run(() => onRemove(r.id))}>Remove</Button>
+              <IconButton
+                name="trash"
+                tone="danger"
+                label={`Remove ${r.label}`}
+                disabled={pending || r.id === lockedId}
+                onClick={() => run(() => onRemove(r.id))}
+                className="opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 max-sm:opacity-100"
+              />
             </li>
           ))}
         </ul>
@@ -64,7 +72,7 @@ export function MembershipEditor({ rows, options, addLabel, emptyText, onSet, on
             {candidates.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </Select>
           <RoleSelect value={role} disabled={pending} onChange={setRole} />
-          <Button size="sm" disabled={pending || !chosen} onClick={() => run(() => onSet(chosen, role), () => setPick(""))}>{addLabel}</Button>
+          <Button size="sm" icon="plus" disabled={pending || !chosen} onClick={() => run(() => onSet(chosen, role), () => setPick(""))}>{addLabel}</Button>
         </div>
       )}
       <InlineError>{error}</InlineError>

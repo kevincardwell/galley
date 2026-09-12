@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth/current";
 import { instanceStats, listWorkspaceOptions } from "@/lib/queries/admin";
 import { formatBytes } from "@/lib/format";
+import { Stat } from "@/components/ui/stat";
 import { AdminTabs } from "@/components/admin/tabs";
 import { AdminHeaderActions } from "@/components/admin/header-actions";
 
@@ -10,16 +11,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const workspaces = listWorkspaceOptions();
   return (
     <div className="flex min-h-full flex-col">
-      <header className="border-b border-line bg-surface px-6 pt-4">
-        <div className="flex flex-wrap items-start gap-3.5">
+      <header className="border-b border-line bg-surface px-4 pt-4 sm:px-6">
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
           <div className="min-w-0">
-            <h1 className="m-0 text-xl font-semibold tracking-tight">Admin</h1>
-            <div className="mt-0.5 flex flex-wrap gap-3.5 text-ink-2">
-              <span>{stats.instanceName}</span>
-              <span className="tnum">{stats.people} {stats.people === 1 ? "person" : "people"}</span>
-              <span className="tnum">{stats.workspaces} {stats.workspaces === 1 ? "workspace" : "workspaces"}</span>
-              <span className="tnum">{formatBytes(stats.bytes)} used</span>
-            </div>
+            <p className="m-0 mb-0.5 text-xs font-medium text-ink-3">{stats.instanceName}</p>
+            <h1 className="m-0 text-[22px] leading-tight font-semibold tracking-tight">Admin</h1>
+          </div>
+          <div className="flex flex-wrap items-start gap-x-7 gap-y-3">
+            <Stat icon="users" label="People" value={stats.people} />
+            <Stat icon="folder" label="Workspaces" value={stats.workspaces} />
+            <Stat icon="storage" label="Storage used" value={formatBytes(stats.bytes)} />
           </div>
           <div className="ml-auto"><AdminHeaderActions workspaces={workspaces} /></div>
         </div>

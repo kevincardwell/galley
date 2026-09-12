@@ -5,6 +5,9 @@ import { formatBytes } from "@/lib/format";
 import { Hint, WsDot } from "@/components/admin/bits";
 import { SweepButton } from "@/components/admin/sweep-button";
 import { Empty } from "@/components/ui/empty";
+import { Meter } from "@/components/ui/meter";
+import { Section } from "@/components/ui/page";
+import { Stat } from "@/components/ui/stat";
 
 export default async function AdminStoragePage() {
   await requireAdmin();
@@ -14,43 +17,48 @@ export default async function AdminStoragePage() {
   const accounted = rows.reduce((n, w) => n + w.bytes, 0);
   const unaccounted = Math.max(0, total - accounted);
   return (
-    <div className="grid max-w-3xl gap-8 overflow-auto px-6 pb-8 pt-5">
-      <section>
-        <h2 className="m-0 mb-1 text-sm font-semibold">Total used</h2>
-        <p className="tnum m-0 text-2xl font-semibold tracking-tight">{formatBytes(total)}</p>
-        <Hint small>Uploaded originals plus generated thumbnails, previews and posters on this volume.</Hint>
+    <div className="grid max-w-3xl gap-8 overflow-auto px-4 pt-4 pb-8 sm:px-6 sm:pt-5">
+      <section className="rounded-lg border border-line bg-surface p-4">
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+          <Stat icon="storage" label="Total used" value={formatBytes(total)} />
+          <Stat icon="folder" label="Workspaces with files" value={rows.length} />
+          {unaccounted > 0 && <Stat icon="info" label="Not linked to a workspace" value={formatBytes(unaccounted)} />}
+        </div>
+        <div className="mt-3 border-t border-line-2 pt-3">
+          <Hint small>Uploaded originals plus generated thumbnails, previews and posters on this volume.</Hint>
+        </div>
       </section>
 
-      <section>
-        <h2 className="m-0 mb-3 text-sm font-semibold">By workspace</h2>
+      <Section title="By workspace">
         {rows.length === 0 ? (
-          <Empty title="Nothing uploaded yet" hint="Storage shows up here once someone adds files to a workspace." />
+          <Empty icon="storage" title="Nothing uploaded yet" hint="Storage shows up here once someone adds files to a workspace." />
         ) : (
-          <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+          <ul className="m-0 flex list-none flex-col gap-3 p-0">
             {rows.map((w) => (
-              <li key={w.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
-                <span className="flex min-w-0 items-center gap-2"><WsDot accent={w.accent} /><span className="truncate">{w.name}</span>{w.archivedAt && <span className="text-xs text-ink-3">archived</span>}</span>
-                <span className="tnum text-right text-ink-2">{formatBytes(w.bytes)}</span>
-                <span className="col-span-2 h-1.5 overflow-hidden rounded-full bg-surface-2" role="meter" aria-valuemin={0} aria-valuemax={total || 1} aria-valuenow={w.bytes} aria-label={`${w.name} storage`}>
-                  <span className="block h-full rounded-full transition-[width] duration-150 ease-out" style={{ width: `${Math.max(1, (w.bytes / max) * 100)}%`, background: w.accent }} />
+              <li key={w.id} className="flex flex-col gap-1.5" style={{ ["--accent" as string]: w.accent }}>
+                <span className="flex items-baseline gap-2 text-[13px]">
+                  <WsDot accent={w.accent} className="self-center" />
+                  <span className="min-w-0 truncate font-medium">{w.name}</span>
+                  {w.archivedAt && <span className="shrink-0 text-xs text-ink-3">archived</span>}
+                  <span className="tnum ml-auto shrink-0 text-ink-2">{formatBytes(w.bytes)}</span>
                 </span>
+                <Meter value={w.bytes} max={max} label={`${w.name} storage`} height={6} />
               </li>
             ))}
             {unaccounted > 0 && (
-              <li className="flex items-center justify-between gap-3 text-ink-3">
+              <li className="flex items-baseline gap-2 border-t border-line-2 pt-3 text-[13px] text-ink-3">
                 <span>Not linked to a workspace</span>
-                <span className="tnum">{formatBytes(unaccounted)}</span>
+                <span className="tnum ml-auto">{formatBytes(unaccounted)}</span>
               </li>
             )}
           </ul>
         )}
-      </section>
+      </Section>
 
-      <section>
-        <h2 className="m-0 mb-1 text-sm font-semibold">Orphaned files</h2>
-        <p className="m-0 mb-3 text-ink-2">Folders on disk that no longer match an asset, usually left over from a failed upload or a deleted workspace. Sweeping removes them.</p>
+      <Section title="Orphaned files">
+        <Hint>Folders on disk that no longer match an asset, usually left over from a failed upload or a deleted workspace. Sweeping removes them.</Hint>
         <SweepButton />
-      </section>
+      </Section>
     </div>
   );
 }

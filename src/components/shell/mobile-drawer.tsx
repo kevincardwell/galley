@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clsx } from "@/lib/clsx";
+import { Icon, IconButton } from "@/components/ui/icon";
 import { useCommandPalette } from "./command-palette";
 
 /**
@@ -32,26 +33,28 @@ export function MobileDrawer({ children }: { children: React.ReactNode }) {
   return (
     <div className="md:hidden">
       <div className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-line bg-surface-2 px-3">
-        <button
-          type="button"
+        <IconButton
+          name="menu"
+          label="Menu"
+          size={18}
           onClick={() => setOpen(true)}
           aria-expanded={open}
           aria-controls="mobile-drawer"
-          className="rounded-r border border-line bg-surface px-2.5 py-1 text-[13px] font-medium text-ink-2 hover:text-ink"
-        >
-          Menu
-        </button>
-        <Link href="/" className="flex items-center gap-2 px-1 font-semibold tracking-tight">
+          className="size-9 border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink"
+        />
+        <Link href="/" className="flex cursor-pointer items-center gap-2 px-1 font-semibold tracking-tight">
           <span className="relative inline-block size-[18px] rounded bg-ink after:absolute after:inset-[5px] after:border-b-2 after:border-l-2 after:border-surface" />
           Galley
         </Link>
         <button
           type="button"
           onClick={openPalette}
-          aria-label="Jump to"
-          className="ml-auto flex items-center gap-1.5 rounded-r border border-line bg-surface px-2.5 py-1 text-[13px] text-ink-3 hover:text-ink"
+          aria-keyshortcuts="Meta+K Control+K"
+          className="ml-auto flex h-9 cursor-pointer items-center gap-1.5 rounded-r border border-line bg-surface px-2.5 text-[13px] text-ink-3 transition-colors duration-150 ease-out hover:border-ink-3 hover:text-ink-2"
         >
-          <span>Jump to…</span><kbd className="text-xs">⌘K</kbd>
+          <Icon name="search" size={15} />
+          <span>Search</span>
+          <kbd className="tnum text-xs">⌘K</kbd>
         </button>
       </div>
 
@@ -72,18 +75,16 @@ export function MobileDrawer({ children }: { children: React.ReactNode }) {
         aria-label="Navigation"
         aria-hidden={!open}
         className={clsx(
-          "fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-5 overflow-y-auto border-r border-line bg-surface-2 px-2.5 py-3.5 transition-transform duration-150 ease-out",
+          "fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-5 overflow-y-auto border-r border-line bg-surface-2 px-2.5 py-3.5 shadow-panel transition-transform duration-150 ease-out",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <button
-          type="button"
+        <IconButton
+          name="x"
+          label="Close menu"
           onClick={() => setOpen(false)}
-          aria-label="Close menu"
-          className="absolute right-2 top-2.5 grid size-7 place-items-center rounded text-ink-3 hover:bg-surface hover:text-ink"
-        >
-          ×
-        </button>
+          className="absolute top-2.5 right-2 hover:bg-surface"
+        />
         {children}
       </div>
     </div>

@@ -2,10 +2,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { clsx } from "@/lib/clsx";
+import { Icon } from "@/components/ui/icon";
 import { useBoard, isTempId } from "./board-context";
 import { TaskCheckbox } from "./task-checkbox";
 import { TaskMeta, firstLine } from "./task-meta";
-import { GripIcon } from "./icons";
 import { splitListeners } from "./dnd";
 import type { TaskItem } from "./types";
 
@@ -31,8 +31,8 @@ function RowContent({ task, grip, highlighted, open, placeholder, overlay, class
       <span className="grid place-items-center">{grip}</span>
       <TaskCheckbox done={done} disabled={!board.canEdit || isTempId(task.id)} label={done ? `Reopen ${task.title}` : `Complete ${task.title}`} onToggle={() => board.toggleDone(task.id)} />
       <span className="min-w-0">
-        <span className={clsx("block truncate", done && "text-ink-3 line-through decoration-ink-3/60")}>{task.title}</span>
-        {subtitle && <span className={clsx("block truncate text-xs", done ? "text-ink-3/70" : "text-ink-3")}>{subtitle}</span>}
+        <span className={clsx("block truncate font-medium", done ? "text-ink-3 line-through decoration-ink-3/60" : "text-ink")}>{task.title}</span>
+        {subtitle && <span className={clsx("mt-px block truncate text-[13px]", done ? "text-ink-3/70" : "text-ink-3")}>{subtitle}</span>}
       </span>
       <TaskMeta task={task} />
     </div>
@@ -67,9 +67,10 @@ export function SortableTaskRow({ task }: { task: TaskItem }) {
               onKeyDown={onKeyDown}
               onClick={(e) => e.stopPropagation()}
               aria-label={`Move ${task.title}`}
-              className="grid size-5 cursor-grab place-items-center rounded text-ink-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
+              title="Drag to reorder"
+              className="grid size-5 cursor-grab place-items-center rounded text-ink-3 opacity-0 transition-opacity duration-150 ease-out hover:text-ink group-hover:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
             >
-              <GripIcon />
+              <Icon name="grip" size={14} />
             </button>
           )
         }
@@ -79,5 +80,5 @@ export function SortableTaskRow({ task }: { task: TaskItem }) {
 }
 
 export function TaskRowOverlay({ task }: { task: TaskItem }) {
-  return <RowContent task={task} overlay grip={<span className="grid size-5 place-items-center text-ink-3"><GripIcon /></span>} />;
+  return <RowContent task={task} overlay grip={<span className="grid size-5 place-items-center text-ink-3"><Icon name="grip" size={14} /></span>} />;
 }

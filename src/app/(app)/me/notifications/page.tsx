@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth/current";
 import { listNotifications } from "@/lib/queries/notifications";
+import { PageHeader, Screen } from "@/components/ui/page";
 import { NotificationList } from "@/components/notifications/list";
 
 export const metadata = { title: "Notifications" };
@@ -7,13 +8,16 @@ export const metadata = { title: "Notifications" };
 export default async function NotificationsPage() {
   const user = await requireUser();
   const items = listNotifications(user.id);
+  const unread = items.filter((n) => !n.readAt).length;
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-6">
-      <header className="mb-5">
-        <h1 className="m-0 text-xl font-semibold tracking-tight">Notifications</h1>
-        <p className="m-0 mt-1 text-ink-2">Mentions, assignments and client activity that involve you. Open one to go to it.</p>
-      </header>
+    <Screen width="narrow">
+      <PageHeader
+        eyebrow="You"
+        title="Notifications"
+        count={unread > 0 ? `${unread} unread` : undefined}
+        description="Mentions, assignments and client activity that involve you. Open one to go to it."
+      />
       <NotificationList items={items} />
-    </div>
+    </Screen>
   );
 }

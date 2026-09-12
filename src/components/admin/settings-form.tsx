@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
+import { Icon } from "@/components/ui/icon";
 import { saveInstanceSettings, sendTestEmail } from "@/actions/admin";
 import type { InstanceSettings } from "@/lib/settings";
 import { Hint, InlineError } from "./bits";
@@ -19,7 +20,7 @@ export function InstanceSettingsForm({ settings }: { settings: InstanceSettings 
   const [testResult, setTestResult] = useState<string | null>(null);
   return (
     <form
-      className="grid max-w-3xl gap-8"
+      className="grid max-w-3xl gap-6"
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
@@ -37,8 +38,8 @@ export function InstanceSettingsForm({ settings }: { settings: InstanceSettings 
         );
       }}
     >
-      <section>
-        <h2 className="m-0 mb-3 text-sm font-semibold">Instance</h2>
+      <section className="rounded-lg border border-line bg-surface p-4">
+        <h2 className="m-0 mb-3 flex items-center gap-2 text-sm font-semibold"><Icon name="settings" size={15} className="text-ink-3" />Instance</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <Label htmlFor="st-name">Instance name<Input id="st-name" name="instanceName" defaultValue={settings.instanceName} required maxLength={80} /></Label>
           <Label htmlFor="st-url">Base URL<Input id="st-url" name="baseUrl" defaultValue={settings.baseUrl} placeholder="https://galley.example.co.uk" inputMode="url" /></Label>
@@ -48,8 +49,8 @@ export function InstanceSettingsForm({ settings }: { settings: InstanceSettings 
         <p className="mb-0 mt-2 text-xs text-ink-3">The base URL is used for invite links. Leave it empty to use whatever address you are visiting.</p>
       </section>
 
-      <section>
-        <h2 className="m-0 mb-1 text-sm font-semibold">Email (SMTP)</h2>
+      <section className="rounded-lg border border-line bg-surface p-4">
+        <h2 className="m-0 mb-1 flex items-center gap-2 text-sm font-semibold"><Icon name="mail" size={15} className="text-ink-3" />Email (SMTP)</h2>
         <Hint small>Used for invite links and notifications. Port 465 uses TLS from the start; other ports upgrade with STARTTLS when the server offers it.</Hint>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Label htmlFor="st-host">Host<Input id="st-host" name="smtpHost" defaultValue={settings.smtp?.host ?? ""} placeholder="smtp.example.com" autoComplete="off" /></Label>
@@ -65,7 +66,9 @@ export function InstanceSettingsForm({ settings }: { settings: InstanceSettings 
           </Label>
           <Button
             type="button"
-            disabled={test.pending || !settings.smtp}
+            icon="mail"
+            loading={test.pending}
+            disabled={!settings.smtp}
             title={settings.smtp ? undefined : "Save SMTP settings first"}
             onClick={() => {
               setTestResult(null);
@@ -75,14 +78,14 @@ export function InstanceSettingsForm({ settings }: { settings: InstanceSettings 
             {test.pending ? "Sending…" : "Send test email"}
           </Button>
         </div>
-        {testResult && !test.error && <p role="status" className="m-0 mt-2 text-sm text-done">{testResult}</p>}
+        {testResult && !test.error && <p role="status" className="m-0 mt-2 flex items-center gap-1.5 text-sm text-done"><Icon name="check-circle" size={14} />{testResult}</p>}
         <div className="mt-2"><InlineError>{test.error}</InlineError></div>
         {!settings.smtp && <p className="mb-0 mt-2 text-xs text-ink-3">Save the settings above first; the test uses what is saved, not what is typed.</p>}
       </section>
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" variant="primary" disabled={pending}>{pending ? "Saving…" : "Save settings"}</Button>
-        {saved && !error && <span className="text-done">Saved</span>}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" variant="primary" icon="check" loading={pending}>{pending ? "Saving…" : "Save settings"}</Button>
+        {saved && !error && <span className="flex items-center gap-1.5 text-done"><Icon name="check-circle" size={15} />Saved</span>}
         <InlineError>{error}</InlineError>
       </div>
     </form>

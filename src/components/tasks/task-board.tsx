@@ -20,7 +20,7 @@ import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import * as actions from "@/actions/tasks";
 import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/ui/empty";
-import { XIcon } from "./icons";
+import { Icon } from "@/components/ui/icon";
 import { BoardProvider, type BoardApi, type FocusRequest } from "./board-context";
 import { Toolbar } from "./toolbar";
 import { ListView } from "./list-view";
@@ -29,6 +29,7 @@ import { TaskRowOverlay } from "./task-row";
 import { TaskCardOverlay } from "./task-card";
 import { TaskDetail } from "./task-detail";
 import { useViewPref } from "./use-view-pref";
+import { useCollapsed } from "./use-collapsed";
 import { SECTION_PREFIX, containerOf } from "./dnd";
 import type { Member, SectionWithTasks, TaskItem, TaskPatch, TaskView } from "./types";
 
@@ -79,10 +80,12 @@ export function TaskBoard(props: Props) {
   }
 
   const [storedView, setStoredView] = useViewPref();
+  const { isCollapsed } = useCollapsed();
   const [pickedView, setPickedView] = useState<TaskView | null>(props.initialView);
   const view: TaskView = pickedView ?? storedView ?? "list";
 
   const [mine, setMine] = useState(false);
+  const [query, setQuery] = useState("");
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -254,12 +257,19 @@ export function TaskBoard(props: Props) {
   }, []);
   const cancelNewTask = useCallback(() => setFocusRequest(null), []);
 
-  const visible = useMemo(
-    () => (mine ? sections.map((s) => ({ ...s, tasks: s.tasks.filter((t) => t.assigneeId === currentUserId) })) : sections),
-    [sections, mine, currentUserId],
-  );
-  const flatIds = useMemo(() => visible.flatMap((s) => s.tasks.map((t) => t.id)), [visible]);
+  const needle = query.trim().toLowerCase();
+  const visible = useMemo(() => {
+    if (!mine && !needle) return sections;
+    return sections.map((s) => ({
+      ...s,
+      tasks: s.tasks.filter((t) => (!mine || t.assigneeId === currentUserId) && (!needle || t.title.toLowerCase().includes(needle))),
+    }));
+  }, [sections, mine, currentUserId, needle]);
+  // j/k walks what is on screen, so sections the user collapsed are skipped.
+  const flatIds = useMemo(() => visible.filter((s) => !isCollapsed(s.id)).flatMap((s) => s.tasks.map((t) => t.id)), [visible, isCollapsed]);
   const totalTasks = sections.reduce((n, s) => n + s.tasks.length, 0);
+  const visibleTasks = visible.reduce((n, s) => n + s.tasks.length, 0);
+  const filtered = mine || needle.length > 0;
   const openTask = useMemo(() => (openId ? sections.flatMap((s) => s.tasks).find((t) => t.id === openId) ?? null : null), [sections, openId]);
 
   // ---- Keyboard ----
@@ -389,7 +399,7 @@ export function TaskBoard(props: Props) {
   const activeTask = activeId ? sections.flatMap((s) => s.tasks).find((t) => t.id === activeId) ?? null : null;
 
   const api: BoardApi = {
-    workspaceId, slug, currentUserId, canEdit, members, openId, highlightId, focusRequest,
+    workspaceId, slug, currentUserId, canEdit, members, openId, highlightId, draggingId: activeId, focusRequest,
     open, setHighlight: setHighlightId, requestNewTask, cancelNewTask,
     createTask, updateTask, toggleDone, deleteTask,
     createSection, renameSection, deleteSection, moveSection,
@@ -398,25 +408,43 @@ export function TaskBoard(props: Props) {
   };
 
   const showEmpty = totalTasks === 0 && focusRequest === null;
+  const showNoMatches = !showEmpty && filtered && visibleTasks === 0 && focusRequest === null;
 
   return (
     <BoardProvider value={api}>
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <Toolbar view={view} onView={changeView} mine={mine} onMine={setMine} canEdit={canEdit} onNew={() => requestNewTask()} />
+          <Toolbar view={view} onView={changeView} mine={mine} onMine={setMine} query={query} onQuery={setQuery} canEdit={canEdit} onNew={() => requestNewTask()} />
           {error && (
             <div role="alert" className="mx-6 mt-3 flex items-center gap-3 rounded-r border border-late/30 bg-late-soft px-3 py-2 text-[13px] text-late">
               <span className="flex-1">{error}</span>
-              <button onClick={() => setError(null)} aria-label="Dismiss" className="grid size-5 place-items-center rounded hover:bg-late/10"><XIcon /></button>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                aria-label="Dismiss"
+                title="Dismiss"
+                className="grid size-6 shrink-0 cursor-pointer place-items-center rounded-r text-late/70 transition-colors duration-150 ease-out hover:bg-late/10 hover:text-late"
+              >
+                <Icon name="x" size={14} />
+              </button>
             </div>
           )}
           {sections.length === 0 ? (
-            <div className="px-6 py-8">
-              <Empty title="No sections yet" hint="Tasks live in sections. Add one to get going." action={canEdit && <Button variant="primary" onClick={() => createSection("To do")}>Add a section</Button>} />
+            <div className="px-4 py-8 sm:px-6">
+              <Empty icon="folder" title="No sections yet" hint="Tasks live in sections. Add one to get going." action={canEdit && <Button variant="primary" icon="plus" onClick={() => createSection("To do")}>Add a section</Button>} />
             </div>
           ) : showEmpty ? (
-            <div className="px-6 py-8">
-              <Empty title="No tasks yet" hint="Add the first thing that needs doing." action={canEdit && <Button variant="primary" onClick={() => requestNewTask()}>New task</Button>} />
+            <div className="px-4 py-8 sm:px-6">
+              <Empty icon="checklist" title="No tasks yet" hint="Add the first thing that needs doing." action={canEdit && <Button variant="primary" icon="plus" onClick={() => requestNewTask()}>New task</Button>} />
+            </div>
+          ) : showNoMatches ? (
+            <div className="px-4 py-8 sm:px-6">
+              <Empty
+                icon="search"
+                title="Nothing matches"
+                hint={needle ? `No task title contains “${query.trim()}”.` : "Nothing here is assigned to you."}
+                action={<Button icon="undo" onClick={() => { setQuery(""); setMine(false); }}>Clear filters</Button>}
+              />
             </div>
           ) : (
             <DndContext id="galley-tasks" sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>

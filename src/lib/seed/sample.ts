@@ -268,6 +268,34 @@ const nowS = () => Math.floor(Date.now() / 1000);
 
 // ---------------------------------------------------------------- main
 
+type SampleSupplier = {
+  name: string; category: string; contactName: string; email: string; phone: string; website: string; notes: string;
+  rating: number; tags: string[]; status: "shortlisted" | "enquired" | "booked" | "declined"; cost: number | null; note: string;
+};
+
+/** A small, believable address book so the directory is not empty on a fresh install. */
+const SAMPLE_SUPPLIERS: SampleSupplier[] = [
+  { name: "Thames Print & Bind", category: "Printer", contactName: "Ruth Ellery", email: "hello@thamesprint.co.uk", phone: "01628 447 210", website: "https://thamesprint.co.uk", notes: "Litho and digital. Two-day turnaround on uncoated stock. Ask for Ruth for anything over 500 copies.", rating: 5, tags: ["print", "local"], status: "booked", cost: 48000, note: "Brochure and business cards, 500 each." },
+  { name: "Alder & Frame Photography", category: "Photographer", contactName: "Niamh Alder", email: "studio@alderframe.co.uk", phone: "07812 664 031", website: "https://alderframe.co.uk", notes: "Interiors and maker portraits. Brings her own lighting. Half day is plenty for a workshop shoot.", rating: 5, tags: ["photography", "interiors"], status: "booked", cost: 65000, note: "Half day at the workshop, includes 40 edited images." },
+  { name: "Ridgeway Copywriting", category: "Copywriter", contactName: "Sam Okafor", email: "sam@ridgewaycopy.co.uk", phone: "07440 118 902", website: "https://ridgewaycopy.co.uk", notes: "Good on trade and craft businesses. Works from a brief and a transcript.", rating: 4, tags: ["copy"], status: "enquired", cost: 32000, note: "Quote for Home and About pages." },
+  { name: "Beacon Hosting", category: "Hosting", contactName: "Support desk", email: "support@beaconhosting.uk", phone: "0330 221 4480", website: "https://beaconhosting.uk", notes: "UK data centre, daily backups included. Migration help is free on business plans.", rating: 4, tags: ["hosting", "infrastructure"], status: "shortlisted", cost: 18000, note: "Business plan, billed yearly." },
+  { name: "Quill Signwriting", category: "Signwriter", contactName: "Peter Quill", email: "peter@quillsigns.co.uk", phone: "01494 772 118", website: "https://quillsigns.co.uk", notes: "Hand-painted fascia work. Long lead time in summer.", rating: 3, tags: ["signage"], status: "declined", cost: null, note: "Out of scope for this phase." },
+];
+
+type SampleScheduleItem = {
+  title: string; inDays: number; hour?: number; minute?: number; endHour?: number; endMinute?: number;
+  allDay?: boolean; location?: string; notes?: string;
+};
+
+/** A launch-week run sheet: the kind of thing a project lead keeps on a wall. */
+const SAMPLE_SCHEDULE: SampleScheduleItem[] = [
+  { title: "Photography at the workshop", inDays: 2, hour: 9, endHour: 13, location: "Marlow workshop", notes: "Niamh arrives 08:45. Clear the bench by the window." },
+  { title: "Copy review with Tom", inDays: 3, hour: 15, minute: 30, endHour: 16, endMinute: 30, location: "Video call" },
+  { title: "Print artwork deadline", inDays: 5, allDay: true, notes: "Files to Thames Print by end of day." },
+  { title: "Staging walkthrough", inDays: 8, hour: 11, endHour: 12, location: "Video call" },
+  { title: "Go live", inDays: 12, allDay: true, notes: "DNS change in the morning, watch the forms all afternoon." },
+];
+
 export async function createSampleWorkspace(ownerId: string): Promise<{ workspaceId: string; slug: string }> {
   const workspaceId = newId();
   const slug = uniqueSlug(WORKSPACE.name);
@@ -379,6 +407,41 @@ export async function createSampleWorkspace(ownerId: string): Promise<{ workspac
     log("completed", "task", null, "Homepage wireframe", 60 * 60 * 24 * 2);
     log("approved", "section", heroSectionId, "Hero", 60 * 60 * 24 * 3);
     if (attachTaskId) log("updated", "task", attachTaskId, attachTaskTitle, 60 * 60 * 5);
+
+    // Suppliers the studio actually uses, and the run sheet for launch week.
+    for (const sup of SAMPLE_SUPPLIERS) {
+      const supplierId = newId();
+      tx.insert(schema.suppliers)
+        .values({ id: supplierId, name: sup.name, category: sup.category, contactName: sup.contactName, email: sup.email, phone: sup.phone, website: sup.website, notes: sup.notes, rating: sup.rating, createdBy: ownerId })
+        .run();
+      for (const tag of sup.tags) tx.insert(schema.supplierTags).values({ supplierId, tag }).run();
+      tx.insert(schema.workspaceSuppliers)
+        .values({ id: newId(), workspaceId, supplierId, status: sup.status, cost: sup.cost, note: sup.note, createdBy: ownerId })
+        .run();
+    }
+
+    const nine = (offsetDays: number, hour: number, minute = 0) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      d.setHours(hour, minute, 0, 0);
+      return Math.floor(d.getTime() / 1000);
+    };
+    for (const item of SAMPLE_SCHEDULE) {
+      tx.insert(schema.scheduleItems)
+        .values({
+          id: newId(),
+          workspaceId,
+          title: item.title,
+          notes: item.notes ?? null,
+          startsAt: item.allDay ? nine(item.inDays, 0) : nine(item.inDays, item.hour ?? 9, item.minute ?? 0),
+          endsAt: item.allDay ? null : nine(item.inDays, item.endHour ?? (item.hour ?? 9) + 1, item.endMinute ?? 0),
+          allDay: item.allDay ?? false,
+          location: item.location ?? null,
+          ownerId,
+          createdBy: ownerId,
+        })
+        .run();
+    }
   });
 
   // 3. Thumbnails and palettes in the background.
