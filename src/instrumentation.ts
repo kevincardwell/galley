@@ -2,5 +2,7 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("@/lib/backup/scheduler");
+    const { ensureMediaWorker } = await import("@/lib/media/process");
+    ensureMediaWorker();
   }
 }

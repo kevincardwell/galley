@@ -47,4 +47,6 @@ export function armBackupScheduler() {
   g.__galleyBackupTimer = timer;
 }
 
-armBackupScheduler();
+// Not during `next build`: collecting page data imports this module, and a build should never
+// start a timer or touch the database.
+if (process.env.NEXT_PHASE !== "phase-production-build") armBackupScheduler();

@@ -61,8 +61,37 @@ function open() {
 }
 
 const g = globalThis as unknown as { __galley?: ReturnType<typeof open> };
-if (!g.__galley) g.__galley = open();
 
-export const db = g.__galley.db;
-export const sqlite = g.__galley.sqlite;
+/**
+ * Opens on first use, not on import.
+ *
+ * `next build` imports every route module to read its config, and an import-time connection meant
+ * the build opened a database, ran migrations and wrote a stray data directory into the image
+ * layer. Under emulated arm64 that was slow enough to fail the build outright.
+ */
+function store() {
+  if (!g.__galley) g.__galley = open();
+  return g.__galley;
+}
+
+/** Forwards to the real handle on first touch, keeping methods bound to their owner. */
+function lazy<T extends object>(pick: (s: ReturnType<typeof open>) => T): T {
+  const bound = new WeakMap<object, Map<PropertyKey, unknown>>();
+  return new Proxy({} as T, {
+    get(_target, prop) {
+      const target = pick(store()) as Record<PropertyKey, unknown>;
+      const value = target[prop];
+      if (typeof value !== "function") return value;
+      let cache = bound.get(target);
+      if (!cache) bound.set(target, (cache = new Map()));
+      let fn = cache.get(prop);
+      if (!fn) cache.set(prop, (fn = (value as (...args: unknown[]) => unknown).bind(target)));
+      return fn;
+    },
+    has: (_t, prop) => prop in (pick(store()) as object),
+  });
+}
+
+export const db = lazy((s) => s.db);
+export const sqlite = lazy((s) => s.sqlite);
 export { schema };

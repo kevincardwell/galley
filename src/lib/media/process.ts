@@ -131,7 +131,14 @@ export function requeueUnprocessed(): number {
 }
 
 const g = globalThis as unknown as { __galleyMediaRequeued?: boolean };
-if (!g.__galleyMediaRequeued) {
+
+/**
+ * Picks up anything left half-processed by a restart. Called once per server boot from
+ * instrumentation, never at import: `next build` imports this module to read the upload route's
+ * config, and a build must not query the database.
+ */
+export function ensureMediaWorker() {
+  if (g.__galleyMediaRequeued) return false;
   g.__galleyMediaRequeued = true;
   try {
     const n = requeueUnprocessed();
@@ -139,9 +146,5 @@ if (!g.__galleyMediaRequeued) {
   } catch (err) {
     console.error("[media] requeue failed", err);
   }
-}
-
-/** Importing this module is enough; calling this makes the intent explicit at call sites. */
-export function ensureMediaWorker() {
   return true;
 }
