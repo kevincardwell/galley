@@ -24,13 +24,17 @@ vi.mock("@/lib/auth/current", () => ({ requireUser: async () => actor, currentUs
 
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db/client";
-import { COST_HINT, formatMoney, parseCost } from "@/components/suppliers/shared";
+import { COST_HINT, DEFAULT_CURRENCY, formatMoney, formatMoneyRounded, parseCost } from "@/components/suppliers/shared";
 import { linkSupplier, unlinkSupplier } from "@/actions/suppliers";
 import { countSuppliers, listSuppliers, listWorkspaceSuppliers, supplierCategories, supplierDetail, supplierTagCounts } from "@/lib/queries/suppliers";
 
 describe("cost parsing", () => {
   it("reads pounds with symbols and separators as pence", () => {
     expect(parseCost("£1,250.50")).toBe(125050);
+    // Whatever symbol the instance uses, or one pasted from somewhere else.
+    expect(parseCost("$1,250.50")).toBe(125050);
+    expect(parseCost("€1,250.50")).toBe(125050);
+    expect(parseCost("¥1250")).toBe(125000);
     expect(parseCost("1250")).toBe(125000);
     expect(parseCost(" 1,250 ")).toBe(125000);
     expect(parseCost("0.99")).toBe(99);
@@ -175,5 +179,31 @@ describe("a project's supplier list", () => {
     expect(totals.enquired).toEqual({ count: 1, cost: 8000 });
     expect(totals.shortlisted).toEqual({ count: 1, cost: 0 });
     expect(totals.declined).toEqual({ count: 0, cost: 0 });
+  });
+});
+
+describe("showing money in the instance's currency", () => {
+  const digits = (s: string) => s.replace(/[^\d.,]/g, "");
+
+  it("formats the same amount in whichever currency is configured", () => {
+    expect(formatMoney(125050, "GBP")).toContain("£");
+    expect(formatMoney(125050, "USD")).toContain("$");
+    expect(formatMoney(125050, "EUR")).toContain("€");
+    // Only the symbol changes; the amount is the same stored minor units.
+    expect(digits(formatMoney(125050, "USD"))).toBe(digits(formatMoney(125050, "GBP")));
+  });
+
+  it("still rounds for summaries", () => {
+    expect(digits(formatMoneyRounded(125050, "USD"))).toBe("1,251");
+  });
+
+  it("falls back rather than taking a page down on a bad code", () => {
+    expect(() => formatMoney(125050, "NOPE")).not.toThrow();
+    expect(formatMoney(125050, "NOPE")).toContain("£");
+  });
+
+  it("defaults to pounds, so an instance that never sets one is unchanged", () => {
+    expect(DEFAULT_CURRENCY).toBe("GBP");
+    expect(formatMoney(125050)).toBe(formatMoney(125050, "GBP"));
   });
 });

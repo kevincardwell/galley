@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth/current";
+import { getSettings } from "@/lib/settings";
 import { countSuppliers, listSuppliers, supplierCategories, supplierTagCounts } from "@/lib/queries/suppliers";
 import { Empty } from "@/components/ui/empty";
 import { PageHeader, Screen } from "@/components/ui/page";
@@ -14,6 +15,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? (v[0] ?? "
 
 export default async function SuppliersPage({ searchParams }: { searchParams: Promise<Search> }) {
   await requireUser();
+  const { currency } = getSettings();
   const sp = await searchParams;
   const filters: DirectoryFilters = {
     q: one(sp.q).slice(0, 80),
@@ -58,7 +60,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
       ) : (
         <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3 p-0">
           {rows.map((s) => (
-            <SupplierCard key={s.id} supplier={s} />
+            <SupplierCard key={s.id} supplier={s} currency={currency} />
           ))}
         </ul>
       )}

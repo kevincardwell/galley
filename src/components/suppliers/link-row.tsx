@@ -51,7 +51,7 @@ function CellInput({ value, onSave, label, placeholder, numeric, className }: {
   );
 }
 
-export function LinkRow({ row, canEdit }: { row: WorkspaceSupplierRow; canEdit: boolean }) {
+export function LinkRow({ row, canEdit, currency }: { row: WorkspaceSupplierRow; canEdit: boolean; currency: string }) {
   const router = useRouter();
   const { pending, error, run } = useSupplierAction();
   const [confirm, setConfirm] = useState(false);
@@ -99,7 +99,7 @@ export function LinkRow({ row, canEdit }: { row: WorkspaceSupplierRow; canEdit: 
         ) : row.cost === null ? (
           <span className="text-ink-3">—</span>
         ) : (
-          formatMoney(row.cost)
+          formatMoney(row.cost, currency)
         )}
       </Td>
 

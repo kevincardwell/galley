@@ -274,6 +274,20 @@ const settingsInput = z.object({
     .transform((v) => v.replace(/\/+$/, "")),
   maxUploadMb: z.coerce.number().int("Whole megabytes only").min(1, "At least 1 MB").max(100000, "That is more than 100 GB"),
   sessionDays: z.coerce.number().int("Whole days only").min(1, "At least 1 day").max(365, "At most a year"),
+  currency: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .length(3, "Use a three-letter code like GBP, USD or EUR")
+    .refine((c) => {
+      // Intl is the authority on what it can format; anything it rejects would break every money field.
+      try {
+        new Intl.NumberFormat(undefined, { style: "currency", currency: c }).format(1);
+        return true;
+      } catch {
+        return false;
+      }
+    }, "That is not a currency code Galley can format"),
 });
 export type SaveSettingsInput = z.input<typeof settingsInput>;
 
@@ -283,7 +297,7 @@ export async function saveInstanceSettings(input: SaveSettingsInput): Promise<Re
   if (!parsed.success) return fail(firstIssue(parsed.error));
   // Mail lives on its own screen now; this action must not touch it.
   const next = saveSettings(parsed.data);
-  logAudit({ actorId: admin.id, action: "settings.saved", subjectType: "settings", subjectId: "instance", meta: { instanceName: next.instanceName, baseUrl: next.baseUrl, maxUploadMb: next.maxUploadMb, sessionDays: next.sessionDays } });
+  logAudit({ actorId: admin.id, action: "settings.saved", subjectType: "settings", subjectId: "instance", meta: { instanceName: next.instanceName, baseUrl: next.baseUrl, maxUploadMb: next.maxUploadMb, sessionDays: next.sessionDays, currency: next.currency } });
   refresh();
   return ok(next);
 }

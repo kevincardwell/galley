@@ -229,6 +229,37 @@ Verified end to end in a browser: handed a section over, wrote as the client thr
 studio's editor showed those words with the old text gone — the replaceDoc route holding up a second time.
 155 unit tests pass.
 
+## Tier 2 started 2026-09-14: positioning and the "not built for me" signals
+
+The adoption agent's read was that the build quality is above the median self-hosted launch and the gap is
+positioning: the README led with a feature list, which puts Galley head-on against Notion and Plane, a fight it
+loses. The differentiator nothing else self-hosted has is copy as a first-class object with client sign-off.
+
+- **README rewritten around that.** New first line: "Write your client's website copy, get it signed off, and
+  keep the tasks and files next to it." The opening now says what stalls a website project (the words, the
+  logo, a decision) before listing what Galley has, and "The link you send the client" moved from seventh place
+  to first in the feature list, ahead of tasks — tasks are the commodity half.
+- **A "What it is not" section**, because the objections are predictable and better answered before someone
+  installs it: sized for a studio not a company, one instance is one organisation, local accounts with no OIDC
+  yet, plaintext mail credentials, `en-GB` dates. Naming the ceiling defuses the thread.
+- **`CHANGELOG.md`**, the one piece of repo hygiene self-hosters actually read before pulling an upgrade. Skip
+  the rest at zero users.
+- **Currency is a setting** (`settings.currency`, Admin → Settings, validated against `Intl`). Money was hard
+  coded to GBP in `src/components/suppliers/shared.ts`, which is the cheapest possible "not built for me"
+  signal to a US or EU reader. Costs are still stored as integer minor units and nothing is converted; only the
+  formatting changes. Verified in a browser: switching to USD turned every money field on both supplier screens
+  from £ to $ with the amounts untouched. `parseCost` now strips any currency symbol (`\p{Sc}`), not the three
+  that were hard coded.
+  Dates are still `en-GB` everywhere and that is now documented rather than silent. Making them configurable is
+  a bigger job than it looks: `timeAgo` and friends run in both server and client components, so the locale has
+  to be one configured value on both sides or hydration mismatches appear. Currency was worth doing alone
+  because showing a US agency's costs with a £ in front is wrong, not merely unfamiliar.
+
+Still open from the adoption review, in its order: a demo instance with a nightly reset (the biggest single
+multiplier, and it needs hosting), forward-auth/trusted-header SSO (the loudest legitimate objection from
+r/selfhosted), encrypting or externalising the mail credentials, and a decision about disclosing how heavily
+this repo was built with AI assistance.
+
 ## Not yet done (pick up here)
 1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.

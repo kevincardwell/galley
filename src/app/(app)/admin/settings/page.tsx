@@ -7,7 +7,7 @@ export default async function AdminSettingsPage() {
   const settings = getSettings();
   return (
     <div className="overflow-auto px-4 pt-4 pb-8 sm:px-6 sm:pt-5">
-      <InstanceSettingsForm settings={{ instanceName: settings.instanceName, baseUrl: settings.baseUrl, maxUploadMb: settings.maxUploadMb, sessionDays: settings.sessionDays }} />
+      <InstanceSettingsForm settings={{ instanceName: settings.instanceName, baseUrl: settings.baseUrl, maxUploadMb: settings.maxUploadMb, sessionDays: settings.sessionDays, currency: settings.currency }} />
     </div>
   );
 }

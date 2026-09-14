@@ -5,7 +5,7 @@
 <h1 align="center">Galley</h1>
 
 <p align="center">
-  Tasks, copy, schedules, suppliers and files for every project you run.<br>
+  Write your client's website copy, get it signed off, and keep the tasks and files next to it.<br>
   Self-hosted, one container, one file to back up.
 </p>
 
@@ -19,9 +19,11 @@
 
 ---
 
-A galley proof is the first typeset pull of a page, laid out so the words can be checked before anything goes to print. Galley holds the same things for a project: what needs doing, what it will say, who you are hiring, when it happens, and the pictures that go with it.
+A galley proof is the first typeset pull of a page, laid out so the words can be checked before anything goes to print. Galley does that for a website: the copy is written page by page and section by section, it moves from draft to in review to approved, and the client signs it off through a link — no account, nothing to install.
 
-It is built for the person who runs the work: a web designer with six client sites on the go, a studio lead, someone organising an event. One screen per project, no seats to buy, no data leaving your server.
+Website projects rarely stall on the build. They stall waiting for the words, the logo and a decision. So the client's side of the link is not read-only: they can comment, approve, send files in, and write the sections you hand to them, and once a week they get a note saying what changed and what is still waiting on them.
+
+The rest of the project lives in the same place — tasks, a calendar, the suppliers you book and the files you collect — because it is the same project. It is built for the person who runs the work: a web designer with six client sites on the go, a studio lead, someone organising an event. One screen per project, no seats to buy, no data leaving your server.
 
 ```bash
 mkdir galley && cd galley
@@ -41,6 +43,23 @@ Open a project and you can see where it has got to: what is overdue, how much of
 
 <img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/workspaces.webp" alt="The workspace index with three projects, each showing status, copy approval progress and open task counts" width="880">
 
+### The link you send the client
+
+One link, no account, nothing to install. Read-only by default; switch on what you want them to do.
+
+- **Comment and approve**, section by section. You are told the moment they do, and an approval lapses automatically if the wording changes afterwards — so it always refers to the words they actually agreed to.
+- **Send files in.** Their logo, photographs, the old brochure. Files land in the project's library labelled with who sent them.
+- **Write the sections you hand over.** Tick "they write this one" and the client gets a box for their words. It arrives in the version history like any other edit.
+- **A weekly note**, if you want one: what you changed, what is still waiting on them, and the link back.
+
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/share.webp" alt="The client share view showing approved copy, a client comment and an approve control" width="880">
+
+### Copy written where it belongs
+
+Pages and sections, each with its own draft, in review and approved state. Several people can write in the same section at once and see each other's cursors. Every save is kept, so you can compare any version with a word-level diff and put it back. One click copies clean Markdown or HTML for whatever the site is built in.
+
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/copy.webp" alt="The copy editor with a page outline, the text in a serif column, and a details pane showing status, word count, versions and comments" width="880">
+
 ### Tasks that behave like a to-do list, not a ticketing system
 
 Sections you name yourself, a list or a board, drag to reorder, due dates that go amber then red, assignees, checklists, comments and attached files.
@@ -48,12 +67,6 @@ Sections you name yourself, a list or a board, drag to reorder, due dates that g
 <img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/tasks.webp" alt="The task list grouped into Design, Build, Content and Launch sections with due dates and assignees" width="880">
 
 <img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/board-dark.webp" alt="The same tasks as a board in dark mode" width="880">
-
-### Copy written where it belongs
-
-Pages and sections, each with its own draft, in review and approved state. Several people can write in the same section at once and see each other's cursors. Every save is kept, so you can compare any version with a word-level diff and put it back. One click copies clean Markdown or HTML for whatever the site is built in.
-
-<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/copy.webp" alt="The copy editor with a page outline, the text in a serif column, and a details pane showing status, word count, versions and comments" width="880">
 
 ### A calendar that already knows your deadlines
 
@@ -72,12 +85,6 @@ A shared directory of printers, photographers, copywriters and freelancers, with
 Drag anything in. Thumbnails, dimensions, duration for video, a colour palette pulled from each image, tags, folders, and a record of which task or paragraph each file belongs to.
 
 <img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/assets.webp" alt="The asset grid with filter chips, storage total and a details pane showing palette and tags" width="880">
-
-### A link you can send the client
-
-Read-only by default. Turn on review and they can comment on individual sections and approve them, with no account and nothing to install. You are told the moment they do.
-
-<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/share.webp" alt="The client share view showing approved copy, a client comment and an approve control" width="880">
 
 ### On your phone, as an app
 
@@ -98,7 +105,10 @@ Add it to the home screen from Safari or Chrome and it opens full screen with it
 | **Notifications** | An inbox for mentions, assignments and client feedback, with email when a provider is set up. |
 | **Search** | `⌘K` across tasks, copy, files and projects, scoped to what you are allowed to see. |
 | **Export** | A zip of the whole project: copy as Markdown, tasks as CSV, every original file. |
-| **Backups** | One click, or nightly with retention, from the admin panel. |
+| **Backups** | One click, or nightly with retention, from the admin panel, and the database is copied aside before any upgrade migrates it. |
+| **Project templates** | Start a project from an existing one and keep the task list and page structure, without last client's content. |
+| **Repeating tasks** | Weekly, monthly, quarterly. Tick one off and the next appears, which is how a care plan lives here alongside a build. |
+| **Currency** | Set a three-letter code in Admin → Settings; costs are stored as minor units so nothing rounds twice. |
 | **Themes** | Light, dark, or follow the system. |
 | **Keyboard** | `?` lists every shortcut. |
 
@@ -194,7 +204,17 @@ npm run lint
 npm run db:generate  # after editing src/db/schema.ts
 ```
 
-`docs/DESIGN.md` is the design direction, `docs/PLAN.md` the original plan, and `docs/STATUS.md` the running log of what is done and what is next.
+`CHANGELOG.md` is what changed between releases. `docs/DESIGN.md` is the design direction, `docs/PLAN.md` the original plan, and `docs/STATUS.md` the running log of what is done and what is next.
+
+### What it is not
+
+Worth knowing before you install it, rather than after.
+
+- **It is sized for a studio, not a company.** One SQLite file, one process, no job queue. A handful of people and a few dozen projects is the shape it is built for. If you need fifty concurrent editors or horizontal scaling, this is the wrong tool and will stay the wrong tool.
+- **One instance is one organisation.** Workspaces are projects, not tenants. Everyone invited shares one supplier directory, one set of instance settings and one admin panel. It is not built to host several unrelated businesses.
+- **Accounts are local.** Invite-only email and password, with no OIDC or LDAP yet. If everything behind your reverse proxy goes through Authelia or Authentik today, Galley does not join in.
+- **Mail credentials are stored in plain text** in the database, so treat a backup like a password. This is called out again under Backing up.
+- **Dates are formatted `en-GB`** — "14 Sept", not "Sep 14". Currency is a setting; the date format is not one yet. If that grates, say so in an issue.
 
 ## Licence
 

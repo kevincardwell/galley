@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth/current";
+import { getSettings } from "@/lib/settings";
 import { can, requireAccess } from "@/lib/permissions";
 import { listSuppliers, listWorkspaceSuppliers } from "@/lib/queries/suppliers";
 import { PageHeader, Screen } from "@/components/ui/page";
@@ -10,6 +11,7 @@ import { ProjectSuppliers } from "@/components/suppliers/project-suppliers";
 export default async function WorkspaceSuppliersPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const user = await requireUser();
+  const { currency } = getSettings();
   const access = requireAccess(user, slug);
   const ws = access.workspace;
   const canEdit = can(access, "edit");
@@ -34,7 +36,7 @@ export default async function WorkspaceSuppliersPage({ params }: { params: Promi
           </>
         }
       />
-      <ProjectSuppliers workspaceId={ws.id} rows={rows} totals={totals} directory={directory} canEdit={canEdit} />
+      <ProjectSuppliers workspaceId={ws.id} rows={rows} totals={totals} directory={directory} canEdit={canEdit} currency={currency} />
     </Screen>
   );
 }

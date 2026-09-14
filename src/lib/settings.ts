@@ -12,6 +12,8 @@ export type InstanceSettings = {
   baseUrl: string;
   maxUploadMb: number;
   sessionDays: number;
+  /** ISO 4217 code used wherever Galley shows money. One currency per instance. */
+  currency: string;
   /** Legacy SMTP-only shape, still read so existing installs keep sending after an upgrade. */
   smtp: { host: string; port: number; user: string; pass: string; from: string } | null;
   mail: MailSettings;
@@ -24,6 +26,7 @@ const DEFAULTS: InstanceSettings = {
   baseUrl: process.env.GALLEY_URL || "",
   maxUploadMb: Number(process.env.MAX_UPLOAD_MB || 500),
   sessionDays: 30,
+  currency: "GBP",
   smtp: null,
   mail: MAIL_DEFAULTS,
   backup: { enabled: false, hour: 3, keep: 7 },

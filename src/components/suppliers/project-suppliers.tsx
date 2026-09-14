@@ -8,12 +8,13 @@ import { LinkRow } from "./link-row";
 import { formatMoney, LINK_STATUSES, STATUS_LABEL, type StatusTotals, type WorkspaceSupplierRow } from "./shared";
 
 /** The suppliers tab of one project: totals, then a table per status. */
-export function ProjectSuppliers({ workspaceId, rows, totals, directory, canEdit }: {
+export function ProjectSuppliers({ workspaceId, rows, totals, directory, canEdit, currency }: {
   workspaceId: string;
   rows: WorkspaceSupplierRow[];
   totals: StatusTotals;
   directory: Candidate[];
   canEdit: boolean;
+  currency: string;
 }) {
   const linkedIds = rows.map((r) => r.supplierId);
 
@@ -38,9 +39,9 @@ export function ProjectSuppliers({ workspaceId, rows, totals, directory, canEdit
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start gap-x-10 gap-y-4 rounded-lg border border-line bg-surface px-4 py-3.5">
-        <Stat label="Booked" value={formatMoney(totals.booked.cost)} hint={`${totals.booked.count} supplier${totals.booked.count === 1 ? "" : "s"}`} icon="check-circle" />
+        <Stat label="Booked" value={formatMoney(totals.booked.cost, currency)} hint={`${totals.booked.count} supplier${totals.booked.count === 1 ? "" : "s"}`} icon="check-circle" />
         {LINK_STATUSES.filter((s) => s !== "booked").map((s) => (
-          <Stat key={s} label={STATUS_LABEL[s]} value={totals[s].count} hint={totals[s].cost > 0 ? formatMoney(totals[s].cost) : undefined} />
+          <Stat key={s} label={STATUS_LABEL[s]} value={totals[s].count} hint={totals[s].cost > 0 ? formatMoney(totals[s].cost, currency) : undefined} />
         ))}
       </div>
 
@@ -53,7 +54,7 @@ export function ProjectSuppliers({ workspaceId, rows, totals, directory, canEdit
             title={STATUS_LABEL[status]}
             action={
               <span className="tnum text-xs text-ink-3">
-                {group.length} · {formatMoney(totals[status].cost)}
+                {group.length} · {formatMoney(totals[status].cost, currency)}
               </span>
             }
           >
@@ -72,7 +73,7 @@ export function ProjectSuppliers({ workspaceId, rows, totals, directory, canEdit
               </thead>
               <tbody>
                 {group.map((row) => (
-                  <LinkRow key={row.id} row={row} canEdit={canEdit} />
+                  <LinkRow key={row.id} row={row} canEdit={canEdit} currency={currency} />
                 ))}
               </tbody>
             </Table>

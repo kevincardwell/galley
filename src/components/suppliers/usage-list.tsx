@@ -4,7 +4,7 @@ import { Icon } from "@/components/ui/icon";
 import { formatMoney, STATUS_LABEL, STATUS_TONE, type SupplierUsage } from "./shared";
 
 /** Which projects use this supplier. Projects the reader is not on are counted, never named. */
-export function UsageList({ usage, hidden }: { usage: SupplierUsage[]; hidden: number }) {
+export function UsageList({ usage, hidden, currency }: { usage: SupplierUsage[]; hidden: number; currency: string }) {
   if (usage.length === 0 && hidden === 0) {
     return <p className="m-0 text-[13px] text-ink-3">Not on a project yet. Open a project&rsquo;s Suppliers tab to add them.</p>;
   }
@@ -22,7 +22,7 @@ export function UsageList({ usage, hidden }: { usage: SupplierUsage[]; hidden: n
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="truncate font-medium">{u.workspaceName}</span>
                   <Pill tone={STATUS_TONE[u.status]}>{STATUS_LABEL[u.status]}</Pill>
-                  {u.cost !== null && <span className="tnum ml-auto text-[13px] text-ink-2">{formatMoney(u.cost)}</span>}
+                  {u.cost !== null && <span className="tnum ml-auto text-[13px] text-ink-2">{formatMoney(u.cost, currency)}</span>}
                 </span>
                 {u.note && <span className="mt-0.5 block text-[13px] text-ink-3">{u.note}</span>}
               </span>

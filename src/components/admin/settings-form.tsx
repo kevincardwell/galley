@@ -6,7 +6,7 @@ import { Input, Label } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { saveInstanceSettings } from "@/actions/admin";
 /** Deliberately not the whole settings object: it holds the SMTP password and API key. */
-type VisibleSettings = { instanceName: string; baseUrl: string; maxUploadMb: number; sessionDays: number };
+type VisibleSettings = { instanceName: string; baseUrl: string; maxUploadMb: number; sessionDays: number; currency: string };
 import { Hint, InlineError } from "./bits";
 import { useAdminAction } from "./use-action";
 
@@ -31,6 +31,7 @@ export function InstanceSettingsForm({ settings }: { settings: VisibleSettings }
               baseUrl: str(fd, "baseUrl"),
               maxUploadMb: str(fd, "maxUploadMb"),
               sessionDays: str(fd, "sessionDays"),
+              currency: str(fd, "currency"),
             }),
           () => setSaved(true),
         );
@@ -43,6 +44,7 @@ export function InstanceSettingsForm({ settings }: { settings: VisibleSettings }
           <Label htmlFor="st-url">Base URL<Input id="st-url" name="baseUrl" defaultValue={settings.baseUrl} placeholder="https://galley.example.co.uk" inputMode="url" /></Label>
           <Label htmlFor="st-upload">Max upload (MB)<Input id="st-upload" name="maxUploadMb" type="number" min={1} max={100000} step={1} defaultValue={settings.maxUploadMb} required /></Label>
           <Label htmlFor="st-session">Session lifetime (days)<Input id="st-session" name="sessionDays" type="number" min={1} max={365} step={1} defaultValue={settings.sessionDays} required /></Label>
+          <Label htmlFor="st-currency">Currency<Input id="st-currency" name="currency" defaultValue={settings.currency} required maxLength={3} placeholder="GBP" className="uppercase" /><Hint>Three-letter code, used wherever Galley shows money. Costs already recorded are not converted.</Hint></Label>
         </div>
         <p className="mb-0 mt-2 text-xs text-ink-3">The base URL is used for invite links. Leave it empty to use whatever address you are visiting.</p>
       </section>

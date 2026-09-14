@@ -8,7 +8,7 @@ import { formatMoneyRounded, type SupplierRow } from "./shared";
  * One supplier in the directory grid. The name carries a stretched link so the whole card is
  * clickable without nesting anchors; the contact links sit above it.
  */
-export function SupplierCard({ supplier }: { supplier: SupplierRow }) {
+export function SupplierCard({ supplier, currency }: { supplier: SupplierRow; currency: string }) {
   const archived = supplier.archivedAt !== null;
   const used = supplier.projectCount;
   return (
@@ -42,7 +42,7 @@ export function SupplierCard({ supplier }: { supplier: SupplierRow }) {
               Used on {used} project{used === 1 ? "" : "s"}
             </span>
             <span aria-hidden>·</span>
-            <span className="tnum">{formatMoneyRounded(supplier.bookedTotal)} booked</span>
+            <span className="tnum">{formatMoneyRounded(supplier.bookedTotal, currency)} booked</span>
           </>
         )}
       </p>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/current";
+import { getSettings } from "@/lib/settings";
 import { supplierDetail } from "@/lib/queries/suppliers";
 import { Icon } from "@/components/ui/icon";
 import { PageHeader, Screen, Section } from "@/components/ui/page";
@@ -22,6 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function SupplierPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser();
+  const { currency } = getSettings();
   const detail = supplierDetail(id, user);
   if (!detail) notFound();
   const { supplier, usage, hidden } = detail;
@@ -57,10 +59,10 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
           <Section
             title="Used on"
             action={
-              supplier.bookedTotal > 0 ? <span className="tnum text-xs text-ink-3">{formatMoney(supplier.bookedTotal)} booked</span> : undefined
+              supplier.bookedTotal > 0 ? <span className="tnum text-xs text-ink-3">{formatMoney(supplier.bookedTotal, currency)} booked</span> : undefined
             }
           >
-            <UsageList usage={usage} hidden={hidden} />
+            <UsageList usage={usage} hidden={hidden} currency={currency} />
           </Section>
 
           <Section title="Archive or delete">
