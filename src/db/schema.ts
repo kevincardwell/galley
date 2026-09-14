@@ -61,6 +61,7 @@ export const workspaces = sqliteTable("workspaces", {
   slug: text("slug").notNull().unique(),
   url: text("url"),
   clientName: text("client_name"),
+  clientEmail: text("client_email"), // where the weekly digest goes; no digest without one
   status: text("status", { enum: WORKSPACE_STATUSES }).notNull().default("planning"),
   accent: text("accent").notNull().default("#2F6B4F"),
   faviconPath: text("favicon_path"),
@@ -69,6 +70,8 @@ export const workspaces = sqliteTable("workspaces", {
   shareReview: integer("share_review", { mode: "boolean" }).notNull().default(false),
   // Separate opt-in from shareReview: letting a client write comments is a smaller risk than letting them write files.
   shareUploads: integer("share_uploads", { mode: "boolean" }).notNull().default(false),
+  /** Last weekly client digest, so a restart or a second tick cannot send it twice. */
+  digestSentAt: integer("digest_sent_at"),
   createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: integer("created_at").notNull().default(now()),
   archivedAt: integer("archived_at"),
@@ -298,6 +301,10 @@ export const mailLog = sqliteTable(
     provider: text("provider").notNull(),
     ok: integer("ok", { mode: "boolean" }).notNull(),
     error: text("error"),
+    // Kept so an admin can see exactly what a client was sent. Admin-only, and
+    // pruned with the rest of the log; treat a backup as holding it.
+    body: text("body"),
+    html: text("html"),
     createdAt: integer("created_at").notNull().default(now()),
   },
   (t) => [index("mail_log_created").on(t.createdAt)],

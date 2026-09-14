@@ -10,7 +10,8 @@ import { requireAdmin } from "@/lib/auth/current";
 import { hashPassword } from "@/lib/auth/password";
 import { logAudit } from "@/lib/activity";
 import { newId, newToken } from "@/lib/ids";
-import { getSettings, saveSettings, type BackupSettings, type InstanceSettings } from "@/lib/settings";
+import { getSettings, saveSettings, type BackupSettings, type DigestSettings, type InstanceSettings } from "@/lib/settings";
+import { digestCandidates, sendWorkspaceDigest } from "@/lib/digest";
 import { storage } from "@/lib/storage";
 import { resolveBaseUrl } from "@/lib/queries/admin";
 import { isEmailConfigured, sendEmail } from "@/lib/email";
@@ -411,6 +412,40 @@ export async function saveBackupSchedule(input: SaveBackupScheduleInput): Promis
   logAudit({ actorId: admin.id, action: "settings.backup_schedule", subjectType: "settings", subjectId: "instance", meta: { ...next.backup, pruned } });
   refreshBackups();
   return ok(next.backup);
+}
+
+const digestInput = z.object({
+  enabled: z.boolean(),
+  weekday: z.coerce.number().int().min(0).max(6),
+  hour: z.coerce.number().int().min(0).max(23),
+});
+export type SaveDigestScheduleInput = z.input<typeof digestInput>;
+
+export async function saveDigestSchedule(input: SaveDigestScheduleInput): Promise<Result<DigestSettings>> {
+  const admin = await requireAdmin();
+  const parsed = digestInput.safeParse(input);
+  if (!parsed.success) return fail(firstIssue(parsed.error));
+  const next = saveSettings({ digest: parsed.data });
+  logAudit({ actorId: admin.id, action: "settings.digest_schedule", subjectType: "settings", subjectId: "instance", meta: next.digest });
+  revalidatePath("/admin/email");
+  return ok(next.digest);
+}
+
+/** Runs the weekly digest immediately, for the "send now" button. Ignores the day and hour, not the rest. */
+export async function sendDigestNow(): Promise<Result<{ sent: number }>> {
+  const admin = await requireAdmin();
+  if (!isEmailConfigured()) return fail("Set up email first.");
+  let sent = 0;
+  for (const ws of digestCandidates()) {
+    try {
+      if (await sendWorkspaceDigest(ws)) sent++;
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : "Could not send");
+    }
+  }
+  logAudit({ actorId: admin.id, action: "digest.sent_now", subjectType: "settings", subjectId: "instance", meta: { sent } });
+  revalidatePath("/admin/email");
+  return ok({ sent });
 }
 
 // ---- Storage ----

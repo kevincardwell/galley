@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/icon";
 import { AccentPicker } from "./accent-picker";
 import { updateWorkspace } from "@/actions/workspaces";
 
-type Ws = { id: string; name: string; url: string | null; clientName: string | null; accent: string; status: string };
+type Ws = { id: string; name: string; url: string | null; clientName: string | null; clientEmail: string | null; accent: string; status: string };
 
 const Name = ({ children }: { children: React.ReactNode }) => <span className="font-medium text-ink-2">{children}</span>;
 const Hint = ({ children }: { children: React.ReactNode }) => <span className="text-xs text-ink-3">{children}</span>;
@@ -34,6 +34,11 @@ export function SettingsForm({ workspace }: { workspace: Ws }) {
         <Name>Client</Name>
         <Input id="s-client" name="clientName" defaultValue={workspace.clientName ?? ""} />
         <Hint>The person you send the share link to.</Hint>
+      </Label>
+      <Label htmlFor="s-client-email">
+        <Name>Client email</Name>
+        <Input id="s-client-email" name="clientEmail" type="email" defaultValue={workspace.clientEmail ?? ""} placeholder="tom@marlowandfinch.co.uk" />
+        <Hint>Where the weekly digest goes. Leave it empty and this project sends none.</Hint>
       </Label>
       <Label htmlFor="s-status">
         <Name>Status</Name>

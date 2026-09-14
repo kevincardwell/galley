@@ -4,6 +4,8 @@ import { db, schema } from "@/db/client";
 import { MAIL_DEFAULTS, type MailSettings } from "@/lib/email/providers";
 
 export type BackupSettings = { enabled: boolean; hour: number; keep: number };
+/** Weekly client digest. `weekday` is 0 (Sunday) to 6, matching Date#getDay. */
+export type DigestSettings = { enabled: boolean; weekday: number; hour: number };
 
 export type InstanceSettings = {
   instanceName: string;
@@ -14,6 +16,7 @@ export type InstanceSettings = {
   smtp: { host: string; port: number; user: string; pass: string; from: string } | null;
   mail: MailSettings;
   backup: BackupSettings;
+  digest: DigestSettings;
 };
 
 const DEFAULTS: InstanceSettings = {
@@ -24,6 +27,7 @@ const DEFAULTS: InstanceSettings = {
   smtp: null,
   mail: MAIL_DEFAULTS,
   backup: { enabled: false, hour: 3, keep: 7 },
+  digest: { enabled: false, weekday: 5, hour: 9 }, // Friday morning, off until someone turns it on
 };
 
 export function getSettings(): InstanceSettings {
@@ -40,7 +44,7 @@ export function getSettings(): InstanceSettings {
     mail.from = stored.smtp.from;
     mail.smtp = { host: stored.smtp.host, port: stored.smtp.port, user: stored.smtp.user, pass: stored.smtp.pass };
   }
-  return { ...DEFAULTS, ...stored, mail, backup: { ...DEFAULTS.backup, ...(stored.backup ?? {}) } };
+  return { ...DEFAULTS, ...stored, mail, backup: { ...DEFAULTS.backup, ...(stored.backup ?? {}) }, digest: { ...DEFAULTS.digest, ...(stored.digest ?? {}) } };
 }
 
 export function saveSettings(patch: Partial<InstanceSettings>) {

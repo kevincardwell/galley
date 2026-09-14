@@ -9,6 +9,7 @@ export async function register() {
     console.log(`Galley ${process.env.GALLEY_VERSION || "dev"} started — data directory ${DATA_DIR}`);
 
     await import("@/lib/backup/scheduler");
+    await import("@/lib/digest/scheduler");
     const { ensureMediaWorker } = await import("@/lib/media/process");
     ensureMediaWorker();
   }

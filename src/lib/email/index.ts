@@ -131,7 +131,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
 /** Keeps the last 100 attempts so an admin can see why mail is not arriving. */
 function record(input: SendEmailInput, provider: MailProvider, ok: boolean, error: string | null) {
   try {
-    db.insert(schema.mailLog).values({ to: input.to, subject: input.subject, provider, ok, error: error?.slice(0, 500) ?? null }).run();
+    db.insert(schema.mailLog).values({ to: input.to, subject: input.subject, provider, ok, error: error?.slice(0, 500) ?? null, body: input.text.slice(0, 20_000), html: input.html?.slice(0, 60_000) ?? null }).run();
     db.run(sql`delete from mail_log where id not in (select id from mail_log order by id desc limit 100)`);
   } catch {
     /* logging must never break a send */

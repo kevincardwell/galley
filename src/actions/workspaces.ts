@@ -18,6 +18,13 @@ const wsInput = z.object({
   name: z.string().trim().min(1, "Give the workspace a name").max(80),
   url: z.string().trim().max(200).optional().transform((v) => (v ? (/^https?:\/\//.test(v) ? v : `https://${v}`) : null)),
   clientName: z.string().trim().max(80).optional().transform((v) => v || null),
+  clientEmail: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .transform((v) => v || null)
+    .refine((v) => v === null || /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v), "Enter a valid client email address"),
   accent: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   status: z.enum(WORKSPACE_STATUSES).optional(),
   templateId: z.string().trim().optional().transform((v) => v || null),
@@ -64,10 +71,10 @@ export async function updateWorkspace(workspaceId: string, form: FormData) {
   const { workspace } = assertAccess(user, workspaceId, "manage");
   const parsed = wsInput.safeParse(Object.fromEntries(form));
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message);
-  const { name, url, clientName, accent, status } = parsed.data;
+  const { name, url, clientName, clientEmail, accent, status } = parsed.data;
   const slug = name !== workspace.name ? uniqueSlug(name, workspace.id) : workspace.slug;
   db.update(schema.workspaces)
-    .set({ name, slug, url, clientName, accent: accent ?? workspace.accent, status: status ?? workspace.status })
+    .set({ name, slug, url, clientName, clientEmail, accent: accent ?? workspace.accent, status: status ?? workspace.status })
     .where(eq(schema.workspaces.id, workspace.id))
     .run();
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "updated", subjectType: "workspace", subjectId: workspace.id, subjectTitle: name });

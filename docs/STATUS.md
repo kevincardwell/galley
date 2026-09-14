@@ -170,8 +170,36 @@ library badged "Sent by the client", palette extracted, team notified. `tests/un
 cases, route-level) covers opt-in, archived projects, unknown tokens, a missing name, a workspaceId supplied
 alongside a token (must be ignored), unaccepted file types and the rate limit. 125 unit tests pass.
 
-Still to do from Tier 1: sections a client can write (the other half of the portal) and the weekly client
-digest email — the thing that makes anyone actually open the portal.
+### Weekly client digest, and email that looks like something (2026-09-14)
+
+Guest upload is worth little if nobody opens the share link, so this is the thing that makes them.
+
+- `workspaces.client_email` and `workspaces.digest_sent_at` (migration `0007`), a `digest` block in instance
+  settings (off by default, Friday 09:00), a scheduler in `src/lib/digest/scheduler.ts` armed from
+  instrumentation exactly like the backup one, and Admin → Email gains the schedule plus a "Send now" button.
+- What goes in it: what the studio changed (from `activity`, deduplicated to one line per thing) and what is
+  waiting on the client (sections in `review` that are not client-approved). Deliberately excluded: tasks,
+  suppliers and the calendar, none of which a client sees, and the client's own uploads, which are not news to
+  them. A project with nothing to report is skipped — an empty weekly email only teaches people to ignore it.
+- TRAP, found by clicking "Send now" twice: "waiting on you" is not time-bounded, so a second run finds the
+  same list and mails the client again. The already-sent guard was in the scheduler, which the button bypassed.
+  It lives in `sendWorkspaceDigest` now (`dueForDigest`, 20 hours), so every caller gets it. A failed send never
+  moves the marker, or that week's news would be lost for good; there is a test for that too.
+- **Email design.** `src/lib/email/templates.ts` had an HTML shell all along and the digest had bypassed it with
+  its own plain-text composer — the reuse was sitting right there. The shell is now a proper table-based,
+  inline-styled email (Georgia heading, uppercase section labels, accent bullets, a real button, `word-break`
+  on the raw URL) and every email — invite, notification, test, digest — goes through it and sends
+  `multipart/alternative` with both parts.
+- **Reading what was sent.** `mail_log` keeps the text and HTML bodies (migrations `0008`, `0009`), and a row in
+  Admin → Email is now clickable: a dialog with to/sent/result and the message itself, with a Formatted /
+  Plain text toggle. The HTML renders in an iframe with `sandbox=""` — section titles, project names and guest
+  names are all user input that ends up in that markup, so it is rendered with no scripts and no same-origin.
+  `tests/unit/email-templates.test.ts` covers the escaping.
+
+Verified end to end against a local SMTP sink: digest composed, delivered multipart, logged, previewed, and a
+second "Send now" correctly reported "Nothing to send — no project had news." 144 unit tests pass.
+
+Still to do from Tier 1: sections a client can write — the other half of the portal.
 
 ## Not yet done (pick up here)
 1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).

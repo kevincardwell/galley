@@ -18,7 +18,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
       <PageHeader eyebrow={ws.name} title="Settings" description="How this website is named, coloured and who can work on it." />
       <div className="flex flex-col gap-8">
         <Section title="Workspace">
-          <SettingsForm workspace={{ id: ws.id, name: ws.name, url: ws.url, clientName: ws.clientName, accent: ws.accent, status: ws.status }} />
+          <SettingsForm workspace={{ id: ws.id, name: ws.name, url: ws.url, clientName: ws.clientName, clientEmail: ws.clientEmail, accent: ws.accent, status: ws.status }} />
         </Section>
         <Section title="People" className="border-t border-line pt-6">
           <MembersPanel
