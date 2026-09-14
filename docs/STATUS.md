@@ -78,10 +78,18 @@ sample workspace, copy editor, versions, restore. CI now does this on every push
 - **The supplier directory was writable by viewers.** It is instance-wide, so there is no workspace to check;
   `editsAnyWorkspace()` in `src/lib/permissions.ts` now gates the four directory writes. A viewer on one
   project could previously rename or archive every supplier the studio uses.
-- **Unraid template could not start on a fresh install.** The image runs as uid 1000 and Unraid creates the
-  appdata bind mount `root:root`, so it died forever on first boot. Template now passes `--user 99:100`. The
-  entrypoint also checked writability *after* `mkdir`, so the helpful message was unreachable — order swapped,
-  and the friendly error was confirmed by reproducing the failure.
+- **Unraid template ran as a uid that cannot write appdata.** The image runs as uid 1000 with no chown step.
+  Since Unraid 6.10 appdata directories are created `0755` (they were `0777` on 6.9.2) owned `nobody:users`,
+  so uid 1000 cannot write to one. Template now passes `--user 99:100`. The entrypoint also checked writability
+  *after* `mkdir`, so its helpful message was unreachable — order swapped.
+  CORRECTION to the commit message for this change, which says Unraid creates the mount `root:root`: that is
+  what *plain* Docker does, and it is what the local reproduction hit (a `/tmp` bind mount, container exited
+  immediately, friendly error confirmed). On Unraid the owner is `nobody:users`; the failure is the same but
+  the mechanism stated in the commit is wrong. Severity is also unproven: Community Apps shows 587 downloads
+  and no issues have been filed, so some installs are evidently working — likely pre-existing `0777` appdata
+  from older Unraid versions. Treat this as a robustness fix, not a confirmed outage.
+  NOTE: a Community Apps template update does **not** rewrite containers people have already installed; Unraid
+  keeps each user's config in `templates-user`. Existing installs keep whatever they have.
 - **A failed migration leaked a database handle per request.** `open()` had no try/finally, so every subsequent
   request opened another handle against a half-migrated file. Now closes and rethrows, and
   `src/instrumentation.ts` touches the database at boot so a bad upgrade crashes loudly instead of surfacing
