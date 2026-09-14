@@ -260,6 +260,37 @@ multiplier, and it needs hosting), forward-auth/trusted-header SSO (the loudest 
 r/selfhosted), encrypting or externalising the mail credentials, and a decision about disclosing how heavily
 this repo was built with AI assistance.
 
+## One image that works anywhere (2026-09-14, after a real Unraid install)
+
+Installing Galley on the author's own Unraid box turned up three stacked problems, only the first of which was
+Galley's fault, and none of which the test suite could have caught.
+
+1. The server's `docker.img` had a btrfs uncorrectable checksum error and had gone read-only, so no container
+   could be created at all. Fixed by restarting the Docker service; nothing had to be deleted.
+2. The Galley template's default WebUI port 3000 collided with Nginx Proxy Manager, which also wants 3000.
+3. Unraid creates appdata as `nobody:users` (99:100); the image ran as `node` (1000); so the entrypoint
+   correctly refused to start. `--user 99:100` fixed it and is now **verified on real hardware** — but needing
+   it at all is a bad first run.
+
+**The real fix, now in.** `docker/entrypoint.sh` starts as root, `chown`s the data directory to `PUID:PGID`
+(default 1000:1000) and drops privileges with `setpriv` before exec'ing the app, so the same image works on
+Unraid, on a plain bind mount Docker created as `root:root`, and on a named volume, with nothing to configure.
+`USER node` is gone from the Dockerfile; the app still never runs as root. Anyone who passes `--user` keeps the
+old behaviour and the old, clearer error message.
+
+- `setpriv` comes from util-linux and needs no new package; the Dockerfile asserts it exists at build time so a
+  future base image cannot remove it silently.
+- The `chown -R` only runs when the top-level ownership is wrong, so a large uploads tree is not walked on
+  every start.
+- The Unraid template sets `PUID=99`/`PGID=100` (the convention there, and it keeps the share browsable over
+  SMB) and no longer needs `--user` in ExtraParams.
+- CI now creates a **root-owned, non-world-writable** bind mount — reproducing the real failure — and asserts
+  that `galley.db` ends up owned by 99:100. A root process would have left a root-owned file, so that check is
+  the proof privileges were dropped. A second job checks `--user 1500:1500` still works.
+
+Also noted: `/api/health` reports `"version":"latest"` on main-branch builds, because that is what
+`metadata-action` emits for the `latest` tag. Cosmetic, but a sha or semver would be more use in a bug report.
+
 ## Not yet done (pick up here)
 1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.

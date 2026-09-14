@@ -173,8 +173,46 @@ GALLEY_DATA_DIR=/srv/galley PORT=3000 npm start
 | `TRUSTED_PROXY_HOPS` | `1` | How many reverse proxies sit in front, so the real client address can be found for rate limiting. |
 | `PORT` | `3000` | Port to listen on. |
 | `TZ` | `UTC` | Server time zone. Decides when the nightly backup runs and how dates are grouped. |
+| `PUID` / `PGID` | `1000` / `1000` | Who Galley runs as. It takes ownership of the data directory on start, so a bind mount does not need chowning first. The Unraid template sets `99` / `100`. |
+| `GALLEY_AUTH_HEADERS` | off | Accept sign-ins from a reverse proxy that has already authenticated the caller. See below. |
+| `GALLEY_AUTH_EMAIL_HEADER` | `Remote-Email` | Which header carries the address. |
+| `GALLEY_AUTH_NAME_HEADER` | `Remote-Name` | Which header carries the display name, if any. |
+| `GALLEY_AUTH_AUTO_CREATE` | off | Create an account the first time someone new arrives, instead of requiring an invite. |
 
 Email and the backup schedule are set in the app, under Admin, not with environment variables.
+
+### Signing in through a reverse proxy
+
+If everything on your server already sits behind Authelia, Authentik, oauth2-proxy or Tailscale, Galley can
+trust that and skip its own login.
+
+```yaml
+environment:
+  GALLEY_AUTH_HEADERS: "1"
+  GALLEY_AUTH_AUTO_CREATE: "1"   # optional: invite nobody, let the proxy decide
+```
+
+> [!WARNING]
+> **The proxy is the entire security model.** These are ordinary HTTP headers, so anyone who can reach Galley
+> without going through the proxy can set `Remote-Email` to whatever they like and become that person. Only
+> turn this on when Galley is unreachable except through the proxy — bound to localhost, or on an internal
+> network the proxy can see and nobody else can. Check it from another machine before you trust it.
+
+Defaults suit Authelia. For others, point Galley at their headers:
+
+| Proxy | `GALLEY_AUTH_EMAIL_HEADER` | `GALLEY_AUTH_NAME_HEADER` |
+|---|---|---|
+| Authelia | `Remote-Email` (default) | `Remote-Name` (default) |
+| Authentik | `X-authentik-email` | `X-authentik-name` |
+| oauth2-proxy | `X-Forwarded-Email` | `X-Forwarded-Preferred-Username` |
+| Tailscale Serve | `Tailscale-User-Login` | `Tailscale-User-Name` |
+
+With `GALLEY_AUTH_AUTO_CREATE` off — the default — people still have to be invited first, and the proxy simply
+saves them typing a password. With it on, the first person through becomes the admin and everyone after them
+is an ordinary member, so restrict who reaches Galley in the proxy's own rules.
+
+An account that an admin has deactivated stays out whatever the proxy says. The password login form stays
+available for anyone who was set up that way, so you are never locked out if the proxy misbehaves.
 
 ### Backing up and upgrading
 
@@ -212,8 +250,9 @@ Worth knowing before you install it, rather than after.
 
 - **It is sized for a studio, not a company.** One SQLite file, one process, no job queue. A handful of people and a few dozen projects is the shape it is built for. If you need fifty concurrent editors or horizontal scaling, this is the wrong tool and will stay the wrong tool.
 - **One instance is one organisation.** Workspaces are projects, not tenants. Everyone invited shares one supplier directory, one set of instance settings and one admin panel. It is not built to host several unrelated businesses.
-- **Accounts are local.** Invite-only email and password, with no OIDC or LDAP yet. If everything behind your reverse proxy goes through Authelia or Authentik today, Galley does not join in.
+- **There is no OIDC or LDAP.** Accounts are invite-only email and password. Galley will trust a reverse proxy that has already signed someone in (Authelia, Authentik, oauth2-proxy, Tailscale — see Running it), but it does not speak either protocol itself.
 - **Mail credentials are stored in plain text** in the database, so treat a backup like a password. This is called out again under Backing up.
+- **The container starts as root** for a moment, to take ownership of the data directory, then drops to `PUID:PGID` and runs the application unprivileged. Pass `--user` if you would rather it never ran as root at all — you then own chowning the directory yourself.
 - **Dates are formatted `en-GB`** — "14 Sept", not "Sep 14". Currency is a setting; the date format is not one yet. If that grates, say so in an issue.
 
 ## Licence

@@ -24,7 +24,7 @@
 
     If you put this behind a reverse proxy, set the Public URL variable to the address people will actually use. Installing it to a phone home screen needs https.
 
-    The container runs as nobody:users (99:100) so it can write to appdata. If you change the appdata path to a share with different ownership and the container stops straight away, check the log: it names the directory it could not write to.
+    Galley sets up its own appdata folder on first start and then runs as nobody:users (99:100), the Unraid convention, so the share stays browsable. Change PUID and PGID under advanced settings if you want it to run as someone else.
   </Overview>
   <Category>Productivity: Tools:Utilities</Category>
   <Description>
@@ -45,7 +45,7 @@
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/kevincardwell/galley/main/unraid/galley.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/kevincardwell/galley/main/public/icon-512.png</Icon>
-  <ExtraParams>--user 99:100</ExtraParams>
+  <ExtraParams/>
   <PostArgs/>
   <CPUset/>
   <DonateText/>
@@ -106,6 +106,28 @@
     Display="advanced"
     Required="false"
     Mask="false">1</Config>
+
+  <Config
+    Name="PUID"
+    Target="PUID"
+    Default="99"
+    Mode=""
+    Description="User id Galley runs as. 99 is nobody, the Unraid default, which keeps appdata browsable over SMB."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">99</Config>
+
+  <Config
+    Name="PGID"
+    Target="PGID"
+    Default="100"
+    Mode=""
+    Description="Group id Galley runs as. 100 is users, the Unraid default."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">100</Config>
 
   <Config
     Name="Time zone"

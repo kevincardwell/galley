@@ -44,17 +44,39 @@ jobs:
       # missing one only shows up on the first request.
       - name: Smoke test the image
         run: |
-          mkdir -p /tmp/galley-data && chmod 777 /tmp/galley-data
-          docker run -d --name galley-ci -p 3000:3000 -v /tmp/galley-data:/data galley:ci
+          # Deliberately root-owned and NOT world-writable: this is what Docker
+          # creates for a missing bind mount, and what broke a real Unraid install.
+          # The entrypoint has to fix it itself.
+          sudo mkdir -p /tmp/galley-data && sudo chown 0:0 /tmp/galley-data && sudo chmod 755 /tmp/galley-data
+          docker run -d --name galley-ci -e PUID=99 -e PGID=100 -p 3000:3000 -v /tmp/galley-data:/data galley:ci
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:3000/api/health | grep -q '"ok":true'; then ok=1; break; fi
             sleep 2
           done
           docker logs galley-ci
           test -n "$ok" || { echo "::error::container never became healthy"; exit 1; }
-          test -f /tmp/galley-data/galley.db || { echo "::error::no database was created in the volume"; exit 1; }
+          sudo test -f /tmp/galley-data/galley.db || { echo "::error::no database was created in the volume"; exit 1; }
           curl -fsS -o /dev/null http://127.0.0.1:3000/login || { echo "::error::login page did not render"; exit 1; }
           if docker logs galley-ci 2>&1 | grep -qE "MODULE_NOT_FOUND|Cannot find module"; then
             echo "::error::a module is missing from the standalone bundle"; exit 1
           fi
+          # galley.db is created by the app after the entrypoint has dropped
+          # privileges, so its ownership is proof of which user the app ran as.
+          # Root would have left a root-owned file here.
+          owner=$(sudo stat -c '%u:%g' /tmp/galley-data/galley.db)
+          test "$owner" = "99:100" || { echo "::error::database is owned by $owner, expected 99:100 — privileges were not dropped"; exit 1; }
           docker rm -f galley-ci
+
+      # The other half of the promise: --user still works for anyone who insists
+      # on it, as long as they own the directory.
+      - name: Smoke test with an explicit --user
+        run: |
+          sudo rm -rf /tmp/galley-user && sudo mkdir -p /tmp/galley-user && sudo chown 1500:1500 /tmp/galley-user
+          docker run -d --name galley-user --user 1500:1500 -p 3001:3000 -v /tmp/galley-user:/data galley:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3001/api/health | grep -q '"ok":true'; then ok2=1; break; fi
+            sleep 2
+          done
+          docker logs galley-user
+          test -n "$ok2" || { echo "::error::container did not start when run with --user"; exit 1; }
+          docker rm -f galley-user

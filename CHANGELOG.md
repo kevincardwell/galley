@@ -38,9 +38,13 @@ in place and running the previous tag.
   shipped: the restore wrote a column the editor does not read, and the next save put the newer text back.
 - **A client's approval never lapsed.** A section approved at one wording still showed as approved after it was
   rewritten. Editing a signed-off section now drops the approval and says so in the activity feed.
-- **The Unraid template ran as a user that cannot write appdata**, so a fresh install could stop immediately.
-  The template now runs as `nobody:users`, and the error message when a data directory is not writable says
-  which directory and which user id.
+- **A fresh install could fail on a directory it could not write.** Unraid creates appdata as `nobody:users`
+  and plain Docker creates a missing bind mount as `root:root`, while the image ran as uid 1000 — so neither
+  worked without someone chowning the directory first. The container now starts as root, takes ownership of the
+  data directory, and drops to `PUID:PGID` (99:100 on Unraid, 1000:1000 elsewhere) before running anything.
+  Pass `--user` to keep the old behaviour and own the chown yourself. CI now installs into a deliberately
+  root-owned bind mount, and checks the database comes out owned by the unprivileged user, which is proof the
+  privileges were actually dropped.
 - Editors were shown a "Create feed link" button that only a manager could use, and it failed when clicked.
 - The instance-wide supplier directory could be edited by anyone signed in, including someone invited as a
   viewer on a single project.
@@ -52,8 +56,8 @@ in place and running the previous tag.
 ### Upgrading
 
 - Nothing to do. Six migrations apply on start.
-- On Unraid, the `--user 99:100` fix reaches new installs only — Unraid keeps your container's settings when a
-  template changes. If yours is running, it is fine; leave it alone.
+- If you had worked around the permissions problem with `--user 99:100` in Extra Parameters, you can remove it:
+  Galley handles this itself now. Leaving it in place also works.
 - To use the weekly digest, set a client email address in each project's settings and turn the schedule on in
   Admin → Email.
 
