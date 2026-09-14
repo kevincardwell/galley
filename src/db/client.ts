@@ -47,17 +47,58 @@ CREATE TRIGGER IF NOT EXISTS assets_fts_ad AFTER DELETE ON assets BEGIN
 END;
 `;
 
+const MIGRATIONS_DIR = path.join(process.cwd(), "drizzle");
+/** Pre-migration snapshots to keep. Enough to step back from a bad upgrade, not enough to fill the disk. */
+const KEEP_PRE_MIGRATION = 3;
+
+/**
+ * Copies the database aside before an upgrade applies new migrations.
+ *
+ * Migrations are forward-only and Drizzle writes no down files, so this snapshot
+ * is the whole rollback story: stop the container, put this file back as
+ * galley.db, run the older image. Skipped on a fresh database, where there is
+ * nothing to lose yet.
+ */
+function snapshotBeforeMigrate(sqlite: Database.Database) {
+  const table = sqlite.prepare("select name from sqlite_master where type='table' and name='__drizzle_migrations'").get();
+  if (!table) return; // first boot
+  const { n } = sqlite.prepare("select count(*) as n from __drizzle_migrations").get() as { n: number };
+  const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).length;
+  if (n >= files) return; // nothing pending
+
+  const dir = path.join(DATA_DIR, "backups");
+  fs.mkdirSync(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  sqlite.exec(`VACUUM INTO '${path.join(dir, `pre-migration-${stamp}.db`).replace(/'/g, "''")}'`);
+  console.log(`Galley: ${files - n} migration(s) pending, snapshot written to backups/pre-migration-${stamp}.db`);
+
+  const old = fs
+    .readdirSync(dir)
+    .filter((f) => f.startsWith("pre-migration-") && f.endsWith(".db"))
+    .sort()
+    .slice(0, -KEEP_PRE_MIGRATION);
+  for (const f of old) fs.rmSync(path.join(dir, f), { force: true });
+}
+
 function open() {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   const sqlite = new Database(DB_PATH);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.pragma("busy_timeout = 5000");
-  sqlite.pragma("foreign_keys = ON");
-  sqlite.pragma("synchronous = NORMAL");
-  const db = drizzle(sqlite, { schema });
-  migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
-  sqlite.exec(FTS_SQL);
-  return { db, sqlite };
+  try {
+    sqlite.pragma("journal_mode = WAL");
+    sqlite.pragma("busy_timeout = 5000");
+    sqlite.pragma("foreign_keys = ON");
+    sqlite.pragma("synchronous = NORMAL");
+    snapshotBeforeMigrate(sqlite);
+    const db = drizzle(sqlite, { schema });
+    migrate(db, { migrationsFolder: MIGRATIONS_DIR });
+    sqlite.exec(FTS_SQL);
+    return { db, sqlite };
+  } catch (err) {
+    // Without this the handle leaks and store() opens another one on the next
+    // request, against a half-migrated file, until the process runs out of fds.
+    sqlite.close();
+    throw err;
+  }
 }
 
 const g = globalThis as unknown as { __galley?: ReturnType<typeof open> };

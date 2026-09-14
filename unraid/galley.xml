@@ -23,6 +23,8 @@
     After the container starts, open the WebUI and create the admin account. Tick the box on that screen to load a worked example so nothing starts empty.
 
     If you put this behind a reverse proxy, set the Public URL variable to the address people will actually use. Installing it to a phone home screen needs https.
+
+    The container runs as nobody:users (99:100) so it can write to appdata. If you change the appdata path to a share with different ownership and the container stops straight away, check the log: it names the directory it could not write to.
   </Overview>
   <Category>Productivity: Tools:Utilities</Category>
   <Description>
@@ -43,7 +45,7 @@
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/kevincardwell/galley/main/unraid/galley.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/kevincardwell/galley/main/public/icon-512.png</Icon>
-  <ExtraParams/>
+  <ExtraParams>--user 99:100</ExtraParams>
   <PostArgs/>
   <CPUset/>
   <DonateText/>

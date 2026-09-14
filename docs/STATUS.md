@@ -1,4 +1,4 @@
-# Where Galley stands (2026-09-11)
+# Where Galley stands (2026-09-14)
 
 ## Done
 - Full app builds (`npm run build`) with zero type or lint errors.
@@ -51,8 +51,58 @@ Three parallel audits: auth/authorisation, files/SSRF/tokens, injection/deps/hea
 - npm audit: 0 production vulnerabilities. Dev-only: 4 moderate in drizzle-kit's esbuild chain, not reachable at runtime.
 Known and accepted: mail credentials are stored in plain text in the database (documented in the README, and backups are flagged as secrets); no per-workspace storage quota; CSP allows inline scripts until a nonce is threaded through the proxy.
 
+## Tier 0 fixes 2026-09-14 (four review agents, then the blockers they found)
+
+Four parallel agents reviewed the project (product gaps, code-vs-claims, self-host ops, adoption). Three
+independently flagged that the advertised `docker compose up` had never once been executed. That is now done,
+along with every "the app tells the user something untrue" bug they turned up.
+
+**The image is built and verified.** `sudo docker build` + run against a bind mount: health `ok`, login renders,
+`galley.db` created in the volume, no missing native modules in the standalone bundle. Clicked through setup,
+sample workspace, copy editor, versions, restore. CI now does this on every push (`.github/workflows/ci.yml`):
+`load: true`, run the container, poll `/api/health`, assert the database appears, grep the log for
+`MODULE_NOT_FOUND`. Building an image only proves it compiles.
+
+- **Version restore had never worked since collaboration shipped.** `restoreVersion` wrote `sections.content`,
+  but `loadDoc` rebuilds a room from `sections.ydoc` and ignores the column, so the editor kept the newer text
+  and the next idle persist wrote it straight back. Restore now goes through `replaceDoc` in
+  `src/lib/collab/hub.ts`: it swaps the content inside the live Y.Doc, logs and broadcasts the diff, then
+  persists. Verified in the browser — the editor changed from the new wording back to the restored one with no
+  reload. Deleted the dead `recordVersion` in `src/actions/copy.ts` (a duplicate of `snapshot.ts`).
+- **Client approval was never invalidated.** `clientApprovedAt` was set by `guestApprove` and cleared nowhere,
+  so a section the client approved at v7 still read "Approved by Tom" at v12. `snapshotSection` now clears it
+  whenever the content actually changes, and logs an `approvalLapsed` activity. Verified: the edited section
+  lost its stamp, the four untouched approved sections kept theirs.
+- **Editors saw a "Create feed link" button that threw.** `canManage` is now threaded from both calendar pages
+  instead of being passed `canEdit`.
+- **The supplier directory was writable by viewers.** It is instance-wide, so there is no workspace to check;
+  `editsAnyWorkspace()` in `src/lib/permissions.ts` now gates the four directory writes. A viewer on one
+  project could previously rename or archive every supplier the studio uses.
+- **Unraid template could not start on a fresh install.** The image runs as uid 1000 and Unraid creates the
+  appdata bind mount `root:root`, so it died forever on first boot. Template now passes `--user 99:100`. The
+  entrypoint also checked writability *after* `mkdir`, so the helpful message was unreachable — order swapped,
+  and the friendly error was confirmed by reproducing the failure.
+- **A failed migration leaked a database handle per request.** `open()` had no try/finally, so every subsequent
+  request opened another handle against a half-migrated file. Now closes and rethrows, and
+  `src/instrumentation.ts` touches the database at boot so a bad upgrade crashes loudly instead of surfacing
+  later as 500s on an apparently healthy container.
+- **Upgrades had no rollback.** Migrations are forward-only with no down files. `src/db/client.ts` now does
+  `VACUUM INTO backups/pre-migration-<date>.db` when migrations are pending, keeping 3. Verified end to end on
+  a copy of a real database: pending detected, snapshot `integrity_check: ok`, self-contained.
+  TRAP: drizzle's `__drizzle_migrations` declares `id SERIAL PRIMARY KEY`, which SQLite does not understand, so
+  every `id` is NULL. Count rows, never trust those ids.
+- **The README told people to back up in a way that loses data.** "Copying the data directory does the same
+  job" is false in WAL mode. Now says stopped-only and explains why; the in-app restore note scopes its
+  "delete the -wal" advice to zip restores, where it is correct. (Proved live: a hand-copy of the running dev
+  database was missing its migrations table entirely.)
+- `GALLEY_VERSION` build arg → real version in `/api/health` (it read `npm_package_version`, which `node
+  server.js` never sets, so it was always "dev") and a startup log line. `TZ` documented.
+
+Regression tests in `tests/unit/copy-restore.test.ts` (restore changes the live doc, survives a room reload,
+reaches connected clients; approval lapses on edit but not on a no-op save). 102 unit tests pass.
+
 ## Not yet done (pick up here)
-1. **Docker image not yet built.** `docker build` was refused: this user is not in the `docker` group. Run `sudo usermod -aG docker $USER` and log back in (or use `sudo docker compose up -d --build`), then click through inside the container (ffmpeg posters, volume permissions).
+1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.
 4. E2E only covers access. Add task → copy → upload → export steps once the UI has been eyeballed (selectors unknown until then).
 5. Small known gaps: page/section drag reorder not wired (actions exist); instance logo not implemented; upload accepts by extension/mime only (bad content fails at processing with a recorded error, not at upload); oversize uploads are drained before rejection (no client-side pre-check).

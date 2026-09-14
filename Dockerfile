@@ -18,7 +18,9 @@ RUN npm run build
 # ---- runtime: small image with ffmpeg for video posters ----
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
-ENV NODE_ENV=production \
+ARG VERSION=dev
+ENV GALLEY_VERSION=$VERSION \
+    NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \

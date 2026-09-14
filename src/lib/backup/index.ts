@@ -97,7 +97,7 @@ export async function pruneBackups(keep: number): Promise<number> {
 export function restoreNote(): string {
   return [
     "Restoring is manual. Stop the container, then unzip the backup into the data directory so that galley.db, uploads/ and favicons/ replace what is there.",
-    "Delete any leftover galley.db-wal and galley.db-shm files next to the database before starting again, then start the container.",
+    "The galley.db inside a backup zip is a complete snapshot, so delete any galley.db-wal and galley.db-shm left beside it before starting again. Only do that when restoring from a zip: deleting the -wal next to a database you copied by hand throws away its most recent writes.",
     "Backups live in the backups/ folder of the same data directory; copy them somewhere else too, since a lost volume takes them with it.",
   ].join(" ");
 }

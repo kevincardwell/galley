@@ -162,15 +162,17 @@ GALLEY_DATA_DIR=/srv/galley PORT=3000 npm start
 | `MAX_UPLOAD_MB` | `500` | Largest single upload. |
 | `TRUSTED_PROXY_HOPS` | `1` | How many reverse proxies sit in front, so the real client address can be found for rate limiting. |
 | `PORT` | `3000` | Port to listen on. |
+| `TZ` | `UTC` | Server time zone. Decides when the nightly backup runs and how dates are grouped. |
 
 Email and the backup schedule are set in the app, under Admin, not with environment variables.
 
 ### Backing up and upgrading
 
-- **Backup**: Admin → Backups writes a zip of the database and every upload, on demand or nightly. Copying the data directory does the same job.
+- **Backup**: Admin → Backups writes a zip of the database and every upload, on demand or nightly. Turn the nightly schedule on the first time you open that page.
+- **Copying the data directory works too, but only with Galley stopped.** The database is in WAL mode, so a copy taken while it is running misses whatever is still in `galley.db-wal` and is not a backup you can trust. The zip does not have this problem: it snapshots the database properly (`VACUUM INTO`) and is safe to take at any time.
 - **Treat backups as secrets.** The database holds your SMTP password or provider API key in plain text, along with password hashes, session tokens and share links. Store backups somewhere you would store a password.
 - **Restore**: stop Galley, unzip a backup into an empty data directory, start it again.
-- **Upgrade**: `docker compose pull && docker compose up -d`. Migrations run on start.
+- **Upgrade**: `docker compose pull && docker compose up -d`. Migrations run on start, and Galley copies the database to `backups/pre-migration-<date>.db` first. If an upgrade goes wrong, stop the container, put that file back as `galley.db` (deleting any `galley.db-wal` and `galley.db-shm` beside it) and run the previous image tag.
 
 ---
 

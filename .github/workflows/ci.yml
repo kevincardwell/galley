@@ -34,6 +34,27 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: galley:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Building the image proves it compiles, not that it runs. Next's standalone
+      # output traces native modules (better-sqlite3, sharp, argon2) by hand and a
+      # missing one only shows up on the first request.
+      - name: Smoke test the image
+        run: |
+          mkdir -p /tmp/galley-data && chmod 777 /tmp/galley-data
+          docker run -d --name galley-ci -p 3000:3000 -v /tmp/galley-data:/data galley:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/health | grep -q '"ok":true'; then ok=1; break; fi
+            sleep 2
+          done
+          docker logs galley-ci
+          test -n "$ok" || { echo "::error::container never became healthy"; exit 1; }
+          test -f /tmp/galley-data/galley.db || { echo "::error::no database was created in the volume"; exit 1; }
+          curl -fsS -o /dev/null http://127.0.0.1:3000/login || { echo "::error::login page did not render"; exit 1; }
+          if docker logs galley-ci 2>&1 | grep -qE "MODULE_NOT_FOUND|Cannot find module"; then
+            echo "::error::a module is missing from the standalone bundle"; exit 1
+          fi
+          docker rm -f galley-ci
