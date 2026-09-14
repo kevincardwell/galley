@@ -161,6 +161,8 @@ export const sections = sqliteTable(
     position: integer("position").notNull().default(0),
     version: integer("version").notNull().default(1),
     ydoc: blob("ydoc", { mode: "buffer" }), // Yjs encoded state, source of truth once collaboration has started
+    // The studio hands a section to the client to write: their words, our structure.
+    clientCanWrite: integer("client_can_write", { mode: "boolean" }).notNull().default(false),
     clientApprovedAt: integer("client_approved_at"),
     clientApprovedBy: text("client_approved_by"),
     updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),

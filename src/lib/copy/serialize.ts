@@ -36,6 +36,42 @@ export function asDoc(value: unknown): TiptapDoc {
   return emptyDoc();
 }
 
+/**
+ * Plain text back into a document: blank-line-separated blocks become
+ * paragraphs, single newlines become hard breaks. The inverse of tiptapToText
+ * for the shapes a plain textarea can produce, which is all a client writing
+ * through the share link can type.
+ */
+export function textToDoc(text: string): TiptapDoc {
+  const blocks = text.replace(/\r\n/g, "\n").split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  if (blocks.length === 0) return emptyDoc();
+  return {
+    type: "doc",
+    content: blocks.map((block) => {
+      const content: TiptapNode[] = [];
+      block.split("\n").forEach((line, i) => {
+        if (i > 0) content.push({ type: "hardBreak" });
+        if (line) content.push({ type: "text", text: line });
+      });
+      return { type: "paragraph", content };
+    }),
+  };
+}
+
+/**
+ * The inverse of textToDoc: blocks separated by a blank line, so a client who
+ * reopens the share page sees their paragraphs the way they typed them.
+ *
+ * Deliberately not tiptapToText, which joins every block with a single newline
+ * because it feeds the search index and the word count. Round-tripping through
+ * that would quietly turn two paragraphs into one on the next save.
+ */
+export function docToEditableText(doc: TiptapDoc): string {
+  const out: string[] = [];
+  for (const n of doc.content ?? []) blockText(n, out);
+  return out.filter((s) => s.length > 0).join("\n\n");
+}
+
 export function isDocEmpty(doc: TiptapDoc): boolean {
   return tiptapToText(doc).trim().length === 0;
 }

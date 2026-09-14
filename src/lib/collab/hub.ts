@@ -240,7 +240,7 @@ function persistRoom(room: Room, by?: string | null): { version: number; updated
  * to happen inside the Y.Doc every client is attached to, and reach them as an
  * ordinary update.
  */
-function replaceDoc(sectionId: string, content: TiptapDoc, userId: string): { version: number; updatedAt: number } | null {
+function replaceDoc(sectionId: string, content: TiptapDoc, userId: string | null): { version: number; updatedAt: number } | null {
   const room = getRoom(sectionId);
   if (!room) return null;
   const fresh = prosemirrorJSONToYDoc(pmSchema(), asDoc(content), Y_FIELD);

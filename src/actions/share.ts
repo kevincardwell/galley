@@ -6,6 +6,8 @@ import { newId } from "@/lib/ids";
 import { logActivity } from "@/lib/activity";
 import { cleanGuestName, guestRateLimit, shareWorkspace } from "@/lib/share/guard";
 import { notifyShareTeam } from "@/lib/share/notify";
+import { replaceDoc } from "@/lib/collab/hub";
+import { textToDoc } from "@/lib/copy/serialize";
 
 /**
  * Guest writes through the share link. There is no signed-in user here: the
@@ -13,6 +15,7 @@ import { notifyShareTeam } from "@/lib/share/notify";
  */
 
 const MAX_BODY = 2000;
+const MAX_SECTION_TEXT = 20_000;
 
 function cleanBody(body: string): string {
   const b = (body ?? "").trim().slice(0, MAX_BODY);
@@ -66,4 +69,45 @@ export async function guestApprove(token: string, sectionId: string, name: strin
   if (approve) await notifyShareTeam(ws.id, "client_approved", `${guest} approved ${pageTitle} › ${section.title}`, null, `/w/${ws.slug}/copy/${pageSlug}#s-${section.id}`);
   revalidate(ws, pageSlug);
   return { approvedAt };
+}
+
+/**
+ * The client writes a section themselves.
+ *
+ * Two opt-ins are required: client review on the workspace, and this particular
+ * section handed over by someone with edit rights. Their text goes in through
+ * the live document, not the column — the editor is Yjs-driven, so a write
+ * straight to sections.content would be invisible and then overwritten by the
+ * next persist. Every save lands in the version history like any other.
+ */
+export async function guestWriteSection(token: string, sectionId: string, name: string, text: string): Promise<{ version: number }> {
+  const guest = cleanGuestName(name);
+  const { ws, section, pageSlug, pageTitle } = guestContext(token, sectionId);
+  if (!section.clientCanWrite) throw new Error("Not found");
+  guestRateLimit(`write:${token}`, 60);
+
+  const body = (text ?? "").slice(0, MAX_SECTION_TEXT);
+  if (!body.trim()) throw new Error("Write something first");
+
+  const saved = replaceDoc(section.id, textToDoc(body), null);
+  if (!saved) throw new Error("Not found");
+
+  logActivity({
+    workspaceId: ws.id,
+    actorId: null,
+    verb: "updated",
+    subjectType: "section",
+    subjectId: section.id,
+    subjectTitle: section.title,
+    meta: { guest, clientWrote: true },
+  });
+  await notifyShareTeam(
+    ws.id,
+    "client_wrote",
+    `${guest} wrote ${pageTitle} \u203a ${section.title}`,
+    body.length > 160 ? `${body.slice(0, 157)}\u2026` : body,
+    `/w/${ws.slug}/copy/${pageSlug}#s-${section.id}`,
+  );
+  revalidate(ws, pageSlug);
+  return { version: saved.version };
 }

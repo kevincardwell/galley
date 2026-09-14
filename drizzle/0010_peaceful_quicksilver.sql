@@ -1,0 +1,1 @@
+ALTER TABLE `sections` ADD `client_can_write` integer DEFAULT false NOT NULL;

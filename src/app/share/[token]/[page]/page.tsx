@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { Pill } from "@/components/ui/pill";
 import { findPage, listSections, shareReviewForPage, workspaceByShareToken } from "@/lib/queries/copy";
 import { SectionReview } from "./review";
-import { isDocEmpty, tiptapToHtml } from "@/lib/copy/serialize";
+import { docToEditableText, isDocEmpty, tiptapToHtml } from "@/lib/copy/serialize";
+import { GuestWrite } from "@/components/share/guest-write";
 import { STATUS_LABEL, statusTone } from "@/lib/copy/types";
 
 export default async function SharePage({ params }: { params: Promise<{ token: string; page: string }> }) {
@@ -31,7 +32,11 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                 <h3 className="m-0 min-w-0 truncate text-xs font-medium tracking-wide text-ink-3 uppercase">{s.title}</h3>
                 <Pill tone={statusTone(s.status)}>{STATUS_LABEL[s.status]}</Pill>
               </div>
-              {isDocEmpty(s.content) ? (
+              {review && s.clientCanWrite ? (
+                // Handed to the client: the box holds what is there, so there is
+                // nothing to render above it.
+                <GuestWrite token={token} sectionId={s.id} title={s.title} initialText={docToEditableText(s.content)} />
+              ) : isDocEmpty(s.content) ? (
                 <p className="prose-copy m-0 text-ink-3">Empty.</p>
               ) : (
                 <div className="prose-copy" dangerouslySetInnerHTML={{ __html: tiptapToHtml(s.content) }} />

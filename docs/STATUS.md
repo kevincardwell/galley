@@ -199,7 +199,35 @@ Guest upload is worth little if nobody opens the share link, so this is the thin
 Verified end to end against a local SMTP sink: digest composed, delivered multipart, logged, previewed, and a
 second "Send now" correctly reported "Nothing to send — no project had news." 144 unit tests pass.
 
-Still to do from Tier 1: sections a client can write — the other half of the portal.
+### Sections a client can write (2026-09-14) — Tier 1 complete
+
+The other half of the portal. The studio ticks "They write this one" on a section and the client gets a box on
+the share page for their words, which is the thing that actually unblocks a stalled project.
+
+- `sections.client_can_write` (migration `0010`), toggled from the copy details pane by anyone with edit
+  rights. Two opt-ins are needed before a guest can write: client review on the workspace **and** that
+  particular section handed over. `guestWriteSection` checks both, rate limits per token, and demands a name.
+- It writes through `replaceDoc` — the same hub function built for version restore. Writing `sections.content`
+  directly would have been invisible to the editor and then overwritten by the next persist, which is exactly
+  the bug restore had. Every guest save lands in the version history like any other; the version row has no
+  `created_by` because there is no account, so the guest name lives on the activity row instead.
+- `textToDoc` and `docToEditableText` in `src/lib/copy/serialize.ts` convert between a plain textarea and
+  Tiptap JSON. They are a matched pair on purpose: `tiptapToText` joins blocks with a single newline because it
+  feeds the FTS index and the word count, so round-tripping a client's text through *that* would silently turn
+  two paragraphs into one on their next save.
+- The guest name now lives in one place (`src/components/share/guest-name.ts`) and is shared by comments,
+  approvals, file uploads and writing. The upload zone had been using a different localStorage key, so a client
+  was being asked who they were twice.
+- Known and accepted: the box is plain text, so a heading or a bullet list in a handed-over section comes back
+  as paragraphs. The toggle says so ("Formatting here is replaced by what they type"). Hand over sections that
+  are waiting on the client's words, not ones already styled.
+
+Found by looking at the rendered page: the write box and the feedback box below it each had their own "Your
+name" field. One per section now, in the feedback box, with the write box borrowing it through the shared hook.
+
+Verified end to end in a browser: handed a section over, wrote as the client through the share link, and the
+studio's editor showed those words with the old text gone — the replaceDoc route holding up a second time.
+155 unit tests pass.
 
 ## Not yet done (pick up here)
 1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).

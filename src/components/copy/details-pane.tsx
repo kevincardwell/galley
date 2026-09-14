@@ -13,7 +13,7 @@ import { toast } from "@/components/ui/toast";
 import { AttachPicker } from "@/components/assets/attach-picker";
 import { VersionDiff } from "./version-diff";
 import { tiptapToText } from "@/lib/copy/serialize";
-import { addComment, renameSection, resolveComment, restoreVersion, setSectionStatus } from "@/actions/copy";
+import { addComment, renameSection, resolveComment, restoreVersion, setSectionClientWrite, setSectionStatus } from "@/actions/copy";
 import { STATUS_LABEL, statusTone, type SectionDetails, type SectionRow } from "@/lib/copy/types";
 import type { SaveState, Stats } from "./section-editor";
 
@@ -38,6 +38,13 @@ const PANE = "details flex min-w-0 flex-col overflow-x-hidden border-line bg-sur
 export function DetailsPane({ workspaceId, section, details, saveState, stats, readOnly, selfName, onCopyMarkdown, onSaveNow }: Props) {
   const [pending, start] = useTransition();
   const [copied, setCopied] = useState(false);
+  // Optimistic so the box flips at once; the server value wins after revalidation.
+  const [clientWrites, setClientWrites] = useState(!!details?.clientCanWrite);
+  const [prevWrites, setPrevWrites] = useState(!!details?.clientCanWrite);
+  if (prevWrites !== !!details?.clientCanWrite) {
+    setPrevWrites(!!details?.clientCanWrite);
+    setClientWrites(!!details?.clientCanWrite);
+  }
 
   if (!section) {
     return (
@@ -60,6 +67,17 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
     } else {
       toast("Could not copy", { tone: "late" });
     }
+  };
+
+  const toggleClientWrite = (next: boolean) => {
+    setClientWrites(next);
+    start(async () => {
+      try {
+        await setSectionClientWrite(section.id, next);
+      } catch {
+        setClientWrites(!next);
+      }
+    });
   };
 
   const setStatus = (status: SectionStatus) => {
@@ -116,6 +134,21 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
               </Pill>
             ) : (
               <p className="m-0 text-[13px] text-ink-3">Not yet approved by client</p>
+            )}
+            {!readOnly && (
+              <label className="mt-2 flex cursor-pointer items-start gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={clientWrites}
+                  disabled={pending}
+                  onChange={(e) => toggleClientWrite(e.target.checked)}
+                  className="mt-0.5 size-3.5 shrink-0 cursor-pointer accent-accent"
+                />
+                <span>
+                  They write this one
+                  <span className="block text-xs text-ink-3">A box on the share page for their words. Formatting here is replaced by what they type.</span>
+                </span>
+              </label>
             )}
           </div>
         )}

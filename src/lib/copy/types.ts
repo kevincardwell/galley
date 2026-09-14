@@ -22,6 +22,8 @@ export type SectionRow = {
   version: number;
   updatedAt: number;
   updatedByName: string | null;
+  /** The studio has handed this section to the client to write. */
+  clientCanWrite: boolean;
 };
 
 export type VersionRow = {
@@ -53,6 +55,8 @@ export type SectionDetails = {
   shareReview: boolean;
   clientApprovedAt: number | null;
   clientApprovedBy: string | null;
+  /** The studio has handed this section to the client to write. */
+  clientCanWrite: boolean;
 };
 
 /** What the public share page needs per section when client review is on. */

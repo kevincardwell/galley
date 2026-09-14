@@ -238,6 +238,32 @@ export async function restoreVersion(sectionId: string, versionId: string): Prom
   return { version: saved.version };
 }
 
+/**
+ * Hands a section to the client to write, or takes it back.
+ *
+ * Their words arrive as plain paragraphs through the share link, so this is for
+ * sections waiting on them — an About page, a list of services — not for copy
+ * the studio has already formatted.
+ */
+export async function setSectionClientWrite(sectionId: string, canWrite: boolean): Promise<void> {
+  const user = await requireUser();
+  const { section, pageSlug } = sectionOrThrow(sectionId);
+  const { workspace } = assertAccess(user, section.workspaceId, "edit");
+  if (section.clientCanWrite === canWrite) return;
+  db.update(schema.sections).set({ clientCanWrite: canWrite }).where(eq(schema.sections.id, section.id)).run();
+  logActivity({
+    workspaceId: workspace.id,
+    actorId: user.id,
+    verb: "updated",
+    subjectType: "section",
+    subjectId: section.id,
+    subjectTitle: section.title,
+    meta: { clientCanWrite: canWrite },
+  });
+  revalidatePath(copyPath(workspace.slug, pageSlug));
+  if (workspace.shareToken) revalidatePath(`/share/${workspace.shareToken}`, "layout");
+}
+
 // ---------------------------------------------------------------- comments
 
 export async function addComment(sectionId: string, body: string): Promise<{ id: string }> {

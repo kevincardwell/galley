@@ -14,6 +14,7 @@ const KIND_ICON: Record<string, IconName> = {
   client_comment: "message",
   client_approved: "check-circle",
   client_upload: "upload",
+  client_wrote: "pencil",
   assigned: "user",
   mention: "zap",
   invite: "mail",

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useSyncExternalStore, useTransition, type FormEvent, type KeyboardEvent } from "react";
+import { useState, useTransition, type FormEvent, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
@@ -8,54 +8,7 @@ import { clsx } from "@/lib/clsx";
 import { timeAgo } from "@/lib/format";
 import { guestApprove, guestComment } from "@/actions/share";
 import type { ShareSectionReview } from "@/lib/copy/types";
-
-const NAME_KEY = "galley.guestName";
-
-function readName(): string {
-  try {
-    return window.localStorage.getItem(NAME_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-const listeners = new Set<() => void>();
-const notify = () => listeners.forEach((l) => l());
-
-function saveName(name: string) {
-  try {
-    window.localStorage.setItem(NAME_KEY, name);
-  } catch {
-    /* private mode; the name still lives for this page load */
-  }
-  notify();
-}
-
-function subscribe(l: () => void) {
-  listeners.add(l);
-  const onStorage = (e: StorageEvent) => {
-    if (e.key === NAME_KEY) l();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(l);
-    window.removeEventListener("storage", onStorage);
-  };
-}
-
-/** One name shared by every section on the page, remembered in localStorage. */
-function useGuestName() {
-  const stored = useSyncExternalStore(subscribe, readName, () => "");
-  // Typing is local until it is committed to storage, so a draft never fights the stored value.
-  const [draft, setDraft] = useState<string | null>(null);
-  const name = draft ?? stored;
-  const update = (n: string) => {
-    setDraft(n);
-    saveName(n.trim());
-  };
-  const settle = () => setDraft(null);
-  return [name, update, settle] as const;
-}
+import { useGuestName } from "@/components/share/guest-name";
 
 const message = (e: unknown, fallback: string) => (e instanceof Error && e.message && !/server/i.test(e.message) ? e.message : fallback);
 

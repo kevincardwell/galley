@@ -71,6 +71,13 @@
       "when": 1789391764362,
       "tag": "0009_supreme_frog_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789392154918,
+      "tag": "0010_peaceful_quicksilver",
+      "breakpoints": true
     }
   ]
 }

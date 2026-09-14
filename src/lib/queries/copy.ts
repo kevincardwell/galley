@@ -66,6 +66,7 @@ export function listSections(pageId: string): SectionRow[] {
       version: s.version,
       updatedAt: s.updatedAt,
       updatedByName: updatedByName ?? null,
+      clientCanWrite: s.clientCanWrite,
     }));
 }
 
@@ -138,14 +139,14 @@ export function listAssets(workspaceId: string) {
 // ---- Client review (share link) ----
 
 /** The client-approval state of a section plus whether its workspace lets clients review at all. */
-export function sectionClientReview(sectionId: string): Pick<SectionDetails, "shareReview" | "clientApprovedAt" | "clientApprovedBy"> {
+export function sectionClientReview(sectionId: string): Pick<SectionDetails, "shareReview" | "clientApprovedAt" | "clientApprovedBy" | "clientCanWrite"> {
   const row = db
-    .select({ shareReview: schema.workspaces.shareReview, clientApprovedAt: schema.sections.clientApprovedAt, clientApprovedBy: schema.sections.clientApprovedBy })
+    .select({ shareReview: schema.workspaces.shareReview, clientApprovedAt: schema.sections.clientApprovedAt, clientApprovedBy: schema.sections.clientApprovedBy, clientCanWrite: schema.sections.clientCanWrite })
     .from(schema.sections)
     .innerJoin(schema.workspaces, eq(schema.workspaces.id, schema.sections.workspaceId))
     .where(eq(schema.sections.id, sectionId))
     .get();
-  return { shareReview: row?.shareReview ?? false, clientApprovedAt: row?.clientApprovedAt ?? null, clientApprovedBy: row?.clientApprovedBy ?? null };
+  return { shareReview: row?.shareReview ?? false, clientApprovedAt: row?.clientApprovedAt ?? null, clientApprovedBy: row?.clientApprovedBy ?? null, clientCanWrite: row?.clientCanWrite ?? false };
 }
 
 /** Unresolved comments and client approval for every section of a page, keyed by section id. Used by the share page. */
