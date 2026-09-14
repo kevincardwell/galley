@@ -91,6 +91,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const usedFiles = new Set<string>();
   for (const a of assets) {
     const file = storage.pathFor(ws.id, a.id, "original", variantExt(a, "original"));
+    // Same repair the file route and the processor do: an original stored under
+    // an older spelling of its extension would otherwise be dropped from the
+    // zip without a word, which is the worst place to lose something quietly.
+    storage.healOriginal(ws.id, a.id, file);
     if (!storage.exists(file)) continue;
     let name = safeName(a.filename);
     if (usedFiles.has(name)) {

@@ -6,7 +6,7 @@ Galley applies database migrations when the container starts, and copies the dat
 `backups/pre-migration-<date>.db` first, so an upgrade that goes wrong can be stepped back by putting that file
 in place and running the previous tag.
 
-## Unreleased
+## v1.0.1 — 2026-09-14
 
 ### Fixed
 
@@ -15,8 +15,8 @@ in place and running the previous tag.
   so a `.jpeg` landed on disk as `original.jpeg` and was looked for as `original.jpg`. The upload appeared to
   work, the byte count was right, and the asset then said "The original file is missing". Uploads now use the
   canonical extension, files already written under the other spelling are renamed into place the first time
-  they are asked for, and an asset that failed only for this reason is retried on the next start instead of
-  staying failed.
+  they are asked for — including by the zip export, which would otherwise have dropped them without a word —
+  and an asset that failed only for this reason is retried on the next start instead of staying failed.
 - **An image that failed to process showed a broken image.** The grid assumed every image had a thumbnail
   whether or not processing had succeeded, so the browser's broken-image glyph appeared instead of the file
   icon and the "Could not process" note underneath. Videos already checked; images do now too.
