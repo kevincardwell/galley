@@ -109,6 +109,38 @@ sample workspace, copy editor, versions, restore. CI now does this on every push
 Regression tests in `tests/unit/copy-restore.test.ts` (restore changes the live doc, survives a room reload,
 reaches connected clients; approval lapses on edit but not on a no-op save). 102 unit tests pass.
 
+## Tier 1 started 2026-09-14: templates and recurring tasks
+
+Both from the review agents' "small, disproportionate value" list, and both aimed at the work Radius Media
+actually repeats.
+
+- **Start a project from an existing one.** The New workspace dialog gains a "Start from" picker listing every
+  project you can see (archived included). `copyStructure` in `src/lib/workspaces/template.ts` copies task
+  sections and their task *titles*, plus pages and their copy-section titles. Deliberately not copied, because
+  it belongs to the old client rather than to the shape of the work: task bodies, assignees, due dates, done
+  state, the copy itself, files, suppliers, members, share links — and never a previous client's approval.
+  Verified in the browser: a new project came out with 4 task sections, 10 reset tasks, 4 pages and 12 empty
+  draft sections, and the project it copied from was untouched.
+- **Recurring tasks.** One nullable `tasks.repeat_every` column (weekly / fortnightly / monthly / quarterly /
+  yearly, migration `0005`) and a Repeats picker in the task detail panel. Completing a repeating task spawns
+  the next one via `spawnNextOccurrence` in `src/lib/tasks/recur.ts`, carrying the section, title, description,
+  assignee and an unticked copy of the checklist. This is what makes Galley hold a care plan rather than only a
+  build.
+  Two decisions worth keeping: the schedule *moves* to the new task rather than being copied, so reopening and
+  re-completing the old one cannot spawn a duplicate; and `nextDue` skips past missed occurrences, so a monthly
+  check ticked off six months late lands next month rather than immediately overdue.
+  Both completion paths (`toggleDone` and `updateTask` with status done) call the one helper — the logic is not
+  duplicated per caller.
+
+Tests: `tests/unit/recur.test.ts` (7) and `tests/unit/workspace-template.test.ts` (4). 113 unit tests pass.
+
+Unplanned verification: pointing a dev server at the existing `data/` directory applied migration 0005 and
+wrote `data/backups/pre-migration-2026-09-14T12-44-06-249Z.db` on the way, which is the Tier 0 rollback
+snapshot doing its job on a real schema change.
+
+Still to do from Tier 1: the two-way client portal (guest upload through the share token, then sections a
+client can write) and the weekly client digest email. Those are the larger pair and the real product bet.
+
 ## Not yet done (pick up here)
 1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.

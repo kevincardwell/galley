@@ -6,11 +6,12 @@ import { z } from "zod";
 import { db, schema } from "@/db/client";
 import { WORKSPACE_STATUSES } from "@/db/schema";
 import { requireUser } from "@/lib/auth/current";
-import { assertAccess } from "@/lib/permissions";
+import { accessFor, assertAccess } from "@/lib/permissions";
 import { newId, newToken } from "@/lib/ids";
 import { slugify } from "@/lib/slug";
 import { logActivity, logAudit } from "@/lib/activity";
 import { storage } from "@/lib/storage";
+import { copyStructure } from "@/lib/workspaces/template";
 import { fetchFavicon } from "@/lib/favicon";
 
 const wsInput = z.object({
@@ -19,6 +20,7 @@ const wsInput = z.object({
   clientName: z.string().trim().max(80).optional().transform((v) => v || null),
   accent: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   status: z.enum(WORKSPACE_STATUSES).optional(),
+  templateId: z.string().trim().optional().transform((v) => v || null),
 });
 
 function uniqueSlug(base: string, exceptId?: string) {
@@ -37,14 +39,20 @@ export async function createWorkspace(form: FormData) {
   const user = await requireUser();
   const parsed = wsInput.safeParse(Object.fromEntries(form));
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message);
-  const { name, url, clientName, accent } = parsed.data;
+  const { name, url, clientName, accent, templateId } = parsed.data;
+  // Only copy from a project this person can actually see.
+  const template = templateId && accessFor(user, templateId, "view") ? templateId : null;
   const id = newId();
   const slug = uniqueSlug(name);
   db.transaction((tx) => {
     tx.insert(schema.workspaces).values({ id, name, slug, url, clientName, accent: accent ?? "#2F6B4F", createdBy: user.id }).run();
     tx.insert(schema.memberships).values({ workspaceId: id, userId: user.id, role: "manager", addedBy: user.id }).run();
-    DEFAULT_SECTIONS.forEach((n, i) => tx.insert(schema.taskSections).values({ id: newId(), workspaceId: id, name: n, position: i }).run());
-    tx.insert(schema.pages).values({ id: newId(), workspaceId: id, title: "Home", slug: "home", position: 0 }).run();
+    if (template) {
+      copyStructure(tx, template, id, user.id);
+    } else {
+      DEFAULT_SECTIONS.forEach((n, i) => tx.insert(schema.taskSections).values({ id: newId(), workspaceId: id, name: n, position: i }).run());
+      tx.insert(schema.pages).values({ id: newId(), workspaceId: id, title: "Home", slug: "home", position: 0 }).run();
+    }
   });
   logActivity({ workspaceId: id, actorId: user.id, verb: "created", subjectType: "workspace", subjectId: id, subjectTitle: name });
   if (url) fetchFavicon(id, url).catch(() => {});

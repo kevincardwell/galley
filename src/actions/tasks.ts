@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { notifyAssigned, notifyMentions } from "@/lib/notify";
 import { z } from "zod";
 import { db, schema } from "@/db/client";
-import { TASK_STATUSES, type TaskSection, type Task, type User, type Workspace } from "@/db/schema";
+import { TASK_REPEATS, TASK_STATUSES, type TaskSection, type Task, type User, type Workspace } from "@/db/schema";
 import { requireUser } from "@/lib/auth/current";
 import { assertAccess } from "@/lib/permissions";
 import { newId } from "@/lib/ids";
 import { logActivity } from "@/lib/activity";
+import { spawnNextOccurrence } from "@/lib/tasks/recur";
 import type { TaskPatch } from "@/components/tasks/types";
 
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -23,6 +24,7 @@ const patchSchema = z.object({
   assigneeId: z.string().nullable().optional(),
   dueOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a real date").nullable().optional(),
   sectionId: z.string().optional(),
+  repeatEvery: z.enum(TASK_REPEATS).nullable().optional(),
 });
 
 function firstIssue(err: z.ZodError): string {
@@ -111,6 +113,7 @@ export async function updateTask(taskId: string, rawPatch: TaskPatch): Promise<v
   if (patch.title !== undefined) values.title = patch.title;
   if (patch.body !== undefined) values.body = patch.body;
   if (patch.dueOn !== undefined) values.dueOn = patch.dueOn;
+  if (patch.repeatEvery !== undefined) values.repeatEvery = patch.repeatEvery;
   if (patch.assigneeId !== undefined) {
     if (patch.assigneeId) assertAssignable(workspace.id, patch.assigneeId);
     values.assigneeId = patch.assigneeId;
@@ -135,6 +138,7 @@ export async function updateTask(taskId: string, rawPatch: TaskPatch): Promise<v
     await notifyMentions({ text: values.body, workspaceId: workspace.id, actorId: user.id, href, context: `task “${values.title ?? task.title}”` });
   }
   const completed = values.status === "done";
+  if (completed) spawnNextOccurrence(task.id, user.id);
   logActivity({
     workspaceId: workspace.id,
     actorId: user.id,
@@ -154,6 +158,7 @@ export async function toggleDone(taskId: string): Promise<void> {
     .set({ status: done ? "done" : "todo", completedAt: done ? nowSec() : null })
     .where(eq(schema.tasks.id, task.id))
     .run();
+  if (done) spawnNextOccurrence(task.id, user.id);
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: done ? "completed" : "reopened", subjectType: "task", subjectId: task.id, subjectTitle: task.title });
   refresh(workspace);
 }

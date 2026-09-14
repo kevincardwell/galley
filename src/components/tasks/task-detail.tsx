@@ -12,9 +12,10 @@ import { useBoard, isTempId } from "./board-context";
 import { TaskCheckbox } from "./task-checkbox";
 import { Checklist } from "./checklist";
 import { Comments } from "./comments";
-import type { TaskItem, TaskStatus } from "./types";
+import type { TaskItem, TaskStatus, TaskRepeat } from "./types";
 
 const STATUS_LABEL: Record<TaskStatus, string> = { todo: "To do", doing: "Doing", done: "Done" };
+const REPEAT_LABEL: Record<TaskRepeat, string> = { weekly: "Every week", fortnightly: "Every two weeks", monthly: "Every month", quarterly: "Every quarter", yearly: "Every year" };
 
 export function TaskDetail({ task, sections }: { task: TaskItem; sections: { id: string; name: string }[] }) {
   const board = useBoard();
@@ -99,6 +100,19 @@ export function TaskDetail({ task, sections }: { task: TaskItem; sections: { id:
               <Select value={task.sectionId} disabled={readOnly} onChange={(e) => board.updateTask(task.id, { sectionId: e.target.value })}>
                 {sections.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </Select>
+            </Label>
+            <Label className="col-span-2">Repeats
+              <Select
+                value={task.repeatEvery ?? ""}
+                disabled={readOnly}
+                onChange={(e) => board.updateTask(task.id, { repeatEvery: (e.target.value || null) as TaskRepeat | null })}
+              >
+                <option value="">Does not repeat</option>
+                {(Object.keys(REPEAT_LABEL) as TaskRepeat[]).map((r) => <option key={r} value={r}>{REPEAT_LABEL[r]}</option>)}
+              </Select>
+              {task.repeatEvery && (
+                <span className="text-xs text-ink-3">Ticking this off creates the next one and moves the schedule to it.</span>
+              )}
             </Label>
             <Label className="col-span-2">Description
               <Textarea

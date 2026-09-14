@@ -26,10 +26,12 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     return `${ws.name} ${ws.clientName ?? ""} ${ws.url ?? ""}`.toLowerCase().includes(needle);
   });
   const filtering = Boolean(q || status || archived);
+  // Any project you can see is a shape worth reusing, archived ones included.
+  const templates = (archived ? all : listWorkspacesFor(user, true)).map(({ ws }) => ({ id: ws.id, name: ws.name }));
 
   return (
     <Screen>
-      <PageHeader title="Workspaces" count={rows.length} action={<NewWorkspaceButton />} />
+      <PageHeader title="Workspaces" count={rows.length} action={<NewWorkspaceButton templates={templates} />} />
       {all.length > 0 && <WorkspaceFilters q={q} status={status} archived={archived} />}
 
       {all.length === 0 ? (
@@ -37,7 +39,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           icon="sparkles"
           title="No workspaces yet"
           hint={user.isAdmin ? "Create one for each website you are working on." : "Ask an admin to add you to a workspace."}
-          action={<NewWorkspaceButton />}
+          action={<NewWorkspaceButton templates={templates} />}
         />
       ) : rows.length === 0 ? (
         <Empty

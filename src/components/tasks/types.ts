@@ -1,6 +1,6 @@
-import type { AssetKind, TaskStatus } from "@/db/schema";
+import type { AssetKind, TaskRepeat, TaskStatus } from "@/db/schema";
 
-export type { TaskStatus };
+export type { TaskStatus, TaskRepeat };
 export type TaskView = "list" | "board";
 
 export type Member = { id: string; name: string };
@@ -28,6 +28,7 @@ export type TaskItem = {
   assigneeId: string | null;
   assigneeName: string | null;
   dueOn: string | null;
+  repeatEvery: TaskRepeat | null;
   position: number;
   createdAt: number;
   completedAt: number | null;
@@ -45,6 +46,7 @@ export type TaskPatch = {
   status?: TaskStatus;
   assigneeId?: string | null;
   dueOn?: string | null;
+  repeatEvery?: TaskRepeat | null;
   sectionId?: string;
 };
 

@@ -64,6 +64,7 @@ export function loadTasks(workspaceId: string): TaskItem[] {
     assigneeId: t.assigneeId,
     assigneeName,
     dueOn: t.dueOn,
+    repeatEvery: t.repeatEvery,
     position: t.position,
     createdAt: t.createdAt,
     completedAt: t.completedAt,

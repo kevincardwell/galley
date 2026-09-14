@@ -98,6 +98,9 @@ export const taskSections = sqliteTable("task_sections", {
 export const TASK_STATUSES = ["todo", "doing", "done"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
+export const TASK_REPEATS = ["weekly", "fortnightly", "monthly", "quarterly", "yearly"] as const;
+export type TaskRepeat = (typeof TASK_REPEATS)[number];
+
 export const tasks = sqliteTable(
   "tasks",
   {
@@ -109,6 +112,7 @@ export const tasks = sqliteTable(
     status: text("status", { enum: TASK_STATUSES }).notNull().default("todo"),
     assigneeId: text("assignee_id").references(() => users.id, { onDelete: "set null" }),
     dueOn: text("due_on"), // ISO date YYYY-MM-DD
+    repeatEvery: text("repeat_every", { enum: TASK_REPEATS }), // null = one-off; completing a repeating task spawns the next
     position: integer("position").notNull().default(0),
     createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: integer("created_at").notNull().default(now()),

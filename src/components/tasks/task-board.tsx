@@ -165,7 +165,7 @@ export function TaskBoard(props: Props) {
   const createTask = useCallback((sectionId: string, title: string) => {
     const id = tempId();
     const draft: TaskItem = {
-      id, workspaceId, sectionId, title, body: "", status: "todo", assigneeId: null, assigneeName: null, dueOn: null,
+      id, workspaceId, sectionId, title, body: "", status: "todo", assigneeId: null, assigneeName: null, dueOn: null, repeatEvery: null,
       position: Number.MAX_SAFE_INTEGER, createdAt: nowSec(), completedAt: null, checklist: [], attachments: [], comments: [],
     };
     setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, tasks: [...s.tasks, draft] } : s)));
