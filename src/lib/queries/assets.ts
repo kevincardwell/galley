@@ -59,7 +59,9 @@ export function listAssets(workspaceId: string, slug: string): AssetItem[] {
     palette: asset.palette ?? null,
     processedAt: asset.processedAt,
     processError: asset.processError,
-    uploadedByName,
+    // A client who sent the file in has no account, so their name lives on the asset itself.
+    uploadedByName: uploadedByName ?? asset.guestName,
+    fromClient: !!asset.guestName,
     createdAt: asset.createdAt,
     tags: tags.get(asset.id) ?? [],
     usedIn: usage.get(asset.id) ?? [],

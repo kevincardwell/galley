@@ -13,6 +13,7 @@ import type { NotificationRow } from "@/lib/queries/notifications";
 const KIND_ICON: Record<string, IconName> = {
   client_comment: "message",
   client_approved: "check-circle",
+  client_upload: "upload",
   assigned: "user",
   mention: "zap",
   invite: "mail",

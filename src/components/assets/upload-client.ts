@@ -5,14 +5,31 @@ import type { UploadResponse } from "@/lib/media/types";
 
 export type UploadEntry = { id: string; name: string; progress: number; status: "uploading" | "done" | "error"; error?: string };
 
+/**
+ * Where the files are going. A signed-in editor uploads into a workspace; a
+ * client with a share link sends them in with their name instead.
+ */
+export type UploadTarget =
+  | { workspaceId: string; folderId?: string | null }
+  | { shareToken: string; guestName: string };
+
+function targetFields(form: FormData, target: UploadTarget) {
+  if ("shareToken" in target) {
+    form.set("shareToken", target.shareToken);
+    form.set("guestName", target.guestName);
+    return;
+  }
+  form.set("workspaceId", target.workspaceId);
+  if (target.folderId) form.set("folderId", target.folderId);
+}
+
 let seq = 0;
 
 /** One XHR per file so each gets an honest progress bar. */
-export function uploadFile(file: File, opts: { workspaceId: string; folderId?: string | null }, onProgress: (fraction: number) => void): Promise<UploadResponse> {
+export function uploadFile(file: File, target: UploadTarget, onProgress: (fraction: number) => void): Promise<UploadResponse> {
   return new Promise((resolve, reject) => {
     const form = new FormData();
-    form.set("workspaceId", opts.workspaceId);
-    if (opts.folderId) form.set("folderId", opts.folderId);
+    targetFields(form, target);
     form.append("files", file, file.name);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload");
@@ -46,7 +63,7 @@ export function filesFromClipboard(data: DataTransfer | null): File[] {
 }
 
 /** Tracks a batch of uploads with per-file progress. Calls `onDone` after each success so the page can refresh. */
-export function useUploads(opts: { workspaceId: string; folderId?: string | null; onDone?: (res: UploadResponse) => void }) {
+export function useUploads(opts: UploadTarget & { maxUploadMb?: number; onDone?: (res: UploadResponse) => void }) {
   const [uploads, setUploads] = useState<UploadEntry[]>([]);
   const optsRef = useRef(opts);
   useEffect(() => { optsRef.current = opts; });
@@ -57,12 +74,16 @@ export function useUploads(opts: { workspaceId: string; folderId?: string | null
 
   const uploadFiles = useCallback(
     async (files: File[]) => {
-      const { workspaceId, folderId } = optsRef.current;
+      const target = optsRef.current;
+      // Checked here as well as on the server: without it the whole file is sent
+      // up a domestic connection before the server refuses it.
+      const maxBytes = (target.maxUploadMb ?? 0) * 1024 * 1024;
       const entries: { id: string; file: File }[] = [];
       const rejected: UploadEntry[] = [];
       for (const file of files) {
         const id = `u${++seq}`;
         if (!describeFile(file.name)) rejected.push({ id, name: file.name, progress: 0, status: "error", error: "Not an accepted file type" });
+        else if (maxBytes && file.size > maxBytes) rejected.push({ id, name: file.name, progress: 0, status: "error", error: `Larger than the ${target.maxUploadMb} MB limit` });
         else entries.push({ id, file });
       }
       setUploads((list) => [...list, ...rejected, ...entries.map(({ id, file }) => ({ id, name: file.name, progress: 0, status: "uploading" as const }))]);
@@ -73,7 +94,7 @@ export function useUploads(opts: { workspaceId: string; folderId?: string | null
         for (let next = queue.shift(); next; next = queue.shift()) {
           const { id, file } = next;
           try {
-            const res = await uploadFile(file, { workspaceId, folderId }, (f) => patch(id, { progress: f }));
+            const res = await uploadFile(file, target, (f) => patch(id, { progress: f }));
             patch(id, { progress: 1, status: "done" });
             optsRef.current.onDone?.(res);
             setTimeout(() => setUploads((l) => l.filter((u) => u.id !== id)), 1800);

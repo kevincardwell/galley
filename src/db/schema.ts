@@ -67,6 +67,8 @@ export const workspaces = sqliteTable("workspaces", {
   shareToken: text("share_token").unique(),
   calendarToken: text("calendar_token").unique(),
   shareReview: integer("share_review", { mode: "boolean" }).notNull().default(false),
+  // Separate opt-in from shareReview: letting a client write comments is a smaller risk than letting them write files.
+  shareUploads: integer("share_uploads", { mode: "boolean" }).notNull().default(false),
   createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: integer("created_at").notNull().default(now()),
   archivedAt: integer("archived_at"),
@@ -275,7 +277,7 @@ export const notifications = sqliteTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     workspaceId: text("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
-    kind: text("kind").notNull(), // mention, assigned, client_comment, client_approved, invite
+    kind: text("kind").notNull(), // mention, assigned, client_comment, client_approved, client_upload, invite
     title: text("title").notNull(),
     body: text("body"),
     href: text("href"),
@@ -340,6 +342,7 @@ export const assets = sqliteTable(
     processedAt: integer("processed_at"),
     processError: text("process_error"),
     uploadedBy: text("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+    guestName: text("guest_name"), // set instead of uploadedBy when a client sent it through the share link
     createdAt: integer("created_at").notNull().default(now()),
   },
   (t) => [index("assets_ws").on(t.workspaceId)],

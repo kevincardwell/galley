@@ -48,7 +48,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
             {ws.clientName && <span className="truncate">{ws.clientName}</span>}
             <Pill tone="accent">{STATUS_LABEL[ws.status]}</Pill>
           </div>
-          <div className="ml-auto shrink-0"><WorkspaceHeaderActions workspaceId={ws.id} slug={ws.slug} shareToken={ws.shareToken} canManage={canManage} shareReview={ws.shareReview} /></div>
+          <div className="ml-auto shrink-0"><WorkspaceHeaderActions workspaceId={ws.id} slug={ws.slug} shareToken={ws.shareToken} canManage={canManage} shareReview={ws.shareReview} shareUploads={ws.shareUploads} /></div>
         </div>
         <WorkspaceTabs slug={ws.slug} counts={{ open: counts.open, approved: counts.approved, sections: counts.sections, assets: counts.assets }} canManage={canManage} />
       </header>

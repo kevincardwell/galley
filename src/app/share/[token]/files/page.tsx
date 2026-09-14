@@ -3,6 +3,8 @@ import { formatBytes } from "@/lib/format";
 import { listAssets, workspaceByShareToken } from "@/lib/queries/copy";
 import { Empty } from "@/components/ui/empty";
 import { Icon, type IconName } from "@/components/ui/icon";
+import { GuestUpload } from "@/components/share/guest-upload";
+import { getSettings } from "@/lib/settings";
 
 const KIND_ICON: Record<string, IconName> = { image: "image", video: "play", pdf: "file" };
 const KIND_LABEL: Record<string, string> = { image: "Image", video: "Video", pdf: "PDF" };
@@ -13,6 +15,7 @@ export default async function ShareFiles({ params }: { params: Promise<{ token: 
   if (!ws) notFound();
   const assets = listAssets(ws.id);
   const q = `?share=${encodeURIComponent(token)}`;
+  const { maxUploadMb } = getSettings();
 
   return (
     <div>
@@ -21,8 +24,14 @@ export default async function ShareFiles({ params }: { params: Promise<{ token: 
         <h2 className="m-0 mt-1.5 font-serif text-[30px] leading-tight font-medium tracking-tight">Files</h2>
       </header>
 
+      {ws.shareUploads && <GuestUpload token={token} maxUploadMb={maxUploadMb} />}
+
       {assets.length === 0 ? (
-        <Empty icon="image" title="No files have been shared yet" hint="Anything the studio uploads for this project shows up here." />
+        <Empty
+          icon="image"
+          title="No files have been shared yet"
+          hint={ws.shareUploads ? "Anything the studio uploads shows up here, alongside anything you send in." : "Anything the studio uploads for this project shows up here."}
+        />
       ) : (
         <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 p-0">
           {assets.map((a) => (

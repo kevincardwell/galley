@@ -19,6 +19,8 @@ export type AssetItem = {
   processedAt: number | null;
   processError: string | null;
   uploadedByName: string | null;
+  /** True when a client sent this in through the share link rather than the studio uploading it. */
+  fromClient?: boolean;
   createdAt: number;
   tags: string[];
   usedIn: AssetUsage[];

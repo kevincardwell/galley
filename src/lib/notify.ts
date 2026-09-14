@@ -6,7 +6,7 @@ import { notificationEmail } from "@/lib/email/templates";
 import { newId } from "@/lib/ids";
 import { getSettings } from "@/lib/settings";
 
-export type NotificationKind = "mention" | "assigned" | "client_comment" | "client_approved" | "invite";
+export type NotificationKind = "mention" | "assigned" | "client_comment" | "client_approved" | "client_upload" | "invite";
 
 export type NotifyInput = {
   userId: string;

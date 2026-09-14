@@ -92,7 +92,12 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
           <dt className="text-ink-3">Size</dt><dd className="m-0">{formatBytes(asset.bytes)}</dd>
           {asset.width && asset.height && (<><dt className="text-ink-3">Dimensions</dt><dd className="m-0">{asset.width} × {asset.height}</dd></>)}
           {asset.durationMs != null && (<><dt className="text-ink-3">Duration</dt><dd className="m-0">{formatDuration(asset.durationMs)}</dd></>)}
-          <dt className="text-ink-3">Uploaded</dt><dd className="m-0">{asset.uploadedByName ?? "Someone"}, {timeAgo(asset.createdAt)}</dd>
+          <dt className="text-ink-3">Uploaded</dt>
+          <dd className="m-0">
+            {asset.uploadedByName ?? "Someone"}
+            {asset.fromClient && <span className="ml-1.5 rounded-r border border-line bg-surface-2 px-1.5 py-0.5 text-xs text-ink-2">Sent by the client</span>}
+            , {timeAgo(asset.createdAt)}
+          </dd>
         </dl>
         {asset.processError && (
           <p className="m-0 mt-2 flex items-start gap-1.5 text-xs text-late"><Icon name="alert" size={13} className="mt-px" />{asset.processError}</p>

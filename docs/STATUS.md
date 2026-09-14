@@ -138,8 +138,40 @@ Unplanned verification: pointing a dev server at the existing `data/` directory 
 wrote `data/backups/pre-migration-2026-09-14T12-44-06-249Z.db` on the way, which is the Tier 0 rollback
 snapshot doing its job on a real schema change.
 
-Still to do from Tier 1: the two-way client portal (guest upload through the share token, then sections a
-client can write) and the weekly client digest email. Those are the larger pair and the real product bet.
+### Guest upload through the share link (2026-09-14)
+
+The first half of the two-way portal, and the review agents' top-ranked item: chasing a client for their logo
+and photographs is what actually stalls a website project.
+
+- A third share capability, `workspaces.share_uploads` (migration `0006`), opt-in from the Share dialog and
+  deliberately **separate from `shareReview`**: letting a client write comments is a smaller risk than letting
+  them write files. `assets.guest_name` records who sent it, with `uploaded_by` left null.
+- One upload route, not two. `/api/upload` now resolves its target from either a signed-in editor
+  (`workspaceId`) or a share token (`shareToken` + `guestName`), before a byte reaches disk, so the streaming,
+  size caps and error handling are not duplicated. `/api/upload` was added to the proxy's PUBLIC list; the
+  route itself is the guard, and a signed-out request with no token still 404s.
+- Guards in `src/lib/share/guard.ts`, now shared with `src/actions/share.ts` rather than duplicated:
+  `shareWorkspace(token, capability)` (wrong token, capability off, and archived project all return null and
+  look identical from outside) and `guestRateLimit` (20 upload requests per token per ten minutes, counted per
+  request so a client sending twenty photos at once is not punished). `notifyShareTeam` was likewise extracted
+  from share.ts; the team gets one `client_upload` notification per batch, not per file.
+- Also fixed while here, from the code-truth audit's item 7: the upload client now checks `file.size` before
+  sending. A client on a domestic connection was previously made to upload a 4 GB file in full before the
+  server refused it.
+
+TRAP found by testing in a browser: the first implementation only took the guest path when nobody was signed
+in. The one person most likely to try the share link is the owner previewing their own project — who *is*
+signed in, so the request fell through to the `workspaceId` branch, found none, and returned a bare 404. The
+token decides now, not the session. Regression test covers it; this is exactly why it is worth clicking
+through as well as unit testing.
+
+Verified end to end in a browser: refused while the switch is off, accepted with it on, file lands in the
+library badged "Sent by the client", palette extracted, team notified. `tests/unit/share-upload.test.ts` (12
+cases, route-level) covers opt-in, archived projects, unknown tokens, a missing name, a workspaceId supplied
+alongside a token (must be ignored), unaccepted file types and the rate limit. 125 unit tests pass.
+
+Still to do from Tier 1: sections a client can write (the other half of the portal) and the weekly client
+digest email — the thing that makes anyone actually open the portal.
 
 ## Not yet done (pick up here)
 1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).

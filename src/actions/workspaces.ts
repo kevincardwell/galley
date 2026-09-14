@@ -122,3 +122,13 @@ export async function setShareReview(workspaceId: string, enabled: boolean) {
   revalidatePath(`/w/${workspace.slug}`, "layout");
   if (workspace.shareToken) revalidatePath(`/share/${workspace.shareToken}`, "layout");
 }
+
+/** Lets (or stops letting) the client send files in through the share link. */
+export async function setShareUploads(workspaceId: string, enabled: boolean) {
+  const user = await requireUser();
+  const { workspace } = assertAccess(user, workspaceId, "manage");
+  db.update(schema.workspaces).set({ shareUploads: enabled }).where(eq(schema.workspaces.id, workspace.id)).run();
+  logAudit({ actorId: user.id, action: enabled ? "share.uploads_enabled" : "share.uploads_disabled", subjectType: "workspace", subjectId: workspace.id });
+  revalidatePath(`/w/${workspace.slug}`, "layout");
+  if (workspace.shareToken) revalidatePath(`/share/${workspace.shareToken}`, "layout");
+}
