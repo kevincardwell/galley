@@ -4,12 +4,13 @@ import fsp from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import sharp from "sharp";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import type { Asset } from "@/db/schema";
 import { enqueue } from "./queue";
 import { extractPalette } from "./palette";
 import { variantPath } from "./paths";
+import { storage } from "@/lib/storage";
 
 const run = promisify(execFile);
 
@@ -20,13 +21,24 @@ type Patch = Partial<Pick<Asset, "width" | "height" | "durationMs" | "palette" |
 
 const nowS = () => Math.floor(Date.now() / 1000);
 
+/**
+ * Recorded when the original cannot be found. Unlike a file that will not
+ * decode, this one is worth retrying: it was the symptom of originals being
+ * written under one spelling of an extension and read under another, which
+ * healOriginal now repairs.
+ */
+export const MISSING_ORIGINAL = "The original file is missing";
+
 /** Generate derived files and metadata for one asset. Safe to call twice; never throws. */
 export async function processAsset(assetId: string): Promise<void> {
   const asset = db.select().from(schema.assets).where(eq(schema.assets.id, assetId)).get();
   if (!asset) return;
   const original = variantPath(asset, "original");
+  // Older uploads were stored under the extension they arrived with; move one
+  // into place if that is what we are looking at before calling it missing.
+  storage.healOriginal(asset.workspaceId, asset.id, original);
   if (!fs.existsSync(original)) {
-    db.update(schema.assets).set({ processError: "The original file is missing" }).where(eq(schema.assets.id, assetId)).run();
+    db.update(schema.assets).set({ processError: MISSING_ORIGINAL }).where(eq(schema.assets.id, assetId)).run();
     return;
   }
   try {
@@ -124,7 +136,10 @@ export function requeueUnprocessed(): number {
   const rows = db
     .select({ id: schema.assets.id })
     .from(schema.assets)
-    .where(and(isNull(schema.assets.processedAt), isNull(schema.assets.processError)))
+    // Assets that failed only because the original could not be found are
+    // retried: healOriginal may well find it now. Anything that failed for
+    // another reason stays failed rather than being retried on every boot.
+    .where(and(isNull(schema.assets.processedAt), or(isNull(schema.assets.processError), eq(schema.assets.processError, MISSING_ORIGINAL))))
     .all();
   for (const r of rows) enqueueAsset(r.id);
   return rows.length;

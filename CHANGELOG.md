@@ -8,6 +8,19 @@ in place and running the previous tag.
 
 ## Unreleased
 
+### Fixed
+
+- **A `.jpeg` upload was stored where nothing would look for it.** The file was written under the extension it
+  arrived with, while every read derived the path from the stored mime — and `.jpg` and `.jpeg` share one mime,
+  so a `.jpeg` landed on disk as `original.jpeg` and was looked for as `original.jpg`. The upload appeared to
+  work, the byte count was right, and the asset then said "The original file is missing". Uploads now use the
+  canonical extension, files already written under the other spelling are renamed into place the first time
+  they are asked for, and an asset that failed only for this reason is retried on the next start instead of
+  staying failed.
+- **An image that failed to process showed a broken image.** The grid assumed every image had a thumbnail
+  whether or not processing had succeeded, so the browser's broken-image glyph appeared instead of the file
+  icon and the "Could not process" note underneath. Videos already checked; images do now too.
+
 ### Changed
 
 - **The Docker Hub blurb** was still the tagline from before the repositioning, and is now the current one.

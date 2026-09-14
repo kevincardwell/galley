@@ -20,7 +20,10 @@ type Props = { asset: AssetItem; selected: boolean; onSelect: (id: string) => vo
 export const AssetTile = memo(function AssetTile({ asset, selected, onSelect, onOpen }: Props) {
   const ratio = asset.width && asset.height ? `${asset.width} / ${asset.height}` : asset.kind === "video" ? "16 / 9" : asset.kind === "pdf" ? "3 / 4" : "4 / 3";
   const pending = !asset.processedAt && !asset.processError;
-  const hasThumb = asset.kind === "image" || (asset.kind === "video" && !!asset.processedAt && !asset.processError);
+  // Images were trusted to have a thumbnail whether or not processing had
+  // succeeded, so a failure rendered the browser's broken-image glyph instead of
+  // the icon and the "Could not process" note below. Videos already checked.
+  const hasThumb = (asset.kind === "image" || asset.kind === "video") && !!asset.processedAt && !asset.processError;
   return (
     <button
       type="button"

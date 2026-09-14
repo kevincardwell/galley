@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { currentUser } from "@/lib/auth/current";
 import { accessFor } from "@/lib/permissions";
-import type { Variant } from "@/lib/storage";
+import { storage, type Variant } from "@/lib/storage";
 import { variantExt, variantMime, variantPath } from "@/lib/media/paths";
 
 const VARIANTS: readonly Variant[] = ["original", "thumb", "preview", "poster"];
@@ -68,6 +68,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // Resolve the file, falling back while derived variants are still being made.
   let served: Variant = variant;
   let file = variantPath(asset, served);
+  if (served === "original") storage.healOriginal(asset.workspaceId, asset.id, file);
   if (!fs.existsSync(file)) {
     if (variant === "thumb" && asset.kind === "video" && fs.existsSync(variantPath(asset, "poster"))) served = "poster";
     else if ((variant === "thumb" || variant === "preview") && asset.kind === "image") served = "original";

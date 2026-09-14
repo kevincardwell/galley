@@ -8,7 +8,7 @@ import { getSettings } from "@/lib/settings";
 import { storage } from "@/lib/storage";
 import { newId } from "@/lib/ids";
 import { logActivity } from "@/lib/activity";
-import { describeFile, safeFilename } from "@/lib/media/mime";
+import { describeFile, extForMime, safeFilename } from "@/lib/media/mime";
 import { enqueueAsset } from "@/lib/media/process";
 import { FileTooLargeError, NotMultipartError, parseMultipartUpload, type MultipartFile } from "@/lib/media/multipart";
 import type { AssetSummary, UploadResponse } from "@/lib/media/types";
@@ -88,7 +88,11 @@ export async function POST(req: Request) {
     }
     const id = newId();
     try {
-      await storage.writeOriginal(t.ws.id, id, desc.ext, file.stream);
+      // extForMime, not desc.ext: two accepted extensions can share one mime
+      // (.jpg and .jpeg), and everything that reads a file back derives the
+      // path from the stored mime. Writing under the uploaded spelling left
+      // .jpeg uploads on disk under a name nothing would ever look for.
+      await storage.writeOriginal(t.ws.id, id, extForMime(desc.mime), file.stream);
     } catch (err) {
       await storage.remove(t.ws.id, id).catch(() => {});
       seenFiles++;

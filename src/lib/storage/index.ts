@@ -33,6 +33,33 @@ export const storage = {
   exists(p: string) {
     return fs.existsSync(p);
   },
+  /**
+   * Finds an original that was stored under a different spelling of the same
+   * type, and renames it to the canonical one.
+   *
+   * Uploads used to be written under the extension the file arrived with while
+   * everything reading them derived the path from the stored mime, so a .jpeg
+   * landed on disk as original.jpeg and was looked for as original.jpg. The
+   * writer is fixed; this repairs what it already wrote, on first access, so
+   * nobody has to re-upload. Returns true when it moved something.
+   */
+  healOriginal(workspaceId: string, assetId: string, canonical: string): boolean {
+    if (fs.existsSync(canonical)) return false;
+    const dir = this.dir(workspaceId, assetId);
+    let found: string | undefined;
+    try {
+      found = fs.readdirSync(dir).find((f) => f.startsWith("original."));
+    } catch {
+      return false; // no directory at all: genuinely missing, not misnamed
+    }
+    if (!found) return false;
+    try {
+      fs.renameSync(path.join(dir, found), canonical);
+      return true;
+    } catch {
+      return false;
+    }
+  },
   async usage(workspaceId?: string): Promise<number> {
     const root = workspaceId ? path.join(UPLOAD_DIR, workspaceId) : UPLOAD_DIR;
     let total = 0;
