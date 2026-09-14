@@ -73,6 +73,4 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ secrets.DOCKERHUB_USERNAME }}/galley
           short-description: Write your client's website copy, get it signed off, and keep the project beside it. Self-hosted.
-          # Not README.md: Docker Hub strips raw HTML, so the README's centred
-          # hero, headings and badges render as nothing at all.
-          readme-filepath: ./docs/dockerhub.md
+          readme-filepath: ./README.md
