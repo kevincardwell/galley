@@ -231,6 +231,34 @@ function persistRoom(room: Room, by?: string | null): { version: number; updated
   return { version: result.version, updatedAt: result.updatedAt };
 }
 
+/**
+ * Replaces a section's live document wholesale, for version restore.
+ *
+ * Restoring by writing sections.content did nothing: loadDoc rebuilds a room
+ * from sections.ydoc and ignores the column, so the editor kept the newer text
+ * and the next persist wrote that straight back over the restore. The swap has
+ * to happen inside the Y.Doc every client is attached to, and reach them as an
+ * ordinary update.
+ */
+function replaceDoc(sectionId: string, content: TiptapDoc, userId: string): { version: number; updatedAt: number } | null {
+  const room = getRoom(sectionId);
+  if (!room) return null;
+  const fresh = prosemirrorJSONToYDoc(pmSchema(), asDoc(content), Y_FIELD);
+  const target = room.doc.getXmlFragment(Y_FIELD);
+  const before = Y.encodeStateVector(room.doc);
+  room.doc.transact(() => {
+    target.delete(0, target.length);
+    // Clones are detached copies: the originals belong to `fresh` and cannot be re-integrated.
+    target.insert(0, fresh.getXmlFragment(Y_FIELD).toArray().map((n) => (n as Y.XmlElement).clone()));
+  });
+  fresh.destroy();
+  const update = Y.encodeStateAsUpdate(room.doc, before);
+  db.insert(schema.collabUpdates).values({ sectionId, update: Buffer.from(update) }).run();
+  broadcast(room, "update", { section: sectionId, update: Buffer.from(update).toString("base64") });
+  room.lastEditor = userId;
+  return persistRoom(room, userId);
+}
+
 function evictRoom(room: Room) {
   if (room.clients.size > 0) return;
   try {
@@ -261,9 +289,10 @@ type HubImpl = {
   applyClientUpdate: typeof applyClientUpdate;
   setAwareness: typeof setAwareness;
   persistRoom: typeof persistRoom;
+  replaceDoc: typeof replaceDoc;
   evictRoom: typeof evictRoom;
 };
-const impl: HubImpl = (hub.impl ??= { docToJSON, getRoom, peekRoom, joinRoom, touchClient, sweepStaleClients, leaveRoom, applyClientUpdate, setAwareness, persistRoom, evictRoom });
+const impl: HubImpl = (hub.impl ??= { docToJSON, getRoom, peekRoom, joinRoom, touchClient, sweepStaleClients, leaveRoom, applyClientUpdate, setAwareness, persistRoom, replaceDoc, evictRoom });
 
 const docToJSON_: typeof docToJSON = (doc) => impl.docToJSON(doc);
 const getRoom_: typeof getRoom = (id) => impl.getRoom(id);
@@ -275,6 +304,7 @@ const leaveRoom_: typeof leaveRoom = (room, id) => impl.leaveRoom(room, id);
 const applyClientUpdate_: typeof applyClientUpdate = (room, update, from) => impl.applyClientUpdate(room, update, from);
 const setAwareness_: typeof setAwareness = (room, id, m) => impl.setAwareness(room, id, m);
 const persistRoom_: typeof persistRoom = (room, by) => impl.persistRoom(room, by);
+const replaceDoc_: typeof replaceDoc = (id, content, userId) => impl.replaceDoc(id, content, userId);
 const evictRoom_: typeof evictRoom = (room) => impl.evictRoom(room);
 
 export {
@@ -288,5 +318,6 @@ export {
   applyClientUpdate_ as applyClientUpdate,
   setAwareness_ as setAwareness,
   persistRoom_ as persistRoom,
+  replaceDoc_ as replaceDoc,
   evictRoom_ as evictRoom,
 };

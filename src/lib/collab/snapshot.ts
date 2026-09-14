@@ -38,12 +38,27 @@ export function snapshotSection(sectionId: string, content: TiptapDoc, userId: s
   const version = section.version + 1;
   const updatedAt = Math.floor(Date.now() / 1000);
 
+  // A client approved a particular wording, not the section forever. Editing it
+  // after sign-off drops the approval rather than leaving the share view and the
+  // details pane both claiming the new text was approved.
   db.update(schema.sections)
-    .set({ content: doc, plainText, wordCount: words, version, updatedBy: userId ?? section.updatedBy, updatedAt })
+    .set({ content: doc, plainText, wordCount: words, version, updatedBy: userId ?? section.updatedBy, updatedAt, clientApprovedAt: null, clientApprovedBy: null })
     .where(eq(schema.sections.id, sectionId))
     .run();
   db.insert(schema.sectionVersions).values({ id: newId(), sectionId, version, content: doc, plainText, wordCount: words, createdBy: userId }).run();
   pruneVersions(sectionId);
+
+  if (section.clientApprovedAt) {
+    logActivity({
+      workspaceId: section.workspaceId,
+      actorId: userId,
+      verb: "updated",
+      subjectType: "section",
+      subjectId: sectionId,
+      subjectTitle: section.title,
+      meta: { approvalLapsed: true, wasApprovedBy: section.clientApprovedBy },
+    });
+  }
 
   if (userId) {
     const key = `${sectionId}:${userId}`;

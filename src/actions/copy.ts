@@ -1,5 +1,5 @@
 "use server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { notifyMentions } from "@/lib/notify";
 import { db, schema } from "@/db/client";
@@ -9,12 +9,11 @@ import { assertAccess } from "@/lib/permissions";
 import { newId } from "@/lib/ids";
 import { slugify } from "@/lib/slug";
 import { logActivity } from "@/lib/activity";
-import { asDoc, tiptapToText, wordCount } from "@/lib/copy/serialize";
+import { asDoc } from "@/lib/copy/serialize";
 import type { TiptapDoc } from "@/lib/copy/serialize";
 import type { SaveResult } from "@/lib/copy/types";
-import { getRoom, peekRoom, persistRoom } from "@/lib/collab/hub";
+import { getRoom, peekRoom, persistRoom, replaceDoc } from "@/lib/collab/hub";
 
-const MAX_VERSIONS = 100;
 const MAX_TITLE = 120;
 
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -66,24 +65,6 @@ function nextPosition(table: "pages" | "sections", parentId: string): number {
       ? db.select({ m: sql<number | null>`max(${schema.pages.position})` }).from(schema.pages).where(eq(schema.pages.workspaceId, parentId)).get()
       : db.select({ m: sql<number | null>`max(${schema.sections.position})` }).from(schema.sections).where(eq(schema.sections.pageId, parentId)).get();
   return (row?.m ?? -1) + 1;
-}
-
-/** Writes a version row for the section's current state and prunes old ones. */
-function recordVersion(sectionId: string, version: number, content: TiptapDoc, plainText: string, words: number, userId: string) {
-  db.insert(schema.sectionVersions).values({ id: newId(), sectionId, version, content, plainText, wordCount: words, createdBy: userId }).run();
-  const keep = db
-    .select({ id: schema.sectionVersions.id })
-    .from(schema.sectionVersions)
-    .where(eq(schema.sectionVersions.sectionId, sectionId))
-    .orderBy(desc(schema.sectionVersions.version))
-    .limit(MAX_VERSIONS)
-    .all()
-    .map((r) => r.id);
-  if (keep.length >= MAX_VERSIONS) {
-    db.delete(schema.sectionVersions)
-      .where(and(eq(schema.sectionVersions.sectionId, sectionId), sql`${schema.sectionVersions.id} not in (${sql.join(keep.map((k) => sql`${k}`), sql`, `)})`))
-      .run();
-  }
 }
 
 // ---------------------------------------------------------------- pages
@@ -233,7 +214,13 @@ export async function setSectionStatus(sectionId: string, status: SectionStatus)
   revalidatePath(copyPath(workspace.slug), "layout");
 }
 
-/** Copies an old version forward as a brand-new version; history is never rewritten. */
+/**
+ * Copies an old version forward as a brand-new version; history is never rewritten.
+ *
+ * This goes through the live document, not the columns: the editor is driven
+ * entirely by Yjs, so a restore written only to sections.content is invisible
+ * and gets overwritten by the next persist.
+ */
 export async function restoreVersion(sectionId: string, versionId: string): Promise<{ version: number }> {
   const user = await requireUser();
   const { section, pageSlug } = sectionOrThrow(sectionId);
@@ -244,17 +231,11 @@ export async function restoreVersion(sectionId: string, versionId: string): Prom
     .where(and(eq(schema.sectionVersions.id, versionId), eq(schema.sectionVersions.sectionId, section.id)))
     .get();
   if (!old) throw new Error("Not found");
-  const doc = asDoc(old.content);
-  const plainText = tiptapToText(doc);
-  const words = wordCount(plainText);
-  const version = section.version + 1;
-  db.transaction(() => {
-    db.update(schema.sections).set({ content: doc, plainText, wordCount: words, version, updatedBy: user.id, updatedAt: nowSec() }).where(eq(schema.sections.id, section.id)).run();
-    recordVersion(section.id, version, doc, plainText, words, user.id);
-  });
+  const saved = replaceDoc(section.id, asDoc(old.content), user.id);
+  if (!saved) throw new Error("Not found");
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "restored", subjectType: "section", subjectId: section.id, subjectTitle: section.title, meta: { fromVersion: old.version } });
   revalidatePath(copyPath(workspace.slug, pageSlug));
-  return { version };
+  return { version: saved.version };
 }
 
 // ---------------------------------------------------------------- comments
