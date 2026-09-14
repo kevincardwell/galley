@@ -10,6 +10,9 @@ in place and running the previous tag.
 
 ### Changed
 
+- **The Docker Hub page is its own document** (`docs/dockerhub.md`) rather than the README. Docker Hub strips
+  raw HTML, so the README's centred hero image, title, tagline and badges were rendering as nothing at all —
+  the page opened on a wall of text with no picture. The short description was also still the old tagline.
 - **Light is the default theme.** It used to follow the operating system before anyone had chosen anything, so
   a visitor on a dark desktop got a dark Galley without asking for it. Dark now happens when you pick it, or
   when you pick "follow the system". The toggle cycles light → dark → system, and the browser chrome colour
