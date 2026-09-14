@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db, schema } from "@/db/client";
 import { SUPPLIER_LINK_STATUSES, type SupplierLinkStatus } from "@/db/schema";
 import { requireUser } from "@/lib/auth/current";
-import { assertAccess } from "@/lib/permissions";
+import { assertAccess, editsAnyWorkspace } from "@/lib/permissions";
 import { logActivity } from "@/lib/activity";
 import { newId } from "@/lib/ids";
 import { COST_HINT, parseCost } from "@/components/suppliers/shared";
@@ -65,10 +65,13 @@ function refreshProject(slug: string) {
   revalidatePath(`/w/${slug}`);
 }
 
-// ---- Directory: any signed-in person may keep the shared address book up to date ----
+// ---- Directory: anyone who edits a project may keep the shared address book up to date ----
+
+const NOT_YOURS = "You need edit access to a project before you can change the supplier directory.";
 
 export async function createSupplier(input: SupplierInput): Promise<Result<{ id: string }>> {
   const user = await requireUser();
+  if (!editsAnyWorkspace(user)) return fail(NOT_YOURS);
   const parsed = supplierInput.safeParse(input);
   if (!parsed.success) return fail(firstIssue(parsed.error));
   const id = newId();
@@ -78,7 +81,8 @@ export async function createSupplier(input: SupplierInput): Promise<Result<{ id:
 }
 
 export async function updateSupplier(id: string, input: SupplierInput): Promise<Result> {
-  await requireUser();
+  const user = await requireUser();
+  if (!editsAnyWorkspace(user)) return fail(NOT_YOURS);
   const parsed = supplierInput.safeParse(input);
   if (!parsed.success) return fail(firstIssue(parsed.error));
   const existing = db.select({ id: schema.suppliers.id }).from(schema.suppliers).where(eq(schema.suppliers.id, id)).get();
@@ -89,7 +93,8 @@ export async function updateSupplier(id: string, input: SupplierInput): Promise<
 }
 
 export async function archiveSupplier(id: string, archived: boolean): Promise<Result> {
-  await requireUser();
+  const user = await requireUser();
+  if (!editsAnyWorkspace(user)) return fail(NOT_YOURS);
   const existing = db.select({ id: schema.suppliers.id }).from(schema.suppliers).where(eq(schema.suppliers.id, id)).get();
   if (!existing) return fail("That supplier is no longer here");
   db.update(schema.suppliers).set({ archivedAt: archived ? nowS() : null }).where(eq(schema.suppliers.id, id)).run();
@@ -112,7 +117,8 @@ export async function deleteSupplier(id: string): Promise<Result> {
 const tagsInput = z.array(z.string().trim().toLowerCase().min(1).max(30)).max(20, "Twenty tags is plenty");
 
 export async function setSupplierTags(id: string, tags: string[]): Promise<Result<{ tags: string[] }>> {
-  await requireUser();
+  const user = await requireUser();
+  if (!editsAnyWorkspace(user)) return fail(NOT_YOURS);
   const parsed = tagsInput.safeParse(tags);
   if (!parsed.success) return fail(firstIssue(parsed.error));
   const existing = db.select({ id: schema.suppliers.id }).from(schema.suppliers).where(eq(schema.suppliers.id, id)).get();

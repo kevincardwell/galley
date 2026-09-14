@@ -41,6 +41,8 @@ type Props = {
   members: CalendarPerson[];
   suppliers: CalendarSupplier[];
   canEdit: boolean;
+  /** Creating the feed link is a manage action; editors may only copy one that exists. */
+  canManage: boolean;
   /** Workspaces the caller may edit, so a chip is only draggable when the move would be allowed. */
   editableWorkspaceIds: string[];
   /** The entry named by `?item=`, already loaded and access-checked on the server. */
@@ -58,7 +60,7 @@ function shift(entry: CalendarEntry, delta: number): CalendarEntry {
 }
 
 export function CalendarScreen(props: Props) {
-  const { view, dateIso, todayIso, basePath, workspace, members, suppliers, canEdit, openItem, feedUrl } = props;
+  const { view, dateIso, todayIso, basePath, workspace, members, suppliers, canEdit, canManage, openItem, feedUrl } = props;
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -183,7 +185,7 @@ export function CalendarScreen(props: Props) {
           }
         />
 
-        {workspace && canEdit && <FeedLink url={feedUrl} workspaceId={workspace.id} canManage={canEdit} />}
+        {workspace && canEdit && <FeedLink url={feedUrl} workspaceId={workspace.id} canManage={canManage} />}
 
         {view === "agenda" ? (
           agenda

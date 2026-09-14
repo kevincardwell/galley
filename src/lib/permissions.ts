@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db, schema } from "@/db/client";
 import type { User, Workspace, WorkspaceRole } from "@/db/schema";
@@ -43,3 +43,19 @@ export function assertAccess(user: User, workspaceIdOrSlug: string, verb: Verb =
 }
 
 export const can = (a: Access, verb: Verb) => a.role === "admin" || RANK[a.role] >= NEED[verb];
+
+/**
+ * True when the caller edits at least one project.
+ *
+ * The supplier directory is instance-wide, so there is no workspace to check
+ * against, but it is shared studio data: someone invited as a viewer on a single
+ * project should not be able to rewrite or archive every supplier in it.
+ */
+export function editsAnyWorkspace(user: User): boolean {
+  if (user.isAdmin) return true;
+  return !!db
+    .select({ workspaceId: schema.memberships.workspaceId })
+    .from(schema.memberships)
+    .where(and(eq(schema.memberships.userId, user.id), inArray(schema.memberships.role, ["editor", "manager"])))
+    .get();
+}

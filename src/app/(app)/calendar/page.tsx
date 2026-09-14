@@ -35,6 +35,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       members={[]}
       suppliers={[]}
       canEdit={false}
+      canManage={false}
       editableWorkspaceIds={editableWorkspaceIds(user)}
       openItem={null}
       feedUrl={null}

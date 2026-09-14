@@ -25,6 +25,7 @@ export default async function WorkspaceCalendarPage({
   const access = requireAccess(user, slug);
   const ws = access.workspace;
   const canEdit = can(access, "edit");
+  const canManage = can(access, "manage");
 
   const view = asView(one(sp.view));
   const today = startOfDay(new Date());
@@ -51,6 +52,7 @@ export default async function WorkspaceCalendarPage({
       members={members}
       suppliers={suppliers}
       canEdit={canEdit}
+      canManage={canManage}
       editableWorkspaceIds={canEdit ? [ws.id] : []}
       openItem={openItem}
       feedUrl={feedUrl}
