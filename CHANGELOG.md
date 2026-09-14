@@ -6,6 +6,15 @@ Galley applies database migrations when the container starts, and copies the dat
 `backups/pre-migration-<date>.db` first, so an upgrade that goes wrong can be stepped back by putting that file
 in place and running the previous tag.
 
+## Unreleased
+
+### Changed
+
+- **Light is the default theme.** It used to follow the operating system before anyone had chosen anything, so
+  a visitor on a dark desktop got a dark Galley without asking for it. Dark now happens when you pick it, or
+  when you pick "follow the system". The toggle cycles light → dark → system, and the browser chrome colour
+  follows the theme that is actually showing rather than the OS setting.
+
 ## v1.0.0 — 2026-09-14
 
 The first release meant for other people to run. Everything below landed after v0.1.0.

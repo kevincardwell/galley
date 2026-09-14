@@ -23,8 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Galley" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#EFEEEA" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#171614" media="(prefers-color-scheme: dark)" />
+        {/* Light, because that is the default. The script below darkens it when
+            the resolved theme is actually dark, which a media query cannot know. */}
+        <meta name="theme-color" content="#EFEEEA" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
@@ -33,7 +34,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         {/* Stamps the saved theme before first paint. next/script keeps it out of React's client render. */}
         <Script id="galley-theme" strategy="beforeInteractive">
-          {`try{var t=localStorage.getItem('galley-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}`}
+          {`try{var t=localStorage.getItem('galley-theme');if(t)document.documentElement.dataset.theme=t;` +
+            `if(t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches)){` +
+            `var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content','#171614')}}catch(e){}`}
         </Script>
       </head>
       <body>

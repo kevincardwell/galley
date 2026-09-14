@@ -13,17 +13,21 @@ function write(next: string) {
 }
 const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
 
-const NAME: Record<string, string> = { "": "system", dark: "dark", light: "light" };
+// "" is light: nothing stored means no data-theme attribute, which is the
+// light palette. Following the operating system is a choice people make, not
+// what they get before they have chosen anything.
+const NAME: Record<string, string> = { "": "light", light: "light", dark: "dark", system: "system" };
+const ICON: Record<string, "sun" | "moon" | "settings"> = { "": "sun", light: "sun", dark: "moon", system: "settings" };
 
-/** Cycles system → dark → light. The tooltip always names the mode you are in now. */
+/** Cycles light → dark → follow the system. The tooltip always names the mode you are in now. */
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribe, read, () => "");
-  const next = theme === "" ? "dark" : theme === "dark" ? "light" : "";
-  const label = `Theme: ${NAME[theme] ?? "system"}`;
+  const next = theme === "dark" ? "system" : theme === "system" ? "" : "dark";
+  const label = `Theme: ${NAME[theme] ?? "light"}`;
   return (
-    <Tooltip label={`${label} — switch to ${NAME[next] ?? "system"}`}>
+    <Tooltip label={`${label} — switch to ${NAME[next] ?? "light"}`}>
       <IconButton
-        name={theme === "dark" ? "moon" : "sun"}
+        name={ICON[theme] ?? "sun"}
         label={label}
         title={undefined}
         onClick={() => write(next)}

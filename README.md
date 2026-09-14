@@ -109,7 +109,7 @@ Add it to the home screen from Safari or Chrome and it opens full screen with it
 | **Project templates** | Start a project from an existing one and keep the task list and page structure, without last client's content. |
 | **Repeating tasks** | Weekly, monthly, quarterly. Tick one off and the next appears, which is how a care plan lives here alongside a build. |
 | **Currency** | Set a three-letter code in Admin → Settings; costs are stored as minor units so nothing rounds twice. |
-| **Themes** | Light, dark, or follow the system. |
+| **Themes** | Light by default; switch to dark, or let it follow the system. |
 | **Keyboard** | `?` lists every shortcut. |
 
 ---

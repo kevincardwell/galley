@@ -10,8 +10,10 @@
   --serif: "Newsreader", Georgia, "Times New Roman", serif;
   color-scheme: light;
 }
+/* Dark follows the operating system only when someone has asked for that.
+   A fresh visitor gets light, whatever their OS is set to. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root[data-theme="system"] {
     --bg: #171614; --surface: #1f1e1b; --surface-2: #262521; --ink: #edebe5; --ink-2: #aba79d; --ink-3: #736f66; --line: #33322d; --line-2: #2a2925;
     --accent-ink: #0f1f17; --accent-soft: color-mix(in oklab, var(--accent) 18%, var(--surface)); --accent-line: color-mix(in oklab, var(--accent) 40%, var(--surface));
     --review: #d9a44a; --review-soft: #332a18; --done: #6fb893; --done-soft: #1e2e26; --draft: #736f66; --late: #e0876f; --late-soft: #3a241e;
