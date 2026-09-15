@@ -84,6 +84,9 @@ export function resolveForwardAuth(headers: Headers, config = forwardAuthConfig(
     // No password is ever usable: this account signs in through the proxy only.
     passwordHash: "",
     isAdmin,
+    totpSecret: null,
+    totpLastStep: null,
+    totpRecovery: null,
     deactivatedAt: null,
     lastSeenAt: null,
     createdAt: Math.floor(Date.now() / 1000),

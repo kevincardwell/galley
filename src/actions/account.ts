@@ -8,6 +8,9 @@ import { requireUser } from "@/lib/auth/current";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 import { logAudit } from "@/lib/activity";
+import { getSettings } from "@/lib/settings";
+import { grouped, hashRecovery, newRecoveryCodes, newSecret, otpauthUrl, qrPath, verifyCode } from "@/lib/auth/totp";
+import type { User } from "@/db/schema";
 
 export type AccountResult = { ok: true } | { ok: false; error: string };
 
@@ -39,5 +42,56 @@ export async function changePassword(current: string, next: string): Promise<Acc
     tx.delete(schema.sessions).where(and(eq(schema.sessions.userId, user.id), ne(schema.sessions.id, sessionId))).run();
   });
   logAudit({ actorId: user.id, action: "user.password.changed", subjectType: "user", subjectId: user.id });
+  return { ok: true };
+}
+
+// ---- Two-factor ----
+
+export type TotpSetup = { secret: string; otpauth: string; grouped: string; qr: { size: number; d: string } };
+export type TotpResult = { ok: true; codes: string[] } | { ok: false; error: string };
+
+/** A password check before changing how sign-in works. Proxy-only accounts have no password to check. */
+async function confirmPassword(user: User, password: string): Promise<string | null> {
+  if (!user.passwordHash) return null;
+  return (await verifyPassword(user.passwordHash, password)) ? null : "Your password is not right.";
+}
+
+/**
+ * Makes a secret to show as a QR. Nothing is stored until a code proves the app has it,
+ * so an abandoned setup leaves the account exactly as it was.
+ */
+export async function startTotp(): Promise<TotpSetup> {
+  const user = await requireUser();
+  const secret = newSecret();
+  const otpauth = otpauthUrl(secret, user.email, getSettings().instanceName || "Galley");
+  return { secret, otpauth, grouped: grouped(secret), qr: qrPath(otpauth) };
+}
+
+export async function enableTotp(secret: string, code: string, password: string): Promise<TotpResult> {
+  const user = await requireUser();
+  if (user.totpSecret) return { ok: false, error: "Two-factor is already on for this account." };
+  const wrong = await confirmPassword(user, password);
+  if (wrong) return { ok: false, error: wrong };
+  if (!/^[A-Z2-7]{32}$/.test(secret)) return { ok: false, error: "Start the setup again." };
+  const step = verifyCode(secret, code);
+  if (step === null) return { ok: false, error: "That code is not right. Check the clock on your phone and try the next one." };
+
+  const codes = newRecoveryCodes();
+  db.update(schema.users)
+    .set({ totpSecret: secret, totpLastStep: step, totpRecovery: codes.map(hashRecovery) })
+    .where(eq(schema.users.id, user.id))
+    .run();
+  logAudit({ actorId: user.id, action: "user.totp.enabled", subjectType: "user", subjectId: user.id });
+  revalidatePath("/me/account");
+  return { ok: true, codes };
+}
+
+export async function disableTotp(password: string): Promise<AccountResult> {
+  const user = await requireUser();
+  const wrong = await confirmPassword(user, password);
+  if (wrong) return { ok: false, error: wrong };
+  db.update(schema.users).set({ totpSecret: null, totpLastStep: null, totpRecovery: null }).where(eq(schema.users.id, user.id)).run();
+  logAudit({ actorId: user.id, action: "user.totp.disabled", subjectType: "user", subjectId: user.id });
+  revalidatePath("/me/account");
   return { ok: true };
 }

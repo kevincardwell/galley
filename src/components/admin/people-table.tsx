@@ -12,7 +12,8 @@ import { InlineError, ROLE_LABEL, RowActions, Table, Td, Th, Tr, WsDot } from ".
 import { PersonDialog } from "./person-dialog";
 import { useAdminAction } from "./use-action";
 
-function daysLeft(expiresAt: number) {
+function daysLeft(expiresAt: number | null) {
+  if (expiresAt === null) return "never expires";
   const d = Math.max(0, Math.ceil((expiresAt - Date.now() / 1000) / 86400));
   return d === 0 ? "expires today" : d === 1 ? "expires tomorrow" : `expires in ${d} days`;
 }

@@ -9,6 +9,11 @@ export const users = sqliteTable("users", {
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  // Two-factor: a base32 TOTP secret once it is switched on, the last time step it accepted
+  // (so a code cannot be used twice) and the hashed one-shot recovery codes.
+  totpSecret: text("totp_secret"),
+  totpLastStep: integer("totp_last_step"),
+  totpRecovery: text("totp_recovery", { mode: "json" }).$type<string[]>(),
   deactivatedAt: integer("deactivated_at"),
   lastSeenAt: integer("last_seen_at"),
   createdAt: integer("created_at").notNull().default(now()),
@@ -17,6 +22,8 @@ export const users = sqliteTable("users", {
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Password accepted, second factor still owed: signs nobody in until it is cleared. */
+  pendingTotp: integer("pending_totp", { mode: "boolean" }).notNull().default(false),
   expiresAt: integer("expires_at").notNull(),
   createdAt: integer("created_at").notNull().default(now()),
 });
@@ -30,12 +37,19 @@ export const invites = sqliteTable("invites", {
   workspaceId: text("workspace_id").references(() => workspaces.id, { onDelete: "set null" }),
   workspaceRole: text("workspace_role", { enum: ["manager", "editor", "viewer"] }),
   invitedBy: text("invited_by").notNull().references(() => users.id),
-  expiresAt: integer("expires_at").notNull(),
+  /** Null means the link never expires. */
+  expiresAt: integer("expires_at"),
   acceptedAt: integer("accepted_at"),
   revokedAt: integer("revoked_at"),
   emailedAt: integer("emailed_at"),
   createdAt: integer("created_at").notNull().default(now()),
 });
+
+/** What an admin may pick for how long an invite link lives. 0 means it never expires. */
+export const INVITE_LIFETIMES = [1, 7, 30, 90, 0] as const;
+
+/** One place decides what a null (never-expiring) invite means. */
+export const inviteExpired = (expiresAt: number | null) => expiresAt !== null && expiresAt < Math.floor(Date.now() / 1000);
 
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),

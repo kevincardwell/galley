@@ -20,6 +20,7 @@ function StatePill({ state }: { state: InviteRow["state"] }) {
 function expiry(i: InviteRow) {
   if (i.state === "accepted") return `accepted ${timeAgo(i.acceptedAt)}`;
   if (i.state === "revoked") return `revoked ${timeAgo(i.revokedAt)}`;
+  if (i.expiresAt === null) return "never expires";
   return `expires ${new Date(i.expiresAt * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 }
 

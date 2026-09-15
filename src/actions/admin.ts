@@ -5,7 +5,7 @@ import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db, schema, UPLOAD_DIR } from "@/db/client";
-import { WORKSPACE_ROLES, type WorkspaceRole } from "@/db/schema";
+import { inviteExpired, WORKSPACE_ROLES, type WorkspaceRole } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/current";
 import { hashPassword } from "@/lib/auth/password";
 import { logAudit } from "@/lib/activity";
@@ -24,7 +24,7 @@ export type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: 
 const ok = <T,>(data: T): Result<T> => ({ ok: true, data });
 const fail = <T,>(error: string): Result<T> => ({ ok: false, error });
 const nowS = () => Math.floor(Date.now() / 1000);
-const INVITE_DAYS = 7;
+const DEFAULT_INVITE_DAYS = 7;
 
 function refresh() {
   revalidatePath("/admin", "layout");
@@ -47,6 +47,8 @@ const inviteInput = z.object({
   workspaceId: z.string().trim().optional(),
   workspaceRole: role.optional(),
   isAdmin: z.boolean().optional(),
+  /** Days until the link stops working; 0 keeps it working forever. */
+  expiresDays: z.coerce.number().int().min(0).max(365).optional(),
 });
 export type CreateInviteInput = z.input<typeof inviteInput>;
 
@@ -54,7 +56,7 @@ export async function createInvite(input: CreateInviteInput): Promise<Result<{ u
   const admin = await requireAdmin();
   const parsed = inviteInput.safeParse(input);
   if (!parsed.success) return fail(firstIssue(parsed.error));
-  const { name, workspaceId, workspaceRole, isAdmin } = parsed.data;
+  const { name, workspaceId, workspaceRole, isAdmin, expiresDays = DEFAULT_INVITE_DAYS } = parsed.data;
   const existing = db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, parsed.data.email)).get();
   if (existing) return fail("Someone with that email already has an account. Add them to a workspace from Manage instead.");
   let workspaceName: string | null = null;
@@ -65,6 +67,7 @@ export async function createInvite(input: CreateInviteInput): Promise<Result<{ u
   }
   const id = newId();
   const token = newToken();
+  const expiresAt = expiresDays === 0 ? null : nowS() + expiresDays * 86400;
   db.insert(schema.invites)
     .values({
       id,
@@ -75,20 +78,20 @@ export async function createInvite(input: CreateInviteInput): Promise<Result<{ u
       workspaceId: workspaceId || null,
       workspaceRole: workspaceId ? (workspaceRole ?? "editor") : null,
       invitedBy: admin.id,
-      expiresAt: nowS() + INVITE_DAYS * 86400,
+      expiresAt,
     })
     .run();
   const url = `${await resolveBaseUrl()}/invite/${token}`;
   let emailed = false;
   let emailError: string | null = null;
   if (isEmailConfigured()) {
-    const mail = inviteEmail({ instanceName: getSettings().instanceName, url, inviterName: admin.name, workspaceName, expiresDays: INVITE_DAYS });
+    const mail = inviteEmail({ instanceName: getSettings().instanceName, url, inviterName: admin.name, workspaceName, expiresAt });
     const sent = await sendEmail({ to: parsed.data.email, ...mail });
     emailed = sent.ok;
     if (sent.ok) db.update(schema.invites).set({ emailedAt: nowS() }).where(eq(schema.invites.id, id)).run();
     else emailError = sent.error;
   }
-  logAudit({ actorId: admin.id, action: "invite.created", subjectType: "invite", subjectId: id, meta: { email: parsed.data.email, workspaceId: workspaceId || null, isAdmin: isAdmin ?? false, emailed } });
+  logAudit({ actorId: admin.id, action: "invite.created", subjectType: "invite", subjectId: id, meta: { email: parsed.data.email, workspaceId: workspaceId || null, isAdmin: isAdmin ?? false, emailed, expiresDays } });
   refresh();
   return ok({ url, inviteId: id, emailed, emailError });
 }
@@ -322,13 +325,13 @@ export async function resendInvite(inviteId: string): Promise<Result<{ email: st
   if (!invite) return fail("That invite no longer exists.");
   if (invite.acceptedAt) return fail("That invite was already accepted.");
   if (invite.revokedAt) return fail("That invite was revoked.");
-  if (invite.expiresAt < nowS()) return fail("That invite has expired. Create a new one.");
+  if (inviteExpired(invite.expiresAt)) return fail("That invite has expired. Create a new one.");
   if (!isEmailConfigured()) return fail("Email is not set up. Copy the link and send it yourself.");
   const workspaceName = invite.workspaceId
     ? (db.select({ name: schema.workspaces.name }).from(schema.workspaces).where(eq(schema.workspaces.id, invite.workspaceId)).get()?.name ?? null)
     : null;
   const url = `${await resolveBaseUrl()}/invite/${invite.token}`;
-  const mail = inviteEmail({ instanceName: getSettings().instanceName, url, inviterName: admin.name, workspaceName, expiresDays: INVITE_DAYS });
+  const mail = inviteEmail({ instanceName: getSettings().instanceName, url, inviterName: admin.name, workspaceName, expiresAt: invite.expiresAt });
   const sent = await sendEmail({ to: invite.email, ...mail });
   logAudit({ actorId: admin.id, action: "invite.resent", subjectType: "invite", subjectId: inviteId, meta: { to: invite.email, ok: sent.ok } });
   if (!sent.ok) return fail(`Could not send: ${sent.error}`);

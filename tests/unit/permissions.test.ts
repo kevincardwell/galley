@@ -6,7 +6,7 @@ import { db, schema } from "@/db/client";
 import { accessFor, requireAccess } from "@/lib/permissions";
 import type { User } from "@/db/schema";
 
-const u = (id: string, isAdmin = false): User => ({ id, email: `${id}@x.test`, name: id, passwordHash: "", isAdmin, deactivatedAt: null, lastSeenAt: null, createdAt: 0 });
+const u = (id: string, isAdmin = false): User => ({ id, email: `${id}@x.test`, name: id, passwordHash: "", isAdmin, totpSecret: null, totpLastStep: null, totpRecovery: null, deactivatedAt: null, lastSeenAt: null, createdAt: 0 });
 
 describe("workspace access", () => {
   beforeAll(() => {

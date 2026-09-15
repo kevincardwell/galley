@@ -32,6 +32,12 @@ export async function GET(req: Request) {
     redirect(`/login?sso=${result.reason}`);
   }
 
+  // The proxy vouches for who they are; their own second factor still has to be typed.
+  if (result.user.totpSecret) {
+    await createSession(result.user.id, { pendingTotp: true });
+    redirect(`/login/2fa${next === "/" ? "" : `?next=${encodeURIComponent(next)}`}`);
+  }
+
   await createSession(result.user.id);
   logAudit({ actorId: result.user.id, action: "session.proxy_login", subjectType: "user", subjectId: result.user.id });
   redirect(next);

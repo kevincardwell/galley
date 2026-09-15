@@ -6,6 +6,24 @@ Galley applies database migrations when the container starts, and copies the dat
 `backups/pre-migration-<date>.db` first, so an upgrade that goes wrong can be stepped back by putting that file
 in place and running the previous tag.
 
+## Unreleased
+
+### Added
+
+- **Two-factor authentication.** Account → Two-factor turns on a six-digit code from any authenticator app
+  (Google Authenticator, 1Password, Aegis). Scan the QR or type the key, confirm one code, and ten one-shot
+  recovery codes are shown — the only time they are shown. Sign-in then asks for a code after the password,
+  including when a reverse proxy signed the person in. A code cannot be used twice, and the code step is
+  throttled the same way the password step is. Any account can use it; admins are who it is for.
+- **Invite links last as long as you say.** The invite form now has "Link expires": after 1, 7, 30 or 90 days,
+  or never. Seven days stays the default, so nothing changes unless you pick something else, and the invite
+  email names the date rather than counting days from whenever it was sent.
+
+### Upgrading
+
+Nothing to do. The migration adds the two-factor columns and makes an invite's expiry nullable; existing
+invites keep the expiry they already had.
+
 ## v1.0.1 — 2026-09-14
 
 ### Fixed

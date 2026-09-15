@@ -101,7 +101,7 @@ describe("uploading through a share link", () => {
     const before = assetsIn("su-open").length;
     vi.spyOn(signedIn, "currentUser").mockResolvedValueOnce({
       id: "su-owner", email: "owner@x.test", name: "Owner", passwordHash: "", isAdmin: true,
-      deactivatedAt: null, lastSeenAt: null, createdAt: 0,
+      totpSecret: null, totpLastStep: null, totpRecovery: null, deactivatedAt: null, lastSeenAt: null, createdAt: 0,
     });
     const res = await upload({ shareToken: OPEN, guestName: "Tom Marlow" }, [["preview.png", "bytes"]]);
     expect(res.status).toBe(201);

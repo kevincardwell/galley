@@ -291,6 +291,33 @@ old behaviour and the old, clearer error message.
 Also noted: `/api/health` reports `"version":"latest"` on main-branch builds, because that is what
 `metadata-action` emits for the `latest` tag. Cosmetic, but a sha or semver would be more use in a bug report.
 
+## Two-factor and invite lifetimes 2026-09-15
+
+- **Invite expiry is a choice.** `invites.expires_at` is nullable now; null means never. `INVITE_LIFETIMES`
+  and `inviteExpired()` both live in `src/db/schema.ts` so every caller reads a null the same way — making the
+  column nullable (rather than using a far-future sentinel) was deliberate: TypeScript then forced each of the
+  five comparison sites to be handled. The invite email names the expiry date instead of counting days, which
+  also fixes a resent invite claiming "7 days" long after it was made.
+- **TOTP two-factor.** `src/lib/auth/totp.ts` is the whole implementation on `node:crypto` — HMAC-SHA1,
+  base32, ±1 step of drift, tested against the RFC 6238 vector. The only new dependency is
+  `qrcode-generator` (zero deps); the QR is rendered as one SVG `path` built on the server, so no QR library
+  reaches the browser and no raw HTML is injected.
+- **How the second step works.** A password-only sign-in creates a session with `sessions.pending_totp` set
+  and a 10-minute life. `getSessionUser()` refuses a pending session, so it signs nobody in; `/login/2fa`
+  reads it through `getPendingSession()` and `completePendingSession()` promotes it. This reuses the session
+  cookie rather than inventing a second signed token — there is no signing secret in Galley to sign one with.
+- Replay is refused (`users.totp_last_step`), the code step is throttled like the password step, and forward
+  (proxy) auth also lands on `/login/2fa` when the account has a secret.
+- Recovery codes are ten one-shot 60-bit codes, stored as SHA-256 hashes in `users.totp_recovery`. They are
+  the only way back in: no admin screen resets someone else's second factor, which is a deliberate gap, and
+  the README says to clear `totp_secret` in the database if the codes are lost too.
+- Verified in a browser end to end on a fresh install: enrol (QR + manual key), recovery codes shown, sign out,
+  wrong code refused, recovery code accepted, a real authenticator code accepted, disable refused on a wrong
+  password and accepted on the right one. Migration applied to a copy of the real dev database: rows copied,
+  `pragma foreign_key_check` and `integrity_check` clean.
+- Fixed while here: `tests/e2e/access.spec.ts` matched workspace names by text, which also hit the template
+  picker's `<option>`s — it had been failing before any of this work. It matches the card link now.
+
 ## Not yet done (pick up here)
 1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.

@@ -33,6 +33,8 @@ describe("invite redemption", () => {
     db.insert(schema.users).values({ id: "inv-victim", email: "victim@inv.test", name: "Victim", passwordHash: await hashPassword("the-real-password") }).run();
     db.insert(schema.invites).values({ id: "inv-1", token: "token-for-existing-user", email: "victim@inv.test", invitedBy: "inv-admin", expiresAt: future() }).run();
     db.insert(schema.invites).values({ id: "inv-2", token: "token-for-new-user", email: "fresh@inv.test", invitedBy: "inv-admin", expiresAt: future() }).run();
+    // A link made never to expire: expiresAt is null, which must not read as "already expired".
+    db.insert(schema.invites).values({ id: "inv-3", token: "token-that-never-expires", email: "forever@inv.test", invitedBy: "inv-admin", expiresAt: null }).run();
   });
 
   it("refuses to sign a stranger in as an account that already exists", async () => {
@@ -48,6 +50,11 @@ describe("invite redemption", () => {
     const user = db.select().from(schema.users).all().find((u) => u.email === "fresh@inv.test");
     expect(user).toBeDefined();
     expect(created).toContain(user!.id);
+  });
+
+  it("accepts an invite that was set never to expire", async () => {
+    await expect(acceptInviteAction(undefined, form({ token: "token-that-never-expires", name: "Forever", password: "another-long-password" }))).rejects.toThrow("REDIRECT");
+    expect(db.select().from(schema.users).all().some((u) => u.email === "forever@inv.test")).toBe(true);
   });
 
   it("will not let the same invite be used twice", async () => {

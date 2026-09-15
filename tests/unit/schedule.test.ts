@@ -23,7 +23,7 @@ const user = (id: string, isAdmin = false): User => ({
   name: id,
   passwordHash: "",
   isAdmin,
-  deactivatedAt: null,
+  totpSecret: null, totpLastStep: null, totpRecovery: null, deactivatedAt: null,
   lastSeenAt: null,
   createdAt: 0,
 });

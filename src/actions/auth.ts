@@ -3,14 +3,16 @@ import { and, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, schema } from "@/db/client";
+import { inviteExpired } from "@/db/schema";
 import { newId } from "@/lib/ids";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import { createSession, destroySession } from "@/lib/auth/session";
+import { completePendingSession, createSession, destroySession, getPendingSession } from "@/lib/auth/session";
 import { currentUser } from "@/lib/auth/current";
 import { hasAnyUser } from "@/lib/settings";
 import { logAudit } from "@/lib/activity";
 import { clearFailures, isThrottled, recordFailure } from "@/lib/auth/throttle";
 import { createSampleWorkspace } from "@/lib/seed/sample";
+import { hashRecovery, verifyCode } from "@/lib/auth/totp";
 
 export type FormState = { error?: string } | undefined;
 
@@ -61,10 +63,65 @@ export async function loginAction(_: FormState, form: FormData): Promise<FormSta
     return { error: "That email and password do not match." };
   }
   await clearFailures(parsed.data.email);
+  const next = safeNext(String(form.get("next") || ""));
+
+  // Two-factor on: the password alone signs nobody in. The session exists but stays
+  // pending — it is a short-lived "this browser got the password right" note, nothing more.
+  if (user.totpSecret) {
+    await createSession(user.id, { pendingTotp: true });
+    redirect(`/login/2fa${next === "/" ? "" : `?next=${encodeURIComponent(next)}`}`);
+  }
+
   logAudit({ actorId: user.id, action: "auth.login", subjectType: "user", subjectId: user.id });
   await createSession(user.id);
-  const next = String(form.get("next") || "");
-  redirect(/^\/(?![/\\])/.test(next) ? next : "/");
+  redirect(next);
+}
+
+/** Only ever bounce to a path inside this app. */
+function safeNext(raw: string): string {
+  return /^\/(?![/\\])/.test(raw) ? raw : "/";
+}
+
+/**
+ * Second step of a two-factor sign-in: a six-digit code, or one recovery code.
+ * Both are checked against the pending session, so the password step cannot be skipped.
+ */
+export async function verifyTotpAction(_: FormState, form: FormData): Promise<FormState> {
+  const pending = await getPendingSession();
+  const user = pending?.user;
+  const secret = user?.totpSecret;
+  if (!pending || !user || !secret) return { error: "That sign-in has timed out. Start again." };
+  if (await isThrottled(user.email)) return { error: "Too many attempts. Try again in a few minutes." };
+
+  const typed = String(form.get("code") || "");
+  const step = verifyCode(secret, typed);
+  if (step !== null) {
+    // A code is good for its 30-second step only once: someone watching the screen cannot reuse it.
+    if (user.totpLastStep !== null && step <= user.totpLastStep) {
+      await recordFailure(user.email);
+      return { error: "That code has already been used. Wait for the next one." };
+    }
+    db.update(schema.users).set({ totpLastStep: step }).where(eq(schema.users.id, user.id)).run();
+  } else if (!consumeRecoveryCode(user.id, user.totpRecovery, typed)) {
+    await recordFailure(user.email);
+    return { error: "That code is not right. Check the clock on your phone, or use a recovery code." };
+  }
+
+  await clearFailures(user.email);
+  await completePendingSession(pending.id);
+  logAudit({ actorId: user.id, action: "auth.login", subjectType: "user", subjectId: user.id, meta: { totp: step !== null ? "code" : "recovery" } });
+  redirect(safeNext(String(form.get("next") || "")));
+}
+
+/** Spends one recovery code. Each works once, so it is removed as it is accepted. */
+function consumeRecoveryCode(userId: string, codes: string[] | null, typed: string): boolean {
+  const cleaned = typed.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!codes?.length || cleaned.length < 8) return false;
+  const hash = hashRecovery(cleaned);
+  const left = codes.filter((c) => c !== hash);
+  if (left.length === codes.length) return false;
+  db.update(schema.users).set({ totpRecovery: left }).where(eq(schema.users.id, userId)).run();
+  return true;
 }
 
 export async function logoutAction() {
@@ -79,7 +136,7 @@ export async function acceptInviteAction(_: FormState, form: FormData): Promise<
     .from(schema.invites)
     .where(and(eq(schema.invites.token, token), isNull(schema.invites.acceptedAt), isNull(schema.invites.revokedAt)))
     .get();
-  if (!invite || invite.expiresAt < Math.floor(Date.now() / 1000)) return { error: "This invite link is no longer valid. Ask an admin for a new one." };
+  if (!invite || inviteExpired(invite.expiresAt)) return { error: "This invite link is no longer valid. Ask an admin for a new one." };
   const parsed = z.object({ name: z.string().trim().min(1, "Enter your name"), password: z.string().min(8, "Use at least 8 characters") }).safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
 

@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { createInvite, createUser, setMembership } from "@/actions/admin";
-import type { WorkspaceRole } from "@/db/schema";
+import { INVITE_LIFETIMES, type WorkspaceRole } from "@/db/schema";
 import type { WorkspaceOption } from "@/lib/queries/admin";
 import { CopyButton } from "./copy-button";
 import { Hint, InlineError } from "./bits";
 import { useAdminAction } from "./use-action";
 
 const ROLES: WorkspaceRole[] = ["viewer", "editor", "manager"];
+const lifetimeLabel = (days: number) => (days === 0 ? "Never" : days === 1 ? "After 1 day" : `After ${days} days`);
 
 /**
  * "Add a person": creates an invite link, or (expander) an account with a password.
@@ -22,6 +23,7 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
   const [workspaceId, setWorkspaceId] = useState("");
   const [role, setRole] = useState<WorkspaceRole>("editor");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [expiresDays, setExpiresDays] = useState(7);
   const [password, setPassword] = useState("");
   const [link, setLink] = useState<{ url: string; emailed: boolean; to: string } | null>(null);
   const [created, setCreated] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
           e.preventDefault();
           setCreated(null);
           invite.run(
-            () => createInvite({ name, email, workspaceId: workspaceId || undefined, workspaceRole: role, isAdmin }),
+            () => createInvite({ name, email, workspaceId: workspaceId || undefined, workspaceRole: role, isAdmin, expiresDays }),
             (d) => setLink({ url: d.url, emailed: d.emailed, to: email.trim() }),
           );
         }}
@@ -61,6 +63,11 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
         <Label htmlFor={id("role")}>Role
           <Select id={id("role")} value={role} disabled={!workspaceId} onChange={(e) => setRole(e.target.value as WorkspaceRole)}>
             {ROLES.map((r) => <option key={r} value={r}>{r[0]!.toUpperCase() + r.slice(1)}</option>)}
+          </Select>
+        </Label>
+        <Label htmlFor={id("expires")}>Link expires
+          <Select id={id("expires")} value={expiresDays} onChange={(e) => setExpiresDays(Number(e.target.value))}>
+            {INVITE_LIFETIMES.map((d) => <option key={d} value={d}>{lifetimeLabel(d)}</option>)}
           </Select>
         </Label>
         <label className="flex items-center gap-2 text-[13px] text-ink" htmlFor={id("admin")}>

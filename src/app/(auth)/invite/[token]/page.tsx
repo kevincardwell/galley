@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db, schema } from "@/db/client";
+import { inviteExpired } from "@/db/schema";
 import { acceptInviteAction } from "@/actions/auth";
 import { AuthForm } from "@/components/auth-form";
 import { Icon } from "@/components/ui/icon";
@@ -12,7 +13,7 @@ function findLiveInvite(token: string) {
     .from(schema.invites)
     .where(and(eq(schema.invites.token, token), isNull(schema.invites.acceptedAt), isNull(schema.invites.revokedAt)))
     .get();
-  if (!invite || invite.expiresAt < Math.floor(Date.now() / 1000)) return null;
+  if (!invite || inviteExpired(invite.expiresAt)) return null;
   return invite;
 }
 

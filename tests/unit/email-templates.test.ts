@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { digestEmail, inviteEmail, notificationEmail, testEmail } from "@/lib/email/templates";
 
 const all = [
-  inviteEmail({ instanceName: "Galley", url: "https://g.test/invite/abc", inviterName: "Kev", workspaceName: "Marlow", expiresDays: 7 }),
+  inviteEmail({ instanceName: "Galley", url: "https://g.test/invite/abc", inviterName: "Kev", workspaceName: "Marlow", expiresAt: 1_800_000_000 }),
   notificationEmail({ instanceName: "Galley", title: "Tom commented", body: "Looks good", url: "https://g.test/w/x" }),
   testEmail({ instanceName: "Galley" }),
   digestEmail({ instanceName: "Galley", projectName: "Marlow", changes: ["Rewrote Hero"], waitingOn: ["Home › Hero"], shareUrl: "https://g.test/share/t" }),

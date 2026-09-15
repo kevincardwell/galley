@@ -100,7 +100,8 @@ Add it to the home screen from Safari or Chrome and it opens full screen with it
 
 | | |
 |---|---|
-| **Invite only** | No public sign-up. The first account is the admin; everyone else is invited and sees only the projects they are added to. |
+| **Invite only** | No public sign-up. The first account is the admin; everyone else is invited and sees only the projects they are added to. Each invite link lasts a day, a week, a month, three months, or forever — you pick when you make it. |
+| **Two-factor** | Optional TOTP on any account, from Account → Two-factor: scan the QR with Google Authenticator, 1Password, Aegis or anything else that speaks TOTP. Ten one-shot recovery codes are shown once, when you turn it on. |
 | **Email** | Your own SMTP server, or Resend, Postmark, SendGrid or Mailgun when your host blocks SMTP ports. Invites send themselves. |
 | **Notifications** | An inbox for mentions, assignments and client feedback, with email when a provider is set up. |
 | **Search** | `⌘K` across tasks, copy, files and projects, scoped to what you are allowed to see. |
@@ -250,6 +251,7 @@ Worth knowing before you install it, rather than after.
 
 - **It is sized for a studio, not a company.** One SQLite file, one process, no job queue. A handful of people and a few dozen projects is the shape it is built for. If you need fifty concurrent editors or horizontal scaling, this is the wrong tool and will stay the wrong tool.
 - **One instance is one organisation.** Workspaces are projects, not tenants. Everyone invited shares one supplier directory, one set of instance settings and one admin panel. It is not built to host several unrelated businesses.
+- **Recovery codes are the only way back in.** If someone turns two-factor on, loses their phone and loses their recovery codes, no admin screen can let them back in: clear `totp_secret` for that row in `galley.db` with Galley stopped.
 - **There is no OIDC or LDAP.** Accounts are invite-only email and password. Galley will trust a reverse proxy that has already signed someone in (Authelia, Authentik, oauth2-proxy, Tailscale — see Running it), but it does not speak either protocol itself.
 - **Mail credentials are stored in plain text** in the database, so treat a backup like a password. This is called out again under Backing up.
 - **The container starts as root** for a moment, to take ownership of the data directory, then drops to `PUID:PGID` and runs the application unprivileged. Pass `--user` if you would rather it never ran as root at all — you then own chowning the directory yourself.

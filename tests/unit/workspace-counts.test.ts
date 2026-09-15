@@ -6,7 +6,7 @@ import { db, schema } from "@/db/client";
 import { listWorkspacesFor } from "@/lib/queries/workspaces";
 import type { User } from "@/db/schema";
 
-const admin: User = { id: "wc-admin", email: "wc@x.test", name: "Counter", passwordHash: "", isAdmin: true, deactivatedAt: null, lastSeenAt: null, createdAt: 0 };
+const admin: User = { id: "wc-admin", email: "wc@x.test", name: "Counter", passwordHash: "", isAdmin: true, totpSecret: null, totpLastStep: null, totpRecovery: null, deactivatedAt: null, lastSeenAt: null, createdAt: 0 };
 
 describe("workspace grid counts", () => {
   beforeAll(() => {

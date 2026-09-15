@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { hasAnyUser } from "@/lib/settings";
 import { currentUser } from "@/lib/auth/current";
+import { getPendingSession } from "@/lib/auth/session";
 import { loginAction } from "@/actions/auth";
 import { AuthForm } from "@/components/auth-form";
 
@@ -22,6 +23,8 @@ const SSO_REASON: Record<string, string> = {
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; sso?: string }> }) {
   if (!hasAnyUser()) redirect("/setup");
   if (await currentUser()) redirect("/");
+  // Password already accepted, code still owed: pick up where they left off.
+  if (await getPendingSession()) redirect("/login/2fa");
   const { next = "", sso } = await searchParams;
   return (
     <AuthForm

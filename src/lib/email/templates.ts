@@ -101,15 +101,18 @@ function build(instanceName: string, subject: string, body: EmailBody): EmailCon
   return { subject, text: asText(body, instanceName), html: shell(instanceName, body) };
 }
 
-export function inviteEmail(input: { instanceName: string; url: string; inviterName?: string | null; workspaceName?: string | null; expiresDays: number }): EmailContent {
-  const { instanceName, url, inviterName, workspaceName, expiresDays } = input;
+export function inviteEmail(input: { instanceName: string; url: string; inviterName?: string | null; workspaceName?: string | null; expiresAt: number | null }): EmailContent {
+  const { instanceName, url, inviterName, workspaceName, expiresAt } = input;
   const who = inviterName ? `${inviterName} has invited you` : "You have been invited";
   const where = workspaceName ? ` to work on ${workspaceName}` : ` to ${instanceName}`;
   return build(instanceName, `You've been invited to ${instanceName}`, {
     heading: workspaceName ? `Come and work on ${workspaceName}` : `You've been invited to ${instanceName}`,
     paragraphs: [`${who}${where}.`, "Use the button below to set up your account."],
     cta: { label: "Accept the invite", url },
-    note: `The link stops working after ${expiresDays} days.`,
+    // A date, not "in 7 days": the same invite can be sent again days later.
+    note: expiresAt === null
+      ? "The link does not expire."
+      : `The link stops working on ${new Date(expiresAt * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}.`,
   });
 }
 

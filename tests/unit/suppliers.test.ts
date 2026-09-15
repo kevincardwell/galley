@@ -16,7 +16,7 @@ const actor = {
   name: "Linker",
   passwordHash: "",
   isAdmin: false,
-  deactivatedAt: null,
+  totpSecret: null, totpLastStep: null, totpRecovery: null, deactivatedAt: null,
   lastSeenAt: null,
   createdAt: 0,
 };

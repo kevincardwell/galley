@@ -63,9 +63,9 @@ test.describe.serial("invite-only access", () => {
     await page.fill("#auth-password", "another-long-password");
     await page.click("button[type=submit]");
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator("main").getByText("Peak Physio")).toBeVisible();
-    await expect(page.locator("main").getByText("Marlow & Finch Joinery")).toHaveCount(0);
-    await expect(page.locator("main").getByText("Harbourside Bakery")).toHaveCount(0);
+    await expect(page.locator("main").getByRole("link", { name: /Peak Physio/ })).toBeVisible();
+    await expect(page.locator("main").getByRole("link", { name: /Marlow & Finch Joinery/ })).toHaveCount(0);
+    await expect(page.locator("main").getByRole("link", { name: /Harbourside Bakery/ })).toHaveCount(0);
     await page.goto("/w/harbourside-bakery");
     await expect(page.getByText(/not found|could not be found/i)).toBeVisible();
     await page.goto("/admin");

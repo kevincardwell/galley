@@ -2,7 +2,7 @@ import "server-only";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { db, schema } from "@/db/client";
-import type { WorkspaceRole, WorkspaceStatus } from "@/db/schema";
+import { inviteExpired, type WorkspaceRole, type WorkspaceStatus } from "@/db/schema";
 import { getSettings } from "@/lib/settings";
 import { storage } from "@/lib/storage";
 
@@ -28,7 +28,8 @@ export type InviteRow = {
   workspaceRole: WorkspaceRole | null;
   workspace: { id: string; name: string; accent: string } | null;
   inviterName: string | null;
-  expiresAt: number;
+  /** Null when the link was made never to expire. */
+  expiresAt: number | null;
   emailedAt: number | null;
   acceptedAt: number | null;
   revokedAt: number | null;
@@ -130,10 +131,10 @@ export function listWorkspaceOptions(): WorkspaceOption[] {
     .all();
 }
 
-function inviteState(i: { acceptedAt: number | null; revokedAt: number | null; expiresAt: number }): InviteRow["state"] {
+function inviteState(i: { acceptedAt: number | null; revokedAt: number | null; expiresAt: number | null }): InviteRow["state"] {
   if (i.acceptedAt) return "accepted";
   if (i.revokedAt) return "revoked";
-  if (i.expiresAt < nowS()) return "expired";
+  if (inviteExpired(i.expiresAt)) return "expired";
   return "pending";
 }
 
