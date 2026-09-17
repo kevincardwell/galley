@@ -6,7 +6,7 @@ Galley applies database migrations when the container starts, and copies the dat
 `backups/pre-migration-<date>.db` first, so an upgrade that goes wrong can be stepped back by putting that file
 in place and running the previous tag.
 
-## Unreleased
+## v1.1.0 — 2026-09-17
 
 ### Added
 
@@ -19,10 +19,89 @@ in place and running the previous tag.
   or never. Seven days stays the default, so nothing changes unless you pick something else, and the invite
   email names the date rather than counting days from whenever it was sent.
 
+### Fixed
+
+- **Two-factor codes could be spent twice by two requests arriving together**, and a simultaneous pair of
+  recovery codes could undo each other's removal — a spent code came back. The check and the write are now
+  one guarded update, so exactly one request can spend a code.
+- **The code step's rate limit was reset by signing in again.** With the password known, an attacker could
+  sign in, try seven codes, sign in again, and repeat for as long as they liked. The second factor now has
+  its own counter that only a correct code clears, and a successful password no longer wipes the address-wide
+  counter either.
+- **Login throttling could be evaded with a forged header.** `TRUSTED_PROXY_HOPS=0`, documented for setups
+  with no proxy, fell back to the last `X-Forwarded-For` entry — precisely the one a client can set. Zero now
+  ignores forwarded headers, a chain shorter than the configured depth is ignored too, and the compose file
+  binds the port to `127.0.0.1` so a default install is not reachable directly.
+- **A collaborator's tab left in the background silently stopped receiving edits.** The sweep that clears
+  clients whose stream close went unobserved now probes the stream first: a live-but-quiet tab keeps its
+  place, and only a genuinely dead connection is dropped.
+- **The workspace favicon fetch could be pointed at the local network with DNS rebinding.** The address was
+  checked and then resolved again by the fetch. It is now fetched from the address that was checked, the
+  IPv6 private/loopback ranges the check missed (link-local, unique-local, multicast, NAT64 and
+  IPv4-compatible forms) are covered, and a name that resolves to any private address is refused.
+- **Signed-in users who were not managers could read a project's share token** out of the page data and
+  hand out a link that lets guests comment, approve and upload. The token is now only sent to members who
+  can manage the share link.
+- **Enabling or disabling two-factor did not sign out other sessions**, so a session opened with a possibly
+  leaked password survived the exact change made to contain it. Both now sign out every session but the one
+  making the change, as changing a password already did.
+- **An archived project still served its share link, its files and its calendar feed** to anyone holding the
+  old URL. Archiving now closes those for reading as well as writing; unarchiving brings the same links back.
+- **Forward-auth had no way to prove a request came from the proxy.** With `GALLEY_AUTH_HEADERS` on, any
+  request that could reach the port with a `Remote-Email` header signed in as that person. `GALLEY_AUTH_SECRET`
+  now makes the proxy send `x-galley-auth`, checked in constant time, and without it the first (admin) account
+  can no longer be created through the proxy — so an accidentally exposed port is not a way to claim a fresh
+  instance. Galley logs a warning at startup when headers are on with no secret.
+- **`GALLEY_URL` and `MAX_UPLOAD_MB` silently stopped working after the settings page had been saved once.**
+  The stored copy shadowed the environment variable, so changing it in compose or the Unraid template did
+  nothing on restart. The environment now wins over the stored value, always.
+- **A nightly backup that failed was invisible.** Failures only reached the container log, and a container
+  that was down when the chosen hour passed skipped that day entirely. The schedule now catches up after the
+  hour, retries failed runs at a slower cadence, and Admin → Backups shows when the last attempt ran and
+  whether it worked. Backup zips are written under a `.part` name and renamed when complete, so a crash
+  cannot leave a truncated file that looks restorable, and the zips and pre-migration snapshots are created
+  `0600` — they hold the mail password and every session token.
+- **A local `npm run build` packaged the working copy's `data/` directory** (database, WAL and backup zips)
+  into `.next/standalone`. The published image was never affected, but a locally built one could have been.
+  The build now removes it, and the route traces exclude it.
+- **The container healthcheck called a full or read-only data volume healthy**, because it only proved the
+  database answered. It now also checks the data directory is writable with room to spare.
+- **The entrypoint only checked the top-level owner**, so a hand-restored backup or an interrupted chown that
+  left some files root-owned produced permission errors with no explanation. It now probes the database and
+  uploads directory too, and a read-only `/data` gets a plain message instead of a `mkdir` trace and a crash
+  loop.
+- **A pre-migration snapshot could collide with an earlier one** on a crash-looping boot and abort the
+  upgrade, and generated SQLite table rebuilds relied on a pragma that does nothing inside a migration
+  transaction. Both fixed.
+- **The mobile navigation drawer kept its links in the tab order while closed**, trapped no focus when open,
+  and the contrast palette failed WCAG AA in both themes (secondary text, status colours, and the dark-theme
+  accent). The drawer is now `inert` until opened and moves focus in and back out; the palette meets AA.
+- **The command palette was a plain `div`**: no dialog semantics, no focus trap, and arrow-key results were
+  invisible to screen readers. It is now a native modal dialog with combobox/listbox semantics.
+- **Toasts vanished after 2.2 seconds with no way to keep or dismiss them**, including errors. They now last
+  longer, pause while hovered or focused, and can be dismissed.
+- **Cmd+S could report "Saved" over edits that had not reached the server.** The flush now says whether the
+  bytes landed; a failed flush keeps the dirty state and says so.
+- **Smaller ones**: upload progress no longer floods the live region with every percent; each main screen has
+  a skeleton that matches the layout it is about to show instead of the workspace grid; tab rows are links
+  with `aria-current` rather than pretending to be ARIA tabs; icon buttons are 40px on touch screens; the
+  lightbox no longer re-adds its key listener on every render; `?` no longer opens the shortcut sheet over
+  the task inspector; role, member and calendar actions say so when they fail; the theme toggle updates the
+  installed-app chrome colour; `/api/search` responses are marked private; and the release workflow now runs
+  the type, lint and test gates before publishing `:latest`.
+
+### Changed
+
+- **Fonts are self-hosted.** Instrument Sans and Newsreader were loaded from Google's CDN, which needs the
+  CSP to allow that origin and sends every visitor's IP to Google. `next/font` downloads and serves them
+  from the app itself, so the CSP no longer allows any third-party style or font source.
+
 ### Upgrading
 
-Nothing to do. The migration adds the two-factor columns and makes an invite's expiry nullable; existing
-invites keep the expiry they already had.
+If you reach Galley directly rather than through a reverse proxy, publish the port as `3000:3000` and set
+`TRUSTED_PROXY_HOPS=0`, or copy the new `compose.yml`; the default now binds to localhost. Behind a proxy,
+nothing changes. Otherwise nothing to do: the migration adds the two-factor columns and makes an invite's
+expiry nullable, and existing invites keep the expiry they already had.
 
 ## v1.0.1 — 2026-09-14
 
