@@ -25,16 +25,25 @@ if [ "$(id -u)" != "0" ]; then
     echo "  Either drop --user and let Galley set this up itself, or run: chown -R $(id -u):$(id -g) <the host directory>" >&2
     exit 1
   fi
-  mkdir -p "$DATA/uploads"
+  mkdir -p "$DATA/uploads" || { echo "Galley: $DATA is writable but $DATA/uploads could not be created. If this is a read-only mount, remount it read-write." >&2; exit 1; }
   exec node server.js
 fi
 
-mkdir -p "$DATA/uploads"
+if ! mkdir -p "$DATA/uploads" 2>/dev/null; then
+  echo "Galley: cannot create $DATA/uploads. Check that the data directory exists, points at a mounted volume and is not read-only, then start again." >&2
+  exit 1
+fi
 
 # Only when it is not already right: chown -R over a large uploads tree is slow,
-# and it would otherwise run on every single start.
+# and it would otherwise run on every single start. A matching directory owner
+# is not enough on its own, though: an interrupted chown, a hand-restored backup
+# or a mix of previous UIDs leaves individual files owned by someone else, and
+# the app fails on those alone. Probe the database (or uploads) as well.
 owner="$(stat -c '%u:%g' "$DATA" 2>/dev/null || echo '')"
-if [ "$owner" != "$PUID:$PGID" ]; then
+probe="$DATA/galley.db"
+[ -e "$probe" ] || probe="$DATA/uploads"
+probe_owner="$(stat -c '%u:%g' "$probe" 2>/dev/null || echo '')"
+if [ "$owner" != "$PUID:$PGID" ] || { [ -n "$probe_owner" ] && [ "$probe_owner" != "$PUID:$PGID" ]; }; then
   echo "Galley: taking ownership of $DATA for ${PUID}:${PGID} (was ${owner:-unknown})"
   chown -R "$PUID:$PGID" "$DATA"
 fi

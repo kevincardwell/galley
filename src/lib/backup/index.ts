@@ -14,6 +14,26 @@ const FAVICON_DIR = path.join(DATA_DIR, "favicons");
 export type BackupKind = "manual" | "scheduled";
 export type BackupRow = typeof schema.backups.$inferSelect;
 
+/** How the most recent backup attempt went, successful or not. */
+export type BackupStatus = { at: number; ok: boolean; message: string };
+
+/**
+ * Records the result of an attempt in the settings table. The list only ever shows zips that
+ * exist, so without this a nightly failure is invisible outside the container log.
+ */
+export function recordBackupStatus(ok: boolean, message: string) {
+  const value: BackupStatus = { at: Math.floor(Date.now() / 1000), ok, message };
+  db.insert(schema.settings)
+    .values({ key: "backup.status", value })
+    .onConflictDoUpdate({ target: schema.settings.key, set: { value } })
+    .run();
+}
+
+export function lastBackupStatus(): BackupStatus | null {
+  const row = db.select().from(schema.settings).where(eq(schema.settings.key, "backup.status")).get();
+  return (row?.value as BackupStatus | undefined) ?? null;
+}
+
 function stamp(d = new Date()) {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
@@ -34,6 +54,9 @@ export async function createBackup({ createdBy, kind }: { createdBy: string | nu
   let filename = `galley-${stamp()}.zip`;
   if (fs.existsSync(path.join(BACKUP_DIR, filename))) filename = `galley-${stamp()}-${id.slice(0, 4)}.zip`;
   const zipPath = path.join(BACKUP_DIR, filename);
+  // Written under a `.part` name and renamed at the end: a crash midway leaves a part file to
+  // sweep up, never a truncated zip that looks like a backup you can restore from.
+  const partPath = `${zipPath}.part`;
   const tmpDb = path.join(BACKUP_DIR, `.galley-${id}.db`);
 
   try {
@@ -41,7 +64,7 @@ export async function createBackup({ createdBy, kind }: { createdBy: string | nu
     sqlite.exec(`VACUUM INTO '${tmpDb.replace(/'/g, "''")}'`);
 
     await new Promise<void>((resolve, reject) => {
-      const out = fs.createWriteStream(zipPath);
+      const out = fs.createWriteStream(partPath);
       const archive = new ZipArchive({ zlib: { level: 6 } });
       out.on("close", resolve);
       out.on("error", reject);
@@ -57,10 +80,19 @@ export async function createBackup({ createdBy, kind }: { createdBy: string | nu
       archive.finalize().catch(reject);
     });
 
+    await fsp.rename(partPath, zipPath);
+    // A backup zip holds SMTP credentials, password hashes and share tokens; not world-readable.
+    try {
+      await fsp.chmod(zipPath, 0o600);
+    } catch {
+      /* best effort: some filesystems (SMB, CIFS) do not do permissions */
+    }
+
     const bytes = (await fsp.stat(zipPath)).size;
     db.insert(schema.backups).values({ id, filename, bytes, kind, createdBy }).run();
     return db.select().from(schema.backups).where(eq(schema.backups.id, id)).get()!;
   } catch (err) {
+    await fsp.rm(partPath, { force: true }).catch(() => {});
     await fsp.rm(zipPath, { force: true }).catch(() => {});
     throw err;
   } finally {
@@ -80,7 +112,13 @@ export function getBackup(id: string): BackupRow | undefined {
 export async function deleteBackup(id: string): Promise<boolean> {
   const row = getBackup(id);
   if (!row) return false;
-  await fsp.rm(backupPath(row), { force: true }).catch(() => {});
+  try {
+    await fsp.rm(backupPath(row), { force: true });
+  } catch (err) {
+    // The row still goes: keeping it would promise a file nobody can download. Say so, because
+    // the orphaned file is otherwise silent.
+    console.warn(`[backup] could not remove ${row.filename}:`, err instanceof Error ? err.message : err);
+  }
   db.delete(schema.backups).where(eq(schema.backups.id, id)).run();
   return true;
 }

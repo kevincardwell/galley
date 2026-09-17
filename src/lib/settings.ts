@@ -23,8 +23,8 @@ export type InstanceSettings = {
 
 const DEFAULTS: InstanceSettings = {
   instanceName: "Galley",
-  baseUrl: process.env.GALLEY_URL || "",
-  maxUploadMb: Number(process.env.MAX_UPLOAD_MB || 500),
+  baseUrl: "",
+  maxUploadMb: 500,
   sessionDays: 30,
   currency: "GBP",
   smtp: null,
@@ -32,6 +32,22 @@ const DEFAULTS: InstanceSettings = {
   backup: { enabled: false, hour: 3, keep: 7 },
   digest: { enabled: false, weekday: 5, hour: 9 }, // Friday morning, off until someone turns it on
 };
+
+/**
+ * Container-level environment variables are read live, and win over the stored value.
+ *
+ * The settings page persists whatever it is given, so a stored `baseUrl` written before the
+ * variable existed would otherwise shadow it forever: operators change the variable in compose,
+ * restart, and nothing happens. Explicit intent from the environment beats a database row.
+ */
+function envOverrides(): Partial<InstanceSettings> {
+  const out: Partial<InstanceSettings> = {};
+  const url = process.env.GALLEY_URL?.trim();
+  if (url) out.baseUrl = url;
+  const mb = Number(process.env.MAX_UPLOAD_MB);
+  if (Number.isFinite(mb) && mb > 0) out.maxUploadMb = Math.floor(mb);
+  return out;
+}
 
 export function getSettings(): InstanceSettings {
   const row = db.select().from(schema.settings).where(eq(schema.settings.key, "instance")).get();
@@ -47,7 +63,14 @@ export function getSettings(): InstanceSettings {
     mail.from = stored.smtp.from;
     mail.smtp = { host: stored.smtp.host, port: stored.smtp.port, user: stored.smtp.user, pass: stored.smtp.pass };
   }
-  return { ...DEFAULTS, ...stored, mail, backup: { ...DEFAULTS.backup, ...(stored.backup ?? {}) }, digest: { ...DEFAULTS.digest, ...(stored.digest ?? {}) } };
+  return {
+    ...DEFAULTS,
+    ...stored,
+    ...envOverrides(),
+    mail,
+    backup: { ...DEFAULTS.backup, ...(stored.backup ?? {}) },
+    digest: { ...DEFAULTS.digest, ...(stored.digest ?? {}) },
+  };
 }
 
 export function saveSettings(patch: Partial<InstanceSettings>) {

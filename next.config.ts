@@ -15,8 +15,8 @@ const securityHeaders = [
       "default-src 'self'",
       // React's development build needs eval for its debugging tools; production never does.
       `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self'",
       "img-src 'self' data: blob:",
       "media-src 'self' blob:",
       // The dev server talks to itself over a websocket for hot reload.

@@ -10,7 +10,24 @@ permissions:
   packages: write
 
 jobs:
+  # Publishing :latest is what `docker compose pull` fetches, so a red main must never
+  # reach the registry. The image build below is the real compile check; this job runs
+  # the fast gates first (types, lint, tests).
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p .
+      - run: npm run lint
+      - run: npm test
+
   publish:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

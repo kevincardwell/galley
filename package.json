@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node -e \"require('node:fs').rmSync('.next/standalone/data', { recursive: true, force: true })\"",
     "start": "next start",
     "lint": "eslint src tests",
     "test": "vitest run",

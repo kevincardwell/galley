@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import crypto from "node:crypto";
 import path from "node:path";
 import fs from "node:fs";
 import * as schema from "./schema";
@@ -68,9 +69,19 @@ function snapshotBeforeMigrate(sqlite: Database.Database) {
 
   const dir = path.join(DATA_DIR, "backups");
   fs.mkdirSync(dir, { recursive: true });
+  // A random suffix as well as the timestamp: a crash-loop can boot twice in the same
+  // millisecond, and VACUUM INTO refuses to overwrite an existing file.
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  sqlite.exec(`VACUUM INTO '${path.join(dir, `pre-migration-${stamp}.db`).replace(/'/g, "''")}'`);
-  console.log(`Galley: ${files - n} migration(s) pending, snapshot written to backups/pre-migration-${stamp}.db`);
+  const suffix = crypto.randomBytes(3).toString("hex");
+  const file = path.join(dir, `pre-migration-${stamp}-${suffix}.db`);
+  sqlite.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
+  // The snapshot holds SMTP credentials, password hashes and share tokens.
+  try {
+    fs.chmodSync(file, 0o600);
+  } catch {
+    /* best effort: some filesystems (SMB, CIFS) do not do permissions */
+  }
+  console.log(`Galley: ${files - n} migration(s) pending, snapshot written to backups/${path.basename(file)}`);
 
   const old = fs
     .readdirSync(dir)
@@ -90,7 +101,16 @@ function open() {
     sqlite.pragma("synchronous = NORMAL");
     snapshotBeforeMigrate(sqlite);
     const db = drizzle(sqlite, { schema });
-    migrate(db, { migrationsFolder: MIGRATIONS_DIR });
+    // Drizzle wraps each migration in a transaction, and SQLite ignores `PRAGMA foreign_keys`
+    // inside one — so the pragmas drizzle-kit writes into generated table rebuilds are no-ops.
+    // `defer_foreign_keys` does work inside a transaction: checks run at COMMIT instead of
+    // mid-rebuild, which is what lets a rebuild of a table other tables reference succeed.
+    sqlite.pragma("defer_foreign_keys = ON");
+    try {
+      migrate(db, { migrationsFolder: MIGRATIONS_DIR });
+    } finally {
+      sqlite.pragma("defer_foreign_keys = OFF");
+    }
     sqlite.exec(FTS_SQL);
     return { db, sqlite };
   } catch (err) {

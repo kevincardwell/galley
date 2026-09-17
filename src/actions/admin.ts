@@ -17,7 +17,7 @@ import { resolveBaseUrl } from "@/lib/queries/admin";
 import { isEmailConfigured, sendEmail } from "@/lib/email";
 import { MAIL_PROVIDERS, requiredFields, type MailSettings } from "@/lib/email/providers";
 import { inviteEmail, testEmail } from "@/lib/email/templates";
-import { createBackup, deleteBackup, pruneBackups, type BackupRow } from "@/lib/backup";
+import { createBackup, deleteBackup, pruneBackups, recordBackupStatus, type BackupRow } from "@/lib/backup";
 
 export type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -395,12 +395,15 @@ export async function runBackupNow(): Promise<Result<BackupRow>> {
   const admin = await requireAdmin();
   try {
     const row = await createBackup({ createdBy: admin.id, kind: "manual" });
+    recordBackupStatus(true, `${row.filename} (${row.bytes} bytes)`);
     logAudit({ actorId: admin.id, action: "backup.created", subjectType: "backup", subjectId: row.id, meta: { filename: row.filename, bytes: row.bytes } });
     refreshBackups();
     return ok(row);
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    recordBackupStatus(false, message);
     console.error("[backup] manual backup failed:", err);
-    return fail(`Backup failed: ${err instanceof Error ? err.message : String(err)}`);
+    return fail(`Backup failed: ${message}`);
   }
 }
 

@@ -2,14 +2,20 @@ import "server-only";
 import { desc } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { getSettings } from "@/lib/settings";
-import { createBackup, pruneBackups } from "./index";
+import { createBackup, pruneBackups, recordBackupStatus } from "./index";
 
 /**
  * Runs one scheduled backup a day at `settings.backup.hour` (server local time), then prunes to `keep`.
  * Armed once per process on module load; import this (or `@/lib/backup`) from something that runs on boot.
  */
 const TICK_MS = 60_000;
-const g = globalThis as unknown as { __galleyBackupTimer?: ReturnType<typeof setInterval>; __galleyBackupRunning?: boolean };
+/** After a failure, wait this long before trying again rather than logging once a minute. */
+const RETRY_AFTER_FAILURE_MS = 15 * 60_000;
+const g = globalThis as unknown as {
+  __galleyBackupTimer?: ReturnType<typeof setInterval>;
+  __galleyBackupRunning?: boolean;
+  __galleyBackupRetryAt?: number;
+};
 
 function startOfToday() {
   const d = new Date();
@@ -25,15 +31,25 @@ function hasBackupToday(): boolean {
 /** One scheduler pass. Exported for the admin action and tests; safe to call at any time. */
 export async function runScheduledBackupIfDue(now = new Date()): Promise<boolean> {
   const { backup } = getSettings();
-  if (!backup.enabled || now.getHours() !== backup.hour || hasBackupToday() || g.__galleyBackupRunning) return false;
+  if (!backup.enabled || g.__galleyBackupRunning) return false;
+  // One a day, at or after the chosen hour. If the container was down when the hour passed, the
+  // first tick after it starts still writes today's backup instead of skipping the whole day.
+  if (now.getHours() < backup.hour) return false;
+  if (hasBackupToday()) return false;
+  if (g.__galleyBackupRetryAt && now.getTime() < g.__galleyBackupRetryAt) return false;
+
   g.__galleyBackupRunning = true;
   try {
     const row = await createBackup({ createdBy: null, kind: "scheduled" });
     const pruned = await pruneBackups(backup.keep);
+    recordBackupStatus(true, `${row.filename} (${row.bytes} bytes), pruned ${pruned}`);
     console.log(`[backup] scheduled backup ${row.filename} written (${row.bytes} bytes), pruned ${pruned}`);
     return true;
   } catch (err) {
-    console.error("[backup] scheduled backup failed:", err instanceof Error ? err.message : err);
+    const message = err instanceof Error ? err.message : String(err);
+    recordBackupStatus(false, message);
+    g.__galleyBackupRetryAt = now.getTime() + RETRY_AFTER_FAILURE_MS;
+    console.error("[backup] scheduled backup failed:", message);
     return false;
   } finally {
     g.__galleyBackupRunning = false;

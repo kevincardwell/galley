@@ -6,8 +6,10 @@ services:
     container_name: galley
     restart: unless-stopped
     ports:
-      # Bind to localhost when a reverse proxy sits in front, which is the usual setup.
-      - "3000:3000"
+      # Bound to localhost because a reverse proxy in front is the usual setup.
+      # To reach Galley directly instead, publish "3000:3000" and set
+      # TRUSTED_PROXY_HOPS=0 so rate limiting ignores forwarded headers.
+      - "127.0.0.1:3000:3000"
     environment:
       # Public URL people use to reach Galley (used in invite links).
       GALLEY_URL: http://localhost:3000
@@ -20,6 +22,10 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      # The image sets its own start period; overriding the healthcheck here would drop it,
+      # and a slow first boot (migrations on a big database) would show up as unhealthy.
+      start_period: 30s
+      start_interval: 5s
 
 volumes:
   galley-data:

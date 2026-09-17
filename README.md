@@ -135,9 +135,9 @@ Images are published for `linux/amd64` and `linux/arm64` on every release:
 
 Pin a version with a tag such as `:0.1.0` if you would rather upgrade deliberately.
 
-Data lives in the `galley-data` volume at `/data`. To keep it in a folder instead, change the volume to `- ./data:/data` and make it writable by uid 1000.
+Data lives in the `galley-data` volume at `/data`. To keep it in a folder instead, change the volume to `- ./data:/data`: Galley takes ownership on start, and `PUID`/`PGID` choose who it runs as.
 
-Behind a reverse proxy: forward to port 3000, set `GALLEY_URL` to the public https address, and raise the proxy's body limit to at least `MAX_UPLOAD_MB`. The https part matters, because home screen installation needs it.
+Behind a reverse proxy: forward to port 3000, set `GALLEY_URL` to the public https address, and raise the proxy's body limit to at least `MAX_UPLOAD_MB`. The https part matters, because home screen installation needs it. The compose file binds the port to `127.0.0.1` for exactly this setup; if you reach Galley directly instead, publish `3000:3000` and set `TRUSTED_PROXY_HOPS=0`.
 
 To build the image yourself, uncomment `build: .` in `compose.yml`.
 
@@ -161,24 +161,30 @@ git clone https://github.com/kevincardwell/galley.git
 cd galley
 npm ci
 npm run build
-GALLEY_DATA_DIR=/srv/galley PORT=3000 npm start
+GALLEY_URL=http://localhost:3000 GALLEY_DATA_DIR=/srv/galley PORT=3000 npm start
 ```
+
+`GALLEY_URL` is not just for invite links: without it, production builds assume they are behind TLS and mark the session cookie `Secure`, so a plain-http address (a LAN IP, say) would not keep you signed in.
 
 ### Settings
 
 | Variable | Default | What it does |
 |---|---|---|
-| `GALLEY_URL` | none | Public address, used for invite links and to mark cookies secure. |
+| `GALLEY_URL` | none | Public address, used for invite links and to mark cookies secure. Set it whenever the instance is reachable on anything but localhost. |
 | `GALLEY_DATA_DIR` | `./data`, `/data` in Docker | Where the database and uploads live. |
 | `MAX_UPLOAD_MB` | `500` | Largest single upload. |
-| `TRUSTED_PROXY_HOPS` | `1` | How many reverse proxies sit in front, so the real client address can be found for rate limiting. |
+| `TRUSTED_PROXY_HOPS` | `1` | How many reverse proxies sit in front, so the real client address can be found for rate limiting. Set `0` when Galley is the exposed server: forwarded headers are then ignored rather than trusted. A chain shorter than this number is ignored too. |
 | `PORT` | `3000` | Port to listen on. |
 | `TZ` | `UTC` | Server time zone. Decides when the nightly backup runs and how dates are grouped. |
 | `PUID` / `PGID` | `1000` / `1000` | Who Galley runs as. It takes ownership of the data directory on start, so a bind mount does not need chowning first. The Unraid template sets `99` / `100`. |
 | `GALLEY_AUTH_HEADERS` | off | Accept sign-ins from a reverse proxy that has already authenticated the caller. See below. |
+| `GALLEY_AUTH_SECRET` | none | Shared secret the proxy must send in the `x-galley-auth` header, proving the request really came through it. Strongly recommended. |
 | `GALLEY_AUTH_EMAIL_HEADER` | `Remote-Email` | Which header carries the address. |
 | `GALLEY_AUTH_NAME_HEADER` | `Remote-Name` | Which header carries the display name, if any. |
 | `GALLEY_AUTH_AUTO_CREATE` | off | Create an account the first time someone new arrives, instead of requiring an invite. |
+
+`GALLEY_URL` and `MAX_UPLOAD_MB` are read on every start and override whatever the settings page
+stored, so changing them in compose or the Unraid template always takes effect.
 
 Email and the backup schedule are set in the app, under Admin, not with environment variables.
 
@@ -190,14 +196,22 @@ trust that and skip its own login.
 ```yaml
 environment:
   GALLEY_AUTH_HEADERS: "1"
-  GALLEY_AUTH_AUTO_CREATE: "1"   # optional: invite nobody, let the proxy decide
+  GALLEY_AUTH_SECRET: "a-long-random-string"   # the proxy must send this in x-galley-auth
+  GALLEY_AUTH_AUTO_CREATE: "1"                 # optional: invite nobody, let the proxy decide
 ```
+
+With `GALLEY_AUTH_SECRET` set, configure the proxy to add `x-galley-auth: <secret>` on the requests it
+forwards and to strip any inbound copy of that header. Galley compares it in constant time and refuses
+anything without it — so an exposed port is no longer a way in. Without the secret, Galley logs a warning
+at startup and refuses to create the first (admin) account through the proxy, though accounts that already
+exist can still sign in.
 
 > [!WARNING]
 > **The proxy is the entire security model.** These are ordinary HTTP headers, so anyone who can reach Galley
-> without going through the proxy can set `Remote-Email` to whatever they like and become that person. Only
-> turn this on when Galley is unreachable except through the proxy — bound to localhost, or on an internal
-> network the proxy can see and nobody else can. Check it from another machine before you trust it.
+> without going through the proxy can set `Remote-Email` to whatever they like and become that person. A
+> `GALLEY_AUTH_SECRET` closes that door, but only if the proxy sets it and strips inbound copies — belt and
+> braces: keep Galley unreachable except through the proxy. Bound to localhost, or on an internal network
+> the proxy can see and nobody else can. Check it from another machine before you trust it.
 
 Defaults suit Authelia. For others, point Galley at their headers:
 
@@ -210,7 +224,8 @@ Defaults suit Authelia. For others, point Galley at their headers:
 
 With `GALLEY_AUTH_AUTO_CREATE` off — the default — people still have to be invited first, and the proxy simply
 saves them typing a password. With it on, the first person through becomes the admin and everyone after them
-is an ordinary member, so restrict who reaches Galley in the proxy's own rules.
+is an ordinary member; creating that first admin this way needs `GALLEY_AUTH_SECRET`, so restrict who reaches
+Galley in the proxy's own rules either way.
 
 An account that an admin has deactivated stays out whatever the proxy says. The password login form stays
 available for anyone who was set up that way, so you are never locked out if the proxy misbehaves.
