@@ -19,21 +19,20 @@ export function AdminTabs({ pendingInvites }: { pendingInvites: number }) {
     { href: "/admin/audit", label: "Audit log", icon: "activity" },
   ];
   return (
-    <nav className="mt-4 flex max-w-full min-w-0 gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
+    <nav className="mt-4 flex max-w-full min-w-0 gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {tabs.map((t) => {
         const on = t.exact ? path === t.href : path.startsWith(t.href);
         return (
           <Link
             key={t.href}
             href={t.href}
-            role="tab"
-            aria-selected={on}
+            aria-current={on ? "page" : undefined}
             className={clsx(
               "-mb-px flex shrink-0 cursor-pointer items-center gap-1.5 rounded-t border-b-2 px-3 py-2 font-medium whitespace-nowrap transition-colors duration-150",
               on ? "border-accent text-ink" : "border-transparent text-ink-2 hover:bg-surface-2 hover:text-ink",
             )}
           >
-            <Icon name={t.icon} size={15} className={on ? "text-accent" : "text-ink-3"} />
+            <Icon name={t.icon} size={15} className={on ? "text-accent-text" : "text-ink-3"} />
             {t.label}
             {t.n && <span className="tnum text-xs text-ink-3 max-sm:hidden">{t.n}</span>}
           </Link>

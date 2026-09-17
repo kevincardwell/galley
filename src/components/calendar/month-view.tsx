@@ -106,7 +106,7 @@ function DayCell({ day, entries, editable, canAdd, onOpenItem, onOpenDay, onAdd 
         <button
           type="button"
           onClick={() => onOpenDay(day.iso)}
-          className="cursor-pointer rounded-[4px] px-1 py-px text-left text-xs font-medium text-ink-3 transition-colors duration-150 hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="cursor-pointer rounded-[4px] px-1 py-px text-left text-xs font-medium text-ink-3 transition-colors duration-150 hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
         >
           +{hidden} more
         </button>

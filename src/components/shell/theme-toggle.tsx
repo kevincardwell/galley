@@ -9,6 +9,9 @@ function read() { try { return localStorage.getItem(KEY) ?? ""; } catch { return
 function write(next: string) {
   try { if (next) localStorage.setItem(KEY, next); else localStorage.removeItem(KEY); } catch {}
   if (next) document.documentElement.dataset.theme = next; else delete document.documentElement.dataset.theme;
+  // The installed-app chrome follows the theme that is actually showing, not the OS setting.
+  const dark = next === "dark" || (next === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#171614" : "#EFEEEA");
   listeners.forEach((l) => l());
 }
 const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };

@@ -64,7 +64,7 @@ export function InstallApp() {
   return (
     <div className="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-sm rounded-lg border border-line bg-surface p-3 shadow-panel md:hidden" role="dialog" aria-label="Add Galley to your home screen">
       <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent"><Icon name="sparkles" size={17} /></span>
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent-text"><Icon name="sparkles" size={17} /></span>
         <div className="min-w-0 flex-1">
           <p className="m-0 text-sm font-medium">Keep Galley on your home screen</p>
           {prompt ? (

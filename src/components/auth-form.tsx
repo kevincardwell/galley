@@ -42,7 +42,7 @@ export function AuthForm({ action, fields, submit, hidden = {}, title, intro }: 
               defaultValue={f.defaultValue}
               readOnly={f.readOnly}
               required
-              className="rounded-r border border-line bg-surface px-3 py-2 text-sm text-ink transition-colors duration-150 read-only:bg-surface-2 read-only:text-ink-2 placeholder:text-ink-3 hover:border-ink-3 focus:ring-2 focus:ring-accent focus:outline-none"
+              className="rounded-r border border-line bg-surface px-3 py-2 text-sm text-ink transition-colors duration-150 read-only:bg-surface-2 read-only:text-ink-2 placeholder:text-ink-3 hover:border-ink-3 focus:ring-2 focus:ring-accent-text focus:outline-none"
             />
           </label>
         ))}

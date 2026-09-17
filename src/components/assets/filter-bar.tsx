@@ -21,8 +21,8 @@ function Chip({ href, on, icon, count, children }: { href: string; on: boolean; 
       aria-current={on ? "true" : undefined}
       className={clsx(
         "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[13px] whitespace-nowrap transition-colors duration-150",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
-        on ? "border-accent-line bg-accent-soft font-medium text-accent" : "border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
+        on ? "border-accent-line bg-accent-soft font-medium text-accent-text" : "border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
       )}
     >
       {icon && <Icon name={icon} size={13} className={on ? undefined : "text-ink-3"} />}

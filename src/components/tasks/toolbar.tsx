@@ -51,7 +51,7 @@ export function Toolbar({ view, onView, mine, onMine, query, onQuery, canEdit, o
         onClick={() => onMine(!mine)}
         className={clsx(
           "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[13px] font-medium transition-colors duration-150 ease-out",
-          mine ? "border-accent-line bg-accent-soft text-accent" : "border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
+          mine ? "border-accent-line bg-accent-soft text-accent-text" : "border-line text-ink-2 hover:bg-surface-2 hover:text-ink",
         )}
       >
         <Icon name="user" size={13} />
@@ -68,7 +68,7 @@ export function Toolbar({ view, onView, mine, onMine, query, onQuery, canEdit, o
             onKeyDown={(e) => { if (e.key === "Escape" && query) { e.stopPropagation(); onQuery(""); } }}
             placeholder="Search tasks"
             aria-label="Search tasks by title"
-            className="w-40 rounded-r border border-line bg-surface py-1 pr-2.5 pl-7 text-[13px] placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent sm:w-52 [&::-webkit-search-cancel-button]:hidden"
+            className="w-40 rounded-r border border-line bg-surface py-1 pr-2.5 pl-7 text-[13px] placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent-text sm:w-52 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
 

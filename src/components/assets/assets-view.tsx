@@ -167,7 +167,7 @@ export function AssetsView(p: Props) {
                 <button
                   type="button"
                   onClick={pickFiles}
-                  className="cursor-pointer rounded-r font-medium underline decoration-line underline-offset-[3px] transition-colors duration-150 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="cursor-pointer rounded-r font-medium underline decoration-line underline-offset-[3px] transition-colors duration-150 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
                 >
                   choose files
                 </button>
@@ -230,7 +230,7 @@ export function AssetsView(p: Props) {
         )}
       >
         <div className="flex flex-col items-center rounded-lg border-2 border-dashed border-accent bg-surface px-8 py-7 text-center">
-          <span className="mb-3 grid size-10 place-items-center rounded-full bg-accent-soft text-accent">
+          <span className="mb-3 grid size-10 place-items-center rounded-full bg-accent-soft text-accent-text">
             <Icon name="upload" size={18} />
           </span>
           <p className="m-0 text-base font-medium">Drop to upload</p>

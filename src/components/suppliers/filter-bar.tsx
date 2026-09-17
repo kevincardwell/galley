@@ -43,7 +43,7 @@ export function FilterBar({ filters, categories, tags, total }: { filters: Direc
   return (
     <div className="mb-5 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <form action={DIRECTORY_PATH} method="get" role="search" className="flex min-w-[200px] flex-1 items-center gap-2 rounded-r border border-line bg-surface px-2.5 py-1.5 transition-colors focus-within:ring-2 focus-within:ring-accent sm:max-w-[320px]">
+        <form action={DIRECTORY_PATH} method="get" role="search" className="flex min-w-[200px] flex-1 items-center gap-2 rounded-r border border-line bg-surface px-2.5 py-1.5 transition-colors focus-within:ring-2 focus-within:ring-accent-text sm:max-w-[320px]">
           <Icon name="search" size={15} className="text-ink-3" />
           <input
             type="search"

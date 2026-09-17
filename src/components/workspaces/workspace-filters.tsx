@@ -25,8 +25,8 @@ export function workspacesHref({ q, status, archived }: { q?: string; status?: s
 }
 
 const CHIP =
-  "cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
-const CHIP_ON = "border-accent-line bg-accent-soft text-accent";
+  "cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text";
+const CHIP_ON = "border-accent-line bg-accent-soft text-accent-text";
 const CHIP_OFF = "border-line text-ink-2 hover:border-ink-3 hover:text-ink";
 
 export function WorkspaceFilters({ q, status, archived }: { q: string; status: string; archived: boolean }) {

@@ -76,6 +76,7 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
         await setSectionClientWrite(section.id, next);
       } catch {
         setClientWrites(!next);
+        toast("Could not change who writes this section", { tone: "late" });
       }
     });
   };
@@ -83,8 +84,12 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
   const setStatus = (status: SectionStatus) => {
     if (status === section.status) return;
     start(async () => {
-      await onSaveNow();
-      await setSectionStatus(section.id, status);
+      try {
+        await onSaveNow();
+        await setSectionStatus(section.id, status);
+      } catch {
+        toast("Could not change the status", { tone: "late" });
+      }
     });
   };
 
@@ -280,14 +285,14 @@ function Versions({ sectionId, current, currentText, versions, readOnly, selfNam
                           type="button"
                           disabled={pending}
                           onClick={() => start(async () => { await restoreVersion(sectionId, v.id); setConfirmId(null); })}
-                          className="cursor-pointer font-medium text-accent hover:underline"
+                          className="cursor-pointer font-medium text-accent-text hover:underline"
                         >
                           Restore?
                         </button>
                         <button type="button" onClick={() => setConfirmId(null)} className="cursor-pointer text-ink-3 hover:text-ink">No</button>
                       </span>
                     ) : (
-                      <button type="button" onClick={() => setConfirmId(v.id)} className="cursor-pointer text-ink-3 transition-colors duration-150 ease-out hover:text-accent">Restore</button>
+                      <button type="button" onClick={() => setConfirmId(v.id)} className="cursor-pointer text-ink-3 transition-colors duration-150 ease-out hover:text-accent-text">Restore</button>
                     )
                   )}
                 </span>
@@ -334,7 +339,7 @@ function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: stri
       <p className="m-0 whitespace-pre-wrap">{c.body}</p>
       {!readOnly && (
         <div className="mt-2 flex gap-2.5 text-xs font-medium">
-          <button type="button" disabled={pending} onClick={() => start(() => resolveComment(c.id))} className="cursor-pointer text-accent hover:underline disabled:cursor-not-allowed">
+          <button type="button" disabled={pending} onClick={() => start(() => resolveComment(c.id))} className="cursor-pointer text-accent-text hover:underline disabled:cursor-not-allowed">
             {c.resolvedAt ? "Reopen" : "Resolve"}
           </button>
         </div>

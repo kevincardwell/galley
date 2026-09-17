@@ -43,7 +43,7 @@ function CellInput({ value, onSave, label, placeholder, numeric, className }: {
       }}
       className={clsx(
         "w-full cursor-text rounded-r border border-transparent bg-transparent px-1.5 py-1 text-[13px] transition-colors",
-        "placeholder:text-ink-3 hover:border-line focus:border-line focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent",
+        "placeholder:text-ink-3 hover:border-line focus:border-line focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent-text",
         numeric && "tnum text-right",
         className,
       )}
@@ -68,7 +68,7 @@ export function LinkRow({ row, canEdit, currency }: { row: WorkspaceSupplierRow;
   return (
     <tr className={clsx("transition-colors hover:bg-surface-2", pending && "opacity-60")}>
       <Td className="max-w-[220px]">
-        <Link href={`/suppliers/${row.supplierId}`} className="cursor-pointer font-medium transition-colors hover:text-accent hover:underline underline-offset-[3px]">
+        <Link href={`/suppliers/${row.supplierId}`} className="cursor-pointer font-medium transition-colors hover:text-accent-text hover:underline underline-offset-[3px]">
           <span className="block truncate">{row.name}</span>
         </Link>
         <span className="block truncate text-xs text-ink-3">{row.category ?? "Supplier"}</span>
@@ -117,7 +117,7 @@ export function LinkRow({ row, canEdit, currency }: { row: WorkspaceSupplierRow;
             value={row.status}
             aria-label={`Status for ${row.name}`}
             onChange={(e) => patch({ status: e.target.value as SupplierLinkStatus }, `${row.name} moved to ${STATUS_LABEL[e.target.value as SupplierLinkStatus].toLowerCase()}`)}
-            className="w-full cursor-pointer rounded-r border border-transparent bg-transparent px-1.5 py-1 text-[13px] transition-colors hover:border-line focus:border-line focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent"
+            className="w-full cursor-pointer rounded-r border border-transparent bg-transparent px-1.5 py-1 text-[13px] transition-colors hover:border-line focus:border-line focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent-text"
           >
             {LINK_STATUSES.map((s) => (
               <option key={s} value={s}>

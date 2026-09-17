@@ -77,7 +77,7 @@ export function SectionHeader({ section, index, count, collapsed, onToggleCollap
             if (e.key === "Escape") { e.stopPropagation(); setName(section.name); setEditing(false); }
           }}
           aria-label="Section name"
-          className="-mx-1 min-w-0 flex-1 rounded-[4px] border border-line bg-surface px-1 text-sm font-semibold outline-none focus:ring-2 focus:ring-accent"
+          className="-mx-1 min-w-0 flex-1 rounded-[4px] border border-line bg-surface px-1 text-sm font-semibold outline-none focus:ring-2 focus:ring-accent-text"
         />
       ) : (
         <button

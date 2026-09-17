@@ -31,7 +31,7 @@ export function Icon({ name, size = 16, className, strokeWidth = 1.75 }: { name:
   return <Cmp size={size} strokeWidth={strokeWidth} className={clsx("shrink-0", className)} aria-hidden focusable="false" />;
 }
 
-type IconButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { name: IconName; label: string; size?: number; tone?: "default" | "danger" };
+type IconButtonProps = React.ComponentPropsWithRef<"button"> & { name: IconName; label: string; size?: number; tone?: "default" | "danger" };
 
 /** Icon-only button with the accessible name and hit area handled for you. */
 export function IconButton({ name, label, size = 16, tone = "default", className, ...rest }: IconButtonProps) {
@@ -41,7 +41,8 @@ export function IconButton({ name, label, size = 16, tone = "default", className
       aria-label={label}
       title={label}
       className={clsx(
-        "inline-grid size-7 cursor-pointer place-items-center rounded-r transition-colors",
+        // 28px keeps desktop rows quiet; 40px is the smallest comfortable touch target.
+        "inline-grid size-7 max-md:size-10 cursor-pointer place-items-center rounded-r transition-colors",
         tone === "danger" ? "text-ink-3 hover:bg-late-soft hover:text-late" : "text-ink-3 hover:bg-surface-2 hover:text-ink",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className,

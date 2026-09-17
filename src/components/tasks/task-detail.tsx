@@ -67,7 +67,7 @@ export function TaskDetail({ task, sections }: { task: TaskItem; sections: { id:
             onBlur={saveTitle}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); } }}
             aria-label="Title"
-            className={clsx("-mx-1 min-w-0 flex-1 rounded-[4px] border border-transparent bg-transparent px-1 py-0.5 text-base leading-snug font-semibold tracking-tight outline-none transition-colors duration-150 ease-out hover:border-line focus:border-line focus:bg-surface focus-visible:ring-2 focus-visible:ring-accent", done && "text-ink-3 line-through decoration-ink-3/60")}
+            className={clsx("-mx-1 min-w-0 flex-1 rounded-[4px] border border-transparent bg-transparent px-1 py-0.5 text-base leading-snug font-semibold tracking-tight outline-none transition-colors duration-150 ease-out hover:border-line focus:border-line focus:bg-surface focus-visible:ring-2 focus-visible:ring-accent-text", done && "text-ink-3 line-through decoration-ink-3/60")}
           />
           <button
             type="button"

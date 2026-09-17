@@ -27,7 +27,7 @@ export function AgendaView({ groups, today, todayIso, showProject, onOpenItem, e
         <section key={group.iso} className="flex flex-col gap-1">
           {headings && (
             <h2 className="m-0 flex items-baseline gap-2 text-sm font-semibold">
-              <span className={clsx(group.iso === todayIso && "text-accent")}>{formatDayLabel(group.date, today)}</span>
+              <span className={clsx(group.iso === todayIso && "text-accent-text")}>{formatDayLabel(group.date, today)}</span>
               {["Today", "Tomorrow", "Yesterday"].includes(formatDayLabel(group.date, today)) && (
                 <span className="text-xs font-normal text-ink-3">{formatDate(group.date, today)}</span>
               )}
@@ -48,7 +48,7 @@ export function AgendaView({ groups, today, todayIso, showProject, onOpenItem, e
 
 function AgendaRow({ entry, showProject, onOpenItem }: { entry: CalendarEntry; showProject: boolean; onOpenItem?: (entry: CalendarEntry) => void }) {
   const classes =
-    "flex w-full cursor-pointer items-center gap-3 border-b border-line-2 px-2 py-2.5 text-left transition-colors duration-150 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+    "flex w-full cursor-pointer items-center gap-3 border-b border-line-2 px-2 py-2.5 text-left transition-colors duration-150 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text";
   const body = (
     <>
       <span className="tnum w-[104px] shrink-0 text-[13px] text-ink-2">{formatRange(entry.start, entry.end, entry.allDay)}</span>

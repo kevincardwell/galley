@@ -1,7 +1,7 @@
 import { clsx } from "@/lib/clsx";
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
-const base = "w-full rounded-r border border-line bg-surface px-2.5 py-1.5 text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent";
+const base = "w-full rounded-r border border-line bg-surface px-2.5 py-1.5 text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent-text";
 
 export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={clsx(base, className)} {...rest} />;

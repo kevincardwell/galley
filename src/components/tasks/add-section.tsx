@@ -38,7 +38,7 @@ export function AddSection({ className }: { className?: string }) {
         if (e.key === "Escape") { e.stopPropagation(); close(); }
       }}
       aria-label="New section name"
-      className={clsx("rounded-r border border-line bg-surface px-2.5 py-1.5 placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent", className)}
+      className={clsx("rounded-r border border-line bg-surface px-2.5 py-1.5 placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent-text", className)}
     />
   );
 }

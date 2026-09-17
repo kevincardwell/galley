@@ -158,7 +158,7 @@ function useNowOffset(enabled: boolean, range: { start: number; end: number }): 
 
 function TimedEntry({ entry, style, onOpenItem }: { entry: CalendarEntry; style: React.CSSProperties; onOpenItem?: (entry: CalendarEntry) => void }) {
   const classes =
-    "absolute flex cursor-pointer flex-col gap-px overflow-hidden rounded-[5px] border-l-2 px-1.5 py-1 text-left text-xs transition-[filter,background-color] duration-150 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+    "absolute flex cursor-pointer flex-col gap-px overflow-hidden rounded-[5px] border-l-2 px-1.5 py-1 text-left text-xs transition-[filter,background-color] duration-150 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text";
   const boxStyle: React.CSSProperties = {
     ...style,
     borderLeftColor: entry.accent,
@@ -192,7 +192,7 @@ function TimedEntry({ entry, style, onOpenItem }: { entry: CalendarEntry; style:
 
 function AllDayChip({ entry, onOpenItem }: { entry: CalendarEntry; onOpenItem?: (entry: CalendarEntry) => void }) {
   const classes =
-    "flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-[4px] border border-transparent px-1 py-px text-left text-xs transition-colors duration-150 hover:border-line hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+    "flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-[4px] border border-transparent px-1 py-px text-left text-xs transition-colors duration-150 hover:border-line hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text";
   const mark =
     entry.kind === "task" ? (
       <span aria-hidden className="size-1.5 shrink-0 rounded-full" style={{ background: entry.accent }} />

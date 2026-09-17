@@ -10,7 +10,7 @@ export function Stars({ value, size = 13, className }: { value: number | null; s
   return (
     <span role="img" aria-label={`Rated ${value} out of 5`} className={clsx("inline-flex items-center gap-px", className)}>
       {STAR_POSITIONS.map((n) => (
-        <Icon key={n} name="star" size={size} className={n <= value ? "fill-current text-accent" : "text-line"} />
+        <Icon key={n} name="star" size={size} className={n <= value ? "fill-current text-accent-text" : "text-line"} />
       ))}
     </span>
   );

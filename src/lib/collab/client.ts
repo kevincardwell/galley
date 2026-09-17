@@ -30,8 +30,9 @@ export type ProviderOptions = {
 export type SseProvider = {
   awareness: Awareness;
   readonly status: CollabStatus;
-  /** Sends whatever is queued right now (used on page hide and Cmd+S). */
-  flush: () => Promise<void>;
+  /** Sends whatever is queued right now (used on page hide and Cmd+S). False means it did not
+   *  reach the server and is queued for another try. */
+  flush: () => Promise<boolean>;
   destroy: () => void;
 };
 
@@ -196,10 +197,13 @@ export function createSseProvider(opts: ProviderOptions): SseProvider {
     state: (awareness.getLocalState() as Record<string, unknown> | null) ?? null,
   });
 
-  async function send(keepalive = false): Promise<void> {
-    if (destroyed && !keepalive) return;
+  /** Sends what is queued. Resolves true when it is safely on the server; false means the
+   *  bytes went back on the queue and a retry is scheduled — callers that promise "saved"
+   *  to the user must not do so on false. */
+  async function send(keepalive = false): Promise<boolean> {
+    if (destroyed && !keepalive) return false;
     if (inFlight) await inFlight;
-    if (pendingUpdates.length === 0 && pendingAwareness === undefined) return;
+    if (pendingUpdates.length === 0 && pendingAwareness === undefined) return true;
     const updates = pendingUpdates;
     const aw = pendingAwareness;
     pendingUpdates = [];
@@ -208,6 +212,7 @@ export function createSseProvider(opts: ProviderOptions): SseProvider {
     if (updates.length) body.update = toBase64(updates.length === 1 ? updates[0]! : Y.mergeUpdates(updates));
     if (aw !== undefined) body.awareness = aw;
     if (updates.length) opts.onPending?.("saving");
+    let ok = false;
     inFlight = (async () => {
       try {
         const res = await fetch(`/api/collab/${sectionId}`, {
@@ -217,6 +222,7 @@ export function createSseProvider(opts: ProviderOptions): SseProvider {
           keepalive,
         });
         if (!res.ok) throw new Error(`collab post ${res.status}`);
+        ok = true;
         if (updates.length && pendingUpdates.length === 0) opts.onPending?.("saved");
       } catch {
         // Put the bytes back; they go out with the next batch or on reconnect.
@@ -231,6 +237,7 @@ export function createSseProvider(opts: ProviderOptions): SseProvider {
       }
     })();
     await inFlight;
+    return ok;
   }
 
   function schedule(delay = DEBOUNCE_MS) {
@@ -309,7 +316,7 @@ export function createSseProvider(opts: ProviderOptions): SseProvider {
     flush: async () => {
       if (timer) clearTimeout(timer);
       timer = null;
-      await send();
+      return send();
     },
     destroy: () => {
       if (destroyed) return;

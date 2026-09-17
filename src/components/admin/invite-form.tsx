@@ -80,7 +80,7 @@ export function InviteForm({ workspaces, idPrefix = "inv", onDone }: { workspace
           <div className="flex flex-col gap-2">
             {link.emailed && <p role="status" className="m-0 flex items-center gap-1.5 text-sm text-done"><Icon name="check-circle" size={14} />Invite emailed to {link.to}</p>}
             <div className="flex gap-2">
-              <input id={id("link")} readOnly value={link.url} onFocus={(e) => e.currentTarget.select()} aria-label="Invite link" className="min-w-0 flex-1 rounded-r border border-line bg-surface px-2.5 py-1.5 text-sm text-ink-2 focus:ring-2 focus:ring-accent focus:outline-none" />
+              <input id={id("link")} readOnly value={link.url} onFocus={(e) => e.currentTarget.select()} aria-label="Invite link" className="min-w-0 flex-1 rounded-r border border-line bg-surface px-2.5 py-1.5 text-sm text-ink-2 focus:ring-2 focus:ring-accent-text focus:outline-none" />
               <CopyButton value={link.url} />
             </div>
             <Hint small>{link.emailed ? "You can also paste this link to them directly." : "No email was sent (SMTP is not set up). Paste this link to them."}</Hint>

@@ -13,6 +13,13 @@ export function Lightbox({ items, index, onIndex, onClose }: Props) {
   const asset = items[index];
   const prev = () => onIndex((index - 1 + items.length) % items.length);
   const next = () => onIndex((index + 1) % items.length);
+  // The listener is installed once; the refs keep it pointing at the current handlers.
+  const goPrev = useRef(prev);
+  const goNext = useRef(next);
+  useEffect(() => {
+    goPrev.current = prev;
+    goNext.current = next;
+  });
 
   // Remember which tile opened the viewer so focus can go back to it on close.
   const openedFrom = useRef<string | null>(asset?.id ?? null);
@@ -27,12 +34,12 @@ export function Lightbox({ items, index, onIndex, onClose }: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft" || e.key === "k") { e.preventDefault(); prev(); }
-      if (e.key === "ArrowRight" || e.key === "j") { e.preventDefault(); next(); }
+      if (e.key === "ArrowLeft" || e.key === "k") { e.preventDefault(); goPrev.current(); }
+      if (e.key === "ArrowRight" || e.key === "j") { e.preventDefault(); goNext.current(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, []);
 
   if (!asset) return null;
   const many = items.length > 1;
@@ -79,10 +86,10 @@ export function Lightbox({ items, index, onIndex, onClose }: Props) {
           {asset.kind === "pdf" && <iframe key={asset.id} src={fileUrl(asset, "original")} title={asset.filename} className="h-full w-full max-w-5xl rounded-r border-0 bg-white" />}
           {many && (
             <>
-              <button type="button" onClick={prev} aria-label="Previous" title="Previous" className="absolute top-1/2 left-3 -translate-y-1/2 cursor-pointer rounded-full border border-white/25 p-2 transition-colors duration-150 hover:bg-white/10">
+              <button type="button" onClick={prev} aria-label="Previous" title="Previous" className="absolute top-1/2 left-3 -translate-y-1/2 cursor-pointer rounded-full border border-white/25 p-2 max-md:p-3 transition-colors duration-150 hover:bg-white/10">
                 <Icon name="chevron-left" size={18} strokeWidth={2} />
               </button>
-              <button type="button" onClick={next} aria-label="Next" title="Next" className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer rounded-full border border-white/25 p-2 transition-colors duration-150 hover:bg-white/10">
+              <button type="button" onClick={next} aria-label="Next" title="Next" className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer rounded-full border border-white/25 p-2 max-md:p-3 transition-colors duration-150 hover:bg-white/10">
                 <Icon name="chevron-right" size={18} strokeWidth={2} />
               </button>
             </>

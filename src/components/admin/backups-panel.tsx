@@ -70,7 +70,7 @@ export function BackupsTable({ backups, people }: { backups: BackupRow[]; people
                       href={`/api/admin/backups/${b.id}`}
                       download={b.filename}
                       aria-label={`Download ${b.filename}`}
-                      className="inline-grid size-7 cursor-pointer place-items-center rounded-r text-ink-3 transition-colors duration-150 hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="inline-grid size-7 cursor-pointer place-items-center rounded-r text-ink-3 transition-colors duration-150 hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
                     >
                       <Icon name="download" />
                     </a>

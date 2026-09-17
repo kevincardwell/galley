@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { clsx } from "@/lib/clsx";
 import { Icon, IconButton } from "@/components/ui/icon";
 import { useCommandPalette } from "./command-palette";
@@ -17,16 +17,31 @@ export function MobileDrawer({ children }: { children: React.ReactNode }) {
   const open = openedOn === path;
   const setOpen = (next: boolean) => setOpenedOn(next ? path : null);
   const openPalette = useCommandPalette((s) => s.open);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  // Only restore focus for a dismissal (Esc, backdrop, close button). A navigation from inside
+  // the drawer should leave focus on the new page, not jump back to the menu button.
+  const restoreFocus = useRef(false);
 
   useEffect(() => {
     if (!open) return;
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpenedOn(null); }
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButton.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        restoreFocus.current = true;
+        setOpenedOn(null);
+      }
+    }
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      if (restoreFocus.current) {
+        restoreFocus.current = false;
+        if (previous?.isConnected) previous.focus();
+      }
     };
   }, [open]);
 
@@ -60,29 +75,30 @@ export function MobileDrawer({ children }: { children: React.ReactNode }) {
 
       {/* Backdrop */}
       <div
-        onClick={() => setOpen(false)}
+        onClick={() => { restoreFocus.current = true; setOpen(false); }}
         aria-hidden="true"
         className={clsx(
           "fixed inset-0 z-40 bg-ink/40 transition-opacity duration-150 ease-out",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
-      {/* Panel */}
+      {/* Panel. `inert` while closed keeps its links out of the tab order. */}
       <div
         id="mobile-drawer"
         role="dialog"
         aria-modal="true"
         aria-label="Navigation"
-        aria-hidden={!open}
+        inert={!open}
         className={clsx(
           "fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-5 overflow-y-auto border-r border-line bg-surface-2 px-2.5 py-3.5 shadow-panel transition-transform duration-150 ease-out",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <IconButton
+          ref={closeButton}
           name="x"
           label="Close menu"
-          onClick={() => setOpen(false)}
+          onClick={() => { restoreFocus.current = true; setOpen(false); }}
           className="absolute top-2.5 right-2 hover:bg-surface"
         />
         {children}

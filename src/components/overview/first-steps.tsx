@@ -26,7 +26,7 @@ export function FirstSteps({ steps }: { steps: Step[] }) {
               href={s.href}
               className="group flex cursor-pointer items-center gap-2.5 rounded-r px-2 py-1.5 transition-colors duration-150 ease-out hover:bg-surface"
             >
-              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-surface text-accent">
+              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-surface text-accent-text">
                 <Icon name={s.icon} size={13} />
               </span>
               <span className="min-w-0 flex-1 text-[13px]">

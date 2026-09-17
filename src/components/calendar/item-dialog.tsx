@@ -184,7 +184,7 @@ export function ItemDialog({ open, workspaceId, item, defaultDateIso, members, s
           </Label>
         </fieldset>
 
-        {error && <p className="m-0 text-[13px] text-late">{error}</p>}
+        {error && <p role="alert" className="m-0 text-[13px] text-late">{error}</p>}
 
         <div className="flex flex-wrap items-center gap-2">
           {item && !readOnly && (

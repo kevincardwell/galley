@@ -31,7 +31,7 @@ export function CalendarHeader({ basePath, view, anchor, todayIso, label, eyebro
         <NavLink href={step(-1)} icon="chevron-left" label={`Previous ${STEP_LABEL[view]}`} />
         <Link
           href={calendarHref(basePath, view, todayIso)}
-          className="inline-flex cursor-pointer items-center rounded-r border border-line bg-surface px-2.5 py-1 text-[13px] font-medium transition-colors duration-150 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="inline-flex cursor-pointer items-center rounded-r border border-line bg-surface px-2.5 py-1 text-[13px] font-medium transition-colors duration-150 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
         >
           Today
         </Link>
@@ -44,7 +44,7 @@ export function CalendarHeader({ basePath, view, anchor, todayIso, label, eyebro
             href={calendarHref(basePath, v, isoDate(anchor))}
             aria-current={v === view ? "page" : undefined}
             className={clsx(
-              "cursor-pointer rounded-[4px] px-2.5 py-1 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              "cursor-pointer rounded-[4px] px-2.5 py-1 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text",
               v === view ? "bg-accent-soft text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
             )}
           >
@@ -63,7 +63,7 @@ function NavLink({ href, icon, label }: { href: string; icon: IconName; label: s
       href={href}
       aria-label={label}
       title={label}
-      className="inline-grid size-7 cursor-pointer place-items-center rounded-r text-ink-3 transition-colors duration-150 hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent max-sm:size-10"
+      className="inline-grid size-7 cursor-pointer place-items-center rounded-r text-ink-3 transition-colors duration-150 hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text max-sm:size-10"
     >
       <Icon name={icon} />
     </Link>

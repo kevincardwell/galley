@@ -35,7 +35,7 @@ export function SidebarNav({ workspaces, isAdmin }: { workspaces: Ws[]; isAdmin:
         type="button"
         onClick={openPalette}
         aria-keyshortcuts="Meta+K Control+K"
-        className="flex w-full cursor-pointer items-center gap-2 rounded-r border border-line bg-surface px-2.5 py-1.5 text-ink-3 transition-colors duration-150 ease-out hover:border-ink-3 hover:text-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent max-md:py-2.5"
+        className="flex w-full cursor-pointer items-center gap-2 rounded-r border border-line bg-surface px-2.5 py-1.5 text-ink-3 transition-colors duration-150 ease-out hover:border-ink-3 hover:text-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text max-md:py-2.5"
       >
         <Icon name="search" size={15} />
         <span className="flex-1 text-left text-[13px]">Search</span>
@@ -73,7 +73,7 @@ export function SidebarNav({ workspaces, isAdmin }: { workspaces: Ws[]; isAdmin:
             return (
               <li key={item.href}>
                 <Link href={item.href} aria-current={on ? "page" : undefined} className={clsx(ROW, on && ROW_ON)}>
-                  <Icon name={item.icon} size={15} className={on ? "text-accent" : "text-ink-3 group-hover:text-ink-2"} />
+                  <Icon name={item.icon} size={15} className={on ? "text-accent-text" : "text-ink-3 group-hover:text-ink-2"} />
                   <span className="min-w-0 flex-1 truncate">{item.label}</span>
                 </Link>
               </li>
@@ -88,7 +88,7 @@ export function SidebarNav({ workspaces, isAdmin }: { workspaces: Ws[]; isAdmin:
           <ul className="m-0 flex list-none flex-col gap-px p-0">
             <li>
               <Link href="/admin" aria-current={path.startsWith("/admin") ? "page" : undefined} className={clsx(ROW, path.startsWith("/admin") && ROW_ON)}>
-                <Icon name="shield" size={15} className={path.startsWith("/admin") ? "text-accent" : "text-ink-3 group-hover:text-ink-2"} />
+                <Icon name="shield" size={15} className={path.startsWith("/admin") ? "text-accent-text" : "text-ink-3 group-hover:text-ink-2"} />
                 <span className="min-w-0 flex-1 truncate">Admin</span>
               </Link>
             </li>

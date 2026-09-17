@@ -21,7 +21,7 @@ export function RatingInput({ value, onChange }: { value: number | null; onChang
             onClick={() => onChange(value === n ? null : n)}
             className="inline-grid size-7 cursor-pointer place-items-center rounded-r transition-colors hover:bg-surface-2"
           >
-            <Icon name="star" size={16} className={clsx("transition-colors", on ? "fill-current text-accent" : "text-ink-3")} />
+            <Icon name="star" size={16} className={clsx("transition-colors", on ? "fill-current text-accent-text" : "text-ink-3")} />
           </button>
         );
       })}

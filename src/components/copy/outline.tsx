@@ -108,7 +108,7 @@ export function Outline({ slug, workspaceId, pages, currentPageId, sections, act
                   title={readOnly ? undefined : "Double-click to rename"}
                 >
                   <span className="flex items-center gap-2">
-                    <Icon name="text" size={14} className={current ? "text-accent" : "text-ink-3"} />
+                    <Icon name="text" size={14} className={current ? "text-accent-text" : "text-ink-3"} />
                     <span className="min-w-0 flex-1 truncate">{p.title}</span>
                     <StatusDot tone={tone} title={PAGE_TONE_LABEL[tone]} />
                   </span>
@@ -242,7 +242,7 @@ function InlineInput({
         placeholder={placeholder}
         onKeyDown={onKey}
         onBlur={() => setTimeout(() => finish(true), 0)}
-        className={clsx("min-w-0 flex-1 rounded-r border border-accent-line bg-surface px-1.5 py-0.5 text-ink outline-none focus:ring-2 focus:ring-accent", small && "text-[13px]")}
+        className={clsx("min-w-0 flex-1 rounded-r border border-accent-line bg-surface px-1.5 py-0.5 text-ink outline-none focus:ring-2 focus:ring-accent-text", small && "text-[13px]")}
         aria-label={placeholder ?? "Rename"}
       />
       {onDelete && (

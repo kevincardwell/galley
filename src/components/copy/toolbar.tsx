@@ -63,8 +63,8 @@ function Btn({ on, label, onClick, children, ref }: { on: boolean; label: string
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={clsx(
-        "grid size-7 cursor-pointer place-items-center rounded-[4px] transition-colors duration-150 ease-out",
-        on ? "bg-accent-soft font-semibold text-accent" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+        "grid size-7 max-md:size-10 cursor-pointer place-items-center rounded-[4px] transition-colors duration-150 ease-out",
+        on ? "bg-accent-soft font-semibold text-accent-text" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
       )}
     >
       {children}

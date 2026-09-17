@@ -48,7 +48,7 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
       <button
         type="button"
         onClick={onOpen}
-        className="group relative block w-full cursor-pointer overflow-hidden rounded-r border border-line-2 bg-surface transition-colors duration-150 hover:border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="group relative block w-full cursor-pointer overflow-hidden rounded-r border border-line-2 bg-surface transition-colors duration-150 hover:border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
         title="Open in viewer"
         aria-label={`Open ${asset.filename} in viewer`}
       >
@@ -67,7 +67,7 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
             download={asset.filename}
             title=""
             aria-label={`Download ${asset.filename}`}
-            className="inline-grid size-7 cursor-pointer place-items-center rounded-r text-ink-3 transition-colors duration-150 hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-grid size-7 cursor-pointer place-items-center rounded-r text-ink-3 transition-colors duration-150 hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
           >
             <Icon name="download" />
           </a>
@@ -118,8 +118,8 @@ export function DetailPane({ asset, folders, shareToken, canEdit, onDeleted, onO
                 aria-label={`Copy ${hex}`}
                 onClick={() => copy(hex, hex)}
                 className={clsx(
-                  "size-6 cursor-pointer rounded border border-line-2 transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface-2",
-                  copied === hex && "ring-2 ring-accent ring-offset-1 ring-offset-surface-2",
+                  "size-6 cursor-pointer rounded border border-line-2 transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text focus-visible:ring-offset-1 focus-visible:ring-offset-surface-2",
+                  copied === hex && "ring-2 ring-accent-text ring-offset-1 ring-offset-surface-2",
                 )}
                 style={{ background: hex }}
               />
@@ -268,7 +268,7 @@ function TagsEditor({ asset, canEdit }: { asset: AssetItem; canEdit: boolean }) 
           onBlur={add}
           placeholder={asset.tags.length ? "Add tag" : "Add a tag, Enter to save"}
           aria-label="Add tag"
-          className="min-w-24 flex-1 rounded-r bg-transparent px-1 py-0.5 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="min-w-24 flex-1 rounded-r bg-transparent px-1 py-0.5 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
         />
       )}
       {!canEdit && asset.tags.length === 0 && <span className="text-[13px] text-ink-3">No tags.</span>}

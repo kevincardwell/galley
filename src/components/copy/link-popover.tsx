@@ -68,7 +68,7 @@ export function LinkPopover({ initial, onApply, onRemove, onClose, anchor }: Pro
         aria-label="Link URL"
         spellCheck={false}
         autoComplete="off"
-        className="min-w-0 flex-1 rounded-r border border-line bg-surface px-2.5 py-1 text-[13px] text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent"
+        className="min-w-0 flex-1 rounded-r border border-line bg-surface px-2.5 py-1 text-[13px] text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent-text"
       />
       {initial && (
         <Button size="sm" variant="ghost" onClick={onRemove}>Remove</Button>

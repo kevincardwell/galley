@@ -8,8 +8,19 @@ import type { UploadEntry } from "./upload-client";
 export function UploadProgress({ uploads, onDismiss }: { uploads: UploadEntry[]; onDismiss: (id: string) => void }) {
   if (uploads.length === 0) return null;
   const active = uploads.filter((u) => u.status === "uploading").length;
+  const done = uploads.filter((u) => u.status === "done").length;
+  const failed = uploads.filter((u) => u.status === "error").length;
+  // Announce the batch, not every progress tick: the meters below change far too often for a
+  // live region, so they stay silent and this is the one thing a screen reader hears.
+  const summary =
+    active > 0
+      ? `Uploading ${active} ${active === 1 ? "file" : "files"}`
+      : failed > 0
+        ? `${failed} upload${failed === 1 ? "" : "s"} failed`
+        : `${done} file${done === 1 ? "" : "s"} uploaded`;
   return (
-    <div className="fixed right-4 bottom-4 z-40 flex w-[min(340px,calc(100vw-32px))] flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-panel" role="status" aria-live="polite">
+    <div className="fixed right-4 bottom-4 z-40 flex w-[min(340px,calc(100vw-32px))] flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-panel">
+      <p role="status" aria-live="polite" className="sr-only">{summary}</p>
       <p className="m-0 flex items-center gap-2 border-b border-line-2 px-3 py-2 text-xs font-medium text-ink-2">
         <Icon name="upload" size={13} className="text-ink-3" />
         {active > 0 ? <span className="tnum">Uploading {active} {active === 1 ? "file" : "files"}</span> : <span>Uploads</span>}

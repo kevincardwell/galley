@@ -14,7 +14,7 @@ export function TaskMeta({ task, className }: { task: TaskItem; className?: stri
   return (
     <div className={clsx("flex items-center gap-2.5 text-xs", done ? "text-ink-3" : "text-ink-2", className)}>
       {task.status === "doing" && !done && (
-        <span aria-label="Status: doing" className="rounded-full border border-accent-line px-1.5 text-[11px] font-medium text-accent">Doing</span>
+        <span aria-label="Status: doing" className="rounded-full border border-accent-line px-1.5 text-[11px] font-medium text-accent-text">Doing</span>
       )}
       {due.label && (
         <span

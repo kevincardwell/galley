@@ -27,7 +27,7 @@ const tint = (accent: string, mix: number): CSSProperties => ({
 });
 
 const base =
-  "flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-[4px] border border-transparent px-1 py-[3px] text-left text-xs transition-[background-color,border-color,filter] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-[4px] border border-transparent px-1 py-[3px] text-left text-xs transition-[background-color,border-color,filter] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text";
 
 /** The mark that tells a due date from a booking at a glance: a dot for tasks, a bar for items. */
 function Mark({ entry }: { entry: CalendarEntry }) {

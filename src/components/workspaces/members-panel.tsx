@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/field";
 import { IconButton } from "@/components/ui/icon";
 import { Tooltip } from "@/components/ui/tooltip";
+import { toast } from "@/components/ui/toast";
 import { addMember, removeMember, setMemberRole } from "@/actions/members";
 
 type M = { id: string; name: string; email: string; role: string };
@@ -37,7 +38,10 @@ export function MembersPanel({ workspaceId, members, candidates, isAdmin, selfId
               aria-label={`Role for ${m.name}`}
               value={m.role}
               disabled={pending}
-              onChange={(e) => start(() => setMemberRole(workspaceId, m.id, e.target.value))}
+              onChange={(e) => start(async () => {
+                try { await setMemberRole(workspaceId, m.id, e.target.value); }
+                catch { toast("Could not change that role", { tone: "late" }); }
+              })}
             >
               {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </Select>
@@ -48,7 +52,10 @@ export function MembersPanel({ workspaceId, members, candidates, isAdmin, selfId
                 label={`Remove ${m.name}`}
                 title={undefined}
                 disabled={pending || m.id === selfId}
-                onClick={() => start(() => removeMember(workspaceId, m.id))}
+                onClick={() => start(async () => {
+                  try { await removeMember(workspaceId, m.id); }
+                  catch { toast("Could not remove them", { tone: "late" }); }
+                })}
               />
             </Tooltip>
           </li>
@@ -69,7 +76,10 @@ export function MembersPanel({ workspaceId, members, candidates, isAdmin, selfId
                 {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </Select>
             </label>
-            <Button icon="plus" loading={pending} disabled={!pick} onClick={() => start(() => addMember(workspaceId, pick, role as "editor"))}>
+            <Button icon="plus" loading={pending} disabled={!pick} onClick={() => start(async () => {
+              try { await addMember(workspaceId, pick, role as "editor"); }
+              catch { toast("Could not add them", { tone: "late" }); }
+            })}>
               Add to workspace
             </Button>
           </div>

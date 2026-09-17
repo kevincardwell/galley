@@ -44,14 +44,14 @@ function Row({ n }: { n: NotificationRow }) {
         onClick={open}
         disabled={pending}
         className={clsx(
-          "grid w-full cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.5 rounded-r px-2 py-2.5 text-left transition-colors duration-150 ease-out hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-wait",
+          "grid w-full cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.5 rounded-r px-2 py-2.5 text-left transition-colors duration-150 ease-out hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-text disabled:cursor-wait",
           !unread && "text-ink-2",
         )}
       >
         <span
           className={clsx(
             "relative mt-px grid size-6 shrink-0 place-items-center rounded-full",
-            unread ? "bg-accent-soft text-accent" : "bg-surface-2 text-ink-3",
+            unread ? "bg-accent-soft text-accent-text" : "bg-surface-2 text-ink-3",
           )}
         >
           <Icon name={KIND_ICON[n.kind] ?? "inbox"} size={13} />

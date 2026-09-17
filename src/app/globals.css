@@ -1,32 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #efeeea; --surface: #fbfbfa; --surface-2: #f4f3ef; --ink: #1c1b19; --ink-2: #5f5c55; --ink-3: #9a968c; --line: #dbd9d2; --line-2: #eceae4;
-  --accent: #2f6b4f; --accent-ink: #ffffff; --accent-soft: color-mix(in oklab, var(--accent) 12%, var(--surface)); --accent-line: color-mix(in oklab, var(--accent) 35%, var(--surface));
-  --review: #b7791f; --review-soft: #f7ecd6; --done: #2f6b4f; --done-soft: #e4efe8; --draft: #9a968c; --late: #b5533c; --late-soft: #f6e3de;
+  --bg: #efeeea; --surface: #fbfbfa; --surface-2: #f4f3ef; --ink: #1c1b19; --ink-2: #5f5c55; --ink-3: #6f6b62; --line: #dbd9d2; --line-2: #eceae4;
+  --accent: #2f6b4f; --accent-ink: #ffffff; --accent-mix: 0%; --accent-soft: color-mix(in oklab, var(--accent) 12%, var(--surface)); --accent-line: color-mix(in oklab, var(--accent) 35%, var(--surface));
+  --review: #8a5a12; --review-soft: #f7ecd6; --done: #2f6b4f; --done-soft: #e4efe8; --draft: #6f6b62; --late: #8f3f2c; --late-soft: #f6e3de;
   --shadow: 0 1px 2px rgba(28, 27, 25, 0.06), 0 8px 24px rgba(28, 27, 25, 0.08);
   --r: 6px;
-  --ui: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --ui: var(--font-instrument, "Instrument Sans"), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: var(--font-newsreader, "Newsreader"), Georgia, "Times New Roman", serif;
   color-scheme: light;
 }
 /* Dark follows the operating system only when someone has asked for that.
    A fresh visitor gets light, whatever their OS is set to. */
 @media (prefers-color-scheme: dark) {
   :root[data-theme="system"] {
-    --bg: #171614; --surface: #1f1e1b; --surface-2: #262521; --ink: #edebe5; --ink-2: #aba79d; --ink-3: #736f66; --line: #33322d; --line-2: #2a2925;
-    --accent-ink: #0f1f17; --accent-soft: color-mix(in oklab, var(--accent) 18%, var(--surface)); --accent-line: color-mix(in oklab, var(--accent) 40%, var(--surface));
-    --review: #d9a44a; --review-soft: #332a18; --done: #6fb893; --done-soft: #1e2e26; --draft: #736f66; --late: #e0876f; --late-soft: #3a241e;
+    --bg: #171614; --surface: #1f1e1b; --surface-2: #262521; --ink: #edebe5; --ink-2: #aba79d; --ink-3: #9a968c; --line: #33322d; --line-2: #2a2925;
+    --accent-ink: #ffffff; --accent-mix: 45%; --accent-soft: color-mix(in oklab, var(--accent) 18%, var(--surface)); --accent-line: color-mix(in oklab, var(--accent) 40%, var(--surface));
+    --review: #d9a44a; --review-soft: #332a18; --done: #6fb893; --done-soft: #1e2e26; --draft: #9a968c; --late: #e0876f; --late-soft: #3a241e;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.4);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #171614; --surface: #1f1e1b; --surface-2: #262521; --ink: #edebe5; --ink-2: #aba79d; --ink-3: #736f66; --line: #33322d; --line-2: #2a2925;
-  --accent-ink: #0f1f17; --accent-soft: color-mix(in oklab, var(--accent) 18%, var(--surface)); --accent-line: color-mix(in oklab, var(--accent) 40%, var(--surface));
-  --review: #d9a44a; --review-soft: #332a18; --done: #6fb893; --done-soft: #1e2e26; --draft: #736f66; --late: #e0876f; --late-soft: #3a241e;
+  --bg: #171614; --surface: #1f1e1b; --surface-2: #262521; --ink: #edebe5; --ink-2: #aba79d; --ink-3: #9a968c; --line: #33322d; --line-2: #2a2925;
+  --accent-ink: #ffffff; --accent-mix: 45%; --accent-soft: color-mix(in oklab, var(--accent) 18%, var(--surface)); --accent-line: color-mix(in oklab, var(--accent) 40%, var(--surface));
+  --review: #d9a44a; --review-soft: #332a18; --done: #6fb893; --done-soft: #1e2e26; --draft: #9a968c; --late: #e0876f; --late-soft: #3a241e;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.4);
   color-scheme: dark;
+}
+
+/*
+ * Accent text must stay readable on a dark background, and every workspace may pick its own
+ * accent. A token declared at :root would bake in the root accent (derived custom properties do
+ * not recompute when a deeper element overrides --accent), so these utilities resolve
+ * var(--accent) on the element that actually wears the class.
+ */
+@utility text-accent-text {
+  color: color-mix(in oklab, var(--accent), #ffffff var(--accent-mix, 0%));
+}
+@utility ring-accent-text {
+  --tw-ring-color: color-mix(in oklab, var(--accent), #ffffff var(--accent-mix, 0%));
 }
 
 @theme inline {
@@ -46,7 +59,7 @@
   body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 var(--ui); -webkit-font-smoothing: antialiased; }
   button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
   a { color: inherit; text-decoration: none; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  :focus-visible { outline: 2px solid color-mix(in oklab, var(--accent), #ffffff var(--accent-mix, 0%)); outline-offset: 2px; border-radius: 4px; }
   input, select, textarea { font: inherit; color: inherit; }
   kbd { font: 12px var(--ui); color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
   .tnum { font-variant-numeric: tabular-nums; }

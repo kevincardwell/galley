@@ -2,7 +2,7 @@ import { clsx } from "@/lib/clsx";
 
 type Tone = "accent" | "review" | "done" | "draft" | "late" | "neutral";
 const tones: Record<Tone, string> = {
-  accent: "border-accent-line text-accent bg-surface",
+  accent: "border-accent-line text-accent-text bg-surface",
   review: "bg-review-soft text-review border-transparent",
   done: "bg-done-soft text-done border-transparent",
   draft: "bg-surface-2 text-ink-2 border-transparent",

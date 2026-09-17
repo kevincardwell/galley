@@ -48,7 +48,7 @@ export function AddTaskInput({ sectionId, className }: { sectionId: string; clas
         if (e.key === "Escape") { e.stopPropagation(); close(); }
       }}
       aria-label="New task title"
-      className={clsx("w-full rounded-r border border-line bg-surface px-2.5 py-1.5 placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent", className)}
+      className={clsx("w-full rounded-r border border-line bg-surface px-2.5 py-1.5 placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent-text", className)}
     />
   );
 }

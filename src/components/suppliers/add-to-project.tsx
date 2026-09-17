@@ -65,7 +65,7 @@ export function AddToProject({ workspaceId, directory, linkedIds, label = "Add s
           />
         ) : (
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 rounded-r border border-line bg-surface px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-accent">
+            <div className="flex items-center gap-2 rounded-r border border-line bg-surface px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-accent-text">
               <Icon name="search" size={15} className="text-ink-3" />
               <input
                 autoFocus

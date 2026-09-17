@@ -48,7 +48,7 @@ export function WorkspaceCard({ ws }: { ws: WorkspaceCardData }) {
     <Link
       href={`/w/${ws.slug}`}
       style={{ ["--accent" as string]: ws.accent }}
-      className="group flex h-full cursor-pointer flex-col gap-3.5 rounded-lg border border-line bg-surface p-4 transition-colors duration-150 ease-out hover:border-ink-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      className="group flex h-full cursor-pointer flex-col gap-3.5 rounded-lg border border-line bg-surface p-4 transition-colors duration-150 ease-out hover:border-ink-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
     >
       <div className="flex items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-accent font-serif text-base font-semibold text-accent-ink">

@@ -33,6 +33,14 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["better-sqlite3", "sharp", "@node-rs/argon2", "archiver"],
+  // `path.join(process.cwd(), "data")` makes Next trace the working copy's database, its
+  // -wal/-shm siblings and every backup zip. This excludes them from route traces; the
+  // instrumentation trace is written by a different plugin that ignores these options, which
+  // is what the postbuild step in package.json is for. The published image is safe either way
+  // because .dockerignore drops data/, but a local build should not package credentials.
+  outputFileTracingExcludes: {
+    "**": ["**/data/**"],
+  },
   experimental: {
     serverActions: { bodySizeLimit: "10mb" },
   },

@@ -51,8 +51,9 @@ export function ShortcutsSheet() {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "?" || e.metaKey || e.ctrlKey || e.altKey) return;
       if (isTypingTarget(e.target)) return;
-      // Another modal (task delete, lightbox…) owns the keyboard; leave it alone.
-      if (!open && document.querySelector("dialog[open]")) return;
+      // Another modal owns the keyboard; leave it alone. The mobile drawer and the task
+      // inspector are [role="dialog"] rather than native dialogs, and `inert` marks the closed drawer.
+      if (!open && document.querySelector("dialog[open], [role='dialog']:not([inert])")) return;
       e.preventDefault();
       setOpen((v) => !v);
     }

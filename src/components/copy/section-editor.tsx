@@ -12,6 +12,7 @@ import { createSseProvider, type CollabConnection, type CollabStatus, type Peer,
 import { colorFor } from "@/lib/collab/colors";
 import { tiptapToText, wordCount, type TiptapDoc } from "@/lib/copy/serialize";
 import { STATUS_LABEL, statusTone, type SectionRow } from "@/lib/copy/types";
+import { toast } from "@/components/ui/toast";
 import { StatusDot } from "./status-dot";
 import { Toolbar } from "./toolbar";
 
@@ -200,7 +201,14 @@ function LiveEditor({ section, doc, provider, editing, readOnly, autoFocus, self
     if (readOnly) return;
     setState("saving");
     try {
-      await provider.flush();
+      // A "saved" state over edits that are still queued would be a lie: the server snapshot
+      // would not contain them. flush() says whether the bytes actually landed.
+      const flushed = await provider.flush();
+      if (!flushed) {
+        setState("dirty");
+        toast("Still sending — your latest edits are queued", { tone: "late" });
+        return;
+      }
       await saveSection(section.id);
       setState("saved");
     } catch {

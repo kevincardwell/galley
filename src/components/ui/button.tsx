@@ -15,7 +15,7 @@ export function Button({ variant = "default", size = "md", icon, iconAfter, load
     <button
       className={clsx(
         "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-r font-medium whitespace-nowrap transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-text focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
         "disabled:cursor-not-allowed disabled:opacity-50",
         size === "sm" ? "px-2.5 py-1 text-[13px]" : "px-3 py-1.5",
         variant === "primary" && "border border-accent bg-accent text-accent-ink hover:brightness-95",
