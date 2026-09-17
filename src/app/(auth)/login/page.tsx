@@ -18,6 +18,8 @@ const SSO_REASON: Record<string, string> = {
   deactivated: "That account has been switched off. Ask an admin to turn it back on.",
   "no-header": "Your proxy did not pass an email address, so Galley could not tell who you are.",
   disabled: "This Galley is not set up to accept sign-ins from a proxy.",
+  "bad-secret": "Your proxy did not prove it was your proxy. Check that it sends the GALLEY_AUTH_SECRET value in the x-galley-auth header.",
+  "setup-required": "Galley has no accounts yet. Open it directly and finish the setup screen first, or set GALLEY_AUTH_SECRET so the proxy can vouch for the first person.",
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; sso?: string }> }) {

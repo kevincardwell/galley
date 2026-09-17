@@ -49,3 +49,10 @@ export function recentActivity(workspaceId: string, limit = 20) {
     .limit(limit)
     .all();
 }
+
+/** The workspace behind a calendar feed token. Archived projects stop feeding, like their share links. */
+export function workspaceByCalendarToken(token: string) {
+  if (!token) return undefined;
+  const ws = db.select().from(schema.workspaces).where(eq(schema.workspaces.calendarToken, token)).get();
+  return ws && !ws.archivedAt ? ws : undefined;
+}

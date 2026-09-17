@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); }, redirect: (u: string) => { throw new Error("REDIRECT:" + u); } }));
 
 import { db, schema } from "@/db/client";
-import { applyClientUpdate, docToJSON, evictRoom, getRoom, joinRoom, leaveRoom, persistRoom, setAwareness, type RoomClient } from "@/lib/collab/hub";
+import { applyClientUpdate, docToJSON, evictRoom, getRoom, joinRoom, leaveRoom, persistRoom, setAwareness, sweepStaleClients, STALE_CLIENT_MS, type RoomClient } from "@/lib/collab/hub";
 import { countCollabUpdates } from "@/lib/queries/copy";
 import type { TiptapDoc } from "@/lib/copy/serialize";
 
@@ -118,6 +118,30 @@ describe("collaboration hub", () => {
     // Eviction persisted, so the log is empty and the section is on version 3.
     expect(countCollabUpdates("cs")).toBe(0);
     expect(db.select({ v: schema.sections.version }).from(schema.sections).where(eq(schema.sections.id, "cs")).get()?.v).toBe(3);
+    evictRoom(room);
+  });
+
+  it("probes a quiet client before sweeping it, so a hidden tab keeps its stream", () => {
+    const room = getRoom("cs")!;
+
+    // A backgrounded tab is throttled past the stale window but its stream is still open.
+    const quiet = fakeClient("client-quiet", "ann");
+    joinRoom(room, quiet);
+    quiet.lastSeen = Date.now() - STALE_CLIENT_MS - 1;
+    sweepStaleClients();
+    expect(room.clients.has("client-quiet")).toBe(true);
+    expect(quiet.events.at(-1)?.event).toBe("ping");
+    expect(quiet.lastSeen).toBeGreaterThan(Date.now() - 1_000);
+
+    // One whose stream really is gone throws on the probe and is dropped there and then.
+    const dead = fakeClient("client-dead", "ann");
+    joinRoom(room, dead);
+    dead.send = () => { throw new Error("stream gone"); };
+    dead.lastSeen = Date.now() - STALE_CLIENT_MS - 1;
+    sweepStaleClients();
+    expect(room.clients.has("client-dead")).toBe(false);
+
+    leaveRoom(room, "client-quiet");
     evictRoom(room);
   });
 });

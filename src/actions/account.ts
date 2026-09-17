@@ -77,10 +77,17 @@ export async function enableTotp(secret: string, code: string, password: string)
   if (step === null) return { ok: false, error: "That code is not right. Check the clock on your phone and try the next one." };
 
   const codes = newRecoveryCodes();
-  db.update(schema.users)
-    .set({ totpSecret: secret, totpLastStep: step, totpRecovery: codes.map(hashRecovery) })
-    .where(eq(schema.users.id, user.id))
-    .run();
+  const jar = await cookies();
+  const sessionId = jar.get(SESSION_COOKIE)?.value ?? "";
+  db.transaction((tx) => {
+    tx.update(schema.users)
+      .set({ totpSecret: secret, totpLastStep: step, totpRecovery: codes.map(hashRecovery) })
+      .where(eq(schema.users.id, user.id))
+      .run();
+    // Changing how sign-in works signs out every other session: the most likely reason to
+    // turn this on is a password that may have leaked, and those sessions used the password.
+    tx.delete(schema.sessions).where(and(eq(schema.sessions.userId, user.id), ne(schema.sessions.id, sessionId))).run();
+  });
   logAudit({ actorId: user.id, action: "user.totp.enabled", subjectType: "user", subjectId: user.id });
   revalidatePath("/me/account");
   return { ok: true, codes };
@@ -90,7 +97,13 @@ export async function disableTotp(password: string): Promise<AccountResult> {
   const user = await requireUser();
   const wrong = await confirmPassword(user, password);
   if (wrong) return { ok: false, error: wrong };
-  db.update(schema.users).set({ totpSecret: null, totpLastStep: null, totpRecovery: null }).where(eq(schema.users.id, user.id)).run();
+  const jar = await cookies();
+  const sessionId = jar.get(SESSION_COOKIE)?.value ?? "";
+  db.transaction((tx) => {
+    tx.update(schema.users).set({ totpSecret: null, totpLastStep: null, totpRecovery: null }).where(eq(schema.users.id, user.id)).run();
+    // Turning the second factor off is just as much a change to how sign-in works.
+    tx.delete(schema.sessions).where(and(eq(schema.sessions.userId, user.id), ne(schema.sessions.id, sessionId))).run();
+  });
   logAudit({ actorId: user.id, action: "user.totp.disabled", subjectType: "user", subjectId: user.id });
   revalidatePath("/me/account");
   return { ok: true };

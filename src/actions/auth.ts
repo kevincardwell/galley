@@ -1,5 +1,5 @@
 "use server";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, schema } from "@/db/client";
@@ -10,7 +10,7 @@ import { completePendingSession, createSession, destroySession, getPendingSessio
 import { currentUser } from "@/lib/auth/current";
 import { hasAnyUser } from "@/lib/settings";
 import { logAudit } from "@/lib/activity";
-import { clearFailures, isThrottled, recordFailure } from "@/lib/auth/throttle";
+import { clearFailures, clearTotpFailures, isThrottled, isTotpThrottled, recordFailure, recordTotpFailure } from "@/lib/auth/throttle";
 import { createSampleWorkspace } from "@/lib/seed/sample";
 import { hashRecovery, verifyCode } from "@/lib/auth/totp";
 
@@ -91,37 +91,64 @@ export async function verifyTotpAction(_: FormState, form: FormData): Promise<Fo
   const user = pending?.user;
   const secret = user?.totpSecret;
   if (!pending || !user || !secret) return { error: "That sign-in has timed out. Start again." };
-  if (await isThrottled(user.email)) return { error: "Too many attempts. Try again in a few minutes." };
+  if (await isTotpThrottled(user.id)) return { error: "Too many attempts. Try again in a few minutes." };
 
   const typed = String(form.get("code") || "");
   const step = verifyCode(secret, typed);
   if (step !== null) {
-    // A code is good for its 30-second step only once: someone watching the screen cannot reuse it.
-    if (user.totpLastStep !== null && step <= user.totpLastStep) {
-      await recordFailure(user.email);
+    // A code is good for its 30-second step only once: someone watching the screen cannot reuse
+    // it, and neither can two requests that arrive together. The spending is the write itself —
+    // a conditional update accepted only when it moves the step forward. A read-then-write here
+    // would let both requests pass the check before either wrote.
+    const spent = db
+      .update(schema.users)
+      .set({ totpLastStep: step })
+      .where(and(eq(schema.users.id, user.id), or(isNull(schema.users.totpLastStep), lt(schema.users.totpLastStep, step))))
+      .run();
+    if (spent.changes === 0) {
+      await recordTotpFailure(user.id);
       return { error: "That code has already been used. Wait for the next one." };
     }
-    db.update(schema.users).set({ totpLastStep: step }).where(eq(schema.users.id, user.id)).run();
-  } else if (!consumeRecoveryCode(user.id, user.totpRecovery, typed)) {
-    await recordFailure(user.email);
+  } else if (!consumeRecoveryCode(user.id, typed)) {
+    await recordTotpFailure(user.id);
     return { error: "That code is not right. Check the clock on your phone, or use a recovery code." };
   }
 
-  await clearFailures(user.email);
+  await clearTotpFailures(user.id);
   await completePendingSession(pending.id);
   logAudit({ actorId: user.id, action: "auth.login", subjectType: "user", subjectId: user.id, meta: { totp: step !== null ? "code" : "recovery" } });
   redirect(safeNext(String(form.get("next") || "")));
 }
 
-/** Spends one recovery code. Each works once, so it is removed as it is accepted. */
-function consumeRecoveryCode(userId: string, codes: string[] | null, typed: string): boolean {
+/**
+ * Spends one recovery code. Each works once, so it is removed as it is accepted. The list is
+ * compared and swapped in one conditional update, so two requests arriving together cannot both
+ * spend the same code or overwrite each other's removals back into the list.
+ */
+function consumeRecoveryCode(userId: string, typed: string): boolean {
   const cleaned = typed.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (!codes?.length || cleaned.length < 8) return false;
+  if (cleaned.length < 8) return false;
   const hash = hashRecovery(cleaned);
-  const left = codes.filter((c) => c !== hash);
-  if (left.length === codes.length) return false;
-  db.update(schema.users).set({ totpRecovery: left }).where(eq(schema.users.id, userId)).run();
-  return true;
+  // The raw column, not the mapped one: the swap compares the exact stored text, which the json
+  // mapper would parse and reformat. The column name is literal on purpose — see the note in
+  // docs/STATUS.md about interpolating schema columns into raw sql.
+  const row = db.select({ raw: sql<string | null>`totp_recovery` }).from(schema.users).where(eq(schema.users.id, userId)).get();
+  if (!row?.raw) return false;
+  let stored: unknown;
+  try {
+    stored = JSON.parse(row.raw);
+  } catch {
+    return false;
+  }
+  if (!Array.isArray(stored) || !stored.every((c) => typeof c === "string")) return false;
+  const left = (stored as string[]).filter((c) => c !== hash);
+  if (left.length === stored.length) return false;
+  const spent = db
+    .update(schema.users)
+    .set({ totpRecovery: left })
+    .where(and(eq(schema.users.id, userId), sql`totp_recovery = ${row.raw}`))
+    .run();
+  return spent.changes === 1;
 }
 
 export async function logoutAction() {

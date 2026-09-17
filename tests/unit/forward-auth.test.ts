@@ -6,8 +6,10 @@ vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND
 import { db, schema } from "@/db/client";
 import { forwardAuthConfig, resolveForwardAuth } from "@/lib/auth/forward";
 
-const on = { enabled: true, emailHeader: "remote-email", nameHeader: "remote-name", autoCreate: false };
+const on = { enabled: true, emailHeader: "remote-email", nameHeader: "remote-name", autoCreate: false, secret: "" };
 const onCreating = { ...on, autoCreate: true };
+const vouched = { ...onCreating, secret: "proxy-secret" };
+const seedUser = () => db.insert(schema.users).values({ id: "fa-seed", email: "seed@x.test", name: "Seed", passwordHash: "" }).run();
 
 const h = (init: Record<string, string>) => new Headers(init);
 const users = () => db.select().from(schema.users).all();
@@ -30,6 +32,11 @@ describe("reading the configuration", () => {
 
   it("does not create accounts unless asked", () => {
     expect(forwardAuthConfig({ GALLEY_AUTH_HEADERS: "1" }).autoCreate).toBe(false);
+  });
+
+  it("reads the shared secret, trimmed", () => {
+    expect(forwardAuthConfig({ GALLEY_AUTH_HEADERS: "1" }).secret).toBe("");
+    expect(forwardAuthConfig({ GALLEY_AUTH_HEADERS: "1", GALLEY_AUTH_SECRET: "  hunter2  " }).secret).toBe("hunter2");
   });
 });
 
@@ -84,19 +91,36 @@ describe("resolving who the proxy says is calling", () => {
   });
 
   it("falls back to the local part when the proxy sends no name", () => {
+    seedUser();
     resolveForwardAuth(h({ "remote-email": "holly@x.test" }), onCreating);
     expect(byEmail("holly@x.test")!.name).toBe("holly");
   });
 
-  it("makes the very first person through the door an admin", () => {
-    const res = resolveForwardAuth(h({ "remote-email": "first@x.test" }), onCreating);
+  it("makes the very first person through the door an admin when the proxy is vouched for", () => {
+    const res = resolveForwardAuth(h({ "remote-email": "first@x.test", "x-galley-auth": "proxy-secret" }), vouched);
     expect(res.ok && res.user.isAdmin).toBe(true);
     // And the second is not.
-    resolveForwardAuth(h({ "remote-email": "second@x.test" }), onCreating);
+    resolveForwardAuth(h({ "remote-email": "second@x.test", "x-galley-auth": "proxy-secret" }), vouched);
     expect(byEmail("second@x.test")!.isAdmin).toBe(false);
   });
 
+  it("refuses to create the first account without a secret to vouch for the proxy", () => {
+    // The first account is the admin, and headers are only words anyone can type.
+    const res = resolveForwardAuth(h({ "remote-email": "claimant@x.test" }), onCreating);
+    expect(res).toEqual({ ok: false, reason: "setup-required" });
+    expect(users()).toHaveLength(0);
+  });
+
+  it("requires the configured secret on every request", () => {
+    seedUser();
+    expect(resolveForwardAuth(h({ "remote-email": "kev@x.test" }), vouched)).toEqual({ ok: false, reason: "bad-secret" });
+    expect(resolveForwardAuth(h({ "remote-email": "kev@x.test", "x-galley-auth": "wrong" }), vouched)).toEqual({ ok: false, reason: "bad-secret" });
+    expect(resolveForwardAuth(h({ "remote-email": "kev@x.test", "x-galley-auth": "proxy-secret-x" }), vouched)).toEqual({ ok: false, reason: "bad-secret" });
+    expect(resolveForwardAuth(h({ "remote-email": "kev@x.test", "x-galley-auth": "proxy-secret" }), vouched).ok).toBe(true);
+  });
+
   it("signs the same person in again without making a second account", () => {
+    seedUser();
     resolveForwardAuth(h({ "remote-email": "repeat@x.test" }), onCreating);
     resolveForwardAuth(h({ "remote-email": "repeat@x.test" }), onCreating);
     expect(users().filter((u) => u.email === "repeat@x.test")).toHaveLength(1);

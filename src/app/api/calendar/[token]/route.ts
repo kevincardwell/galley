@@ -1,6 +1,5 @@
-import { eq } from "drizzle-orm";
-import { db, schema } from "@/db/client";
 import { resolveBaseUrl } from "@/lib/queries/admin";
+import { workspaceByCalendarToken } from "@/lib/queries/workspaces";
 import { workspaceFeed } from "@/lib/queries/schedule";
 import { addDays, fromUnix, isoDate, parseIsoDate } from "@/lib/dates";
 
@@ -47,9 +46,7 @@ function fold(line: string): string {
 
 export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const ws = token
-    ? db.select().from(schema.workspaces).where(eq(schema.workspaces.calendarToken, token)).get()
-    : undefined;
+  const ws = workspaceByCalendarToken(token);
   if (!ws) return new Response("Not found", { status: 404 });
 
   const base = await resolveBaseUrl();

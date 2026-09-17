@@ -47,7 +47,7 @@ export type Room = {
 export const COMPACT_EVERY = 30;
 export const IDLE_PERSIST_MS = 10_000;
 export const EVICT_AFTER_MS = 5 * 60_000;
-/** A client that has neither posted nor been re-announced for this long is gone (its stream close was never observed). */
+/** A client that has neither posted nor been re-announced for this long is probed before it is dropped. */
 export const STALE_CLIENT_MS = 45_000;
 
 type Hub = { rooms: Map<string, Room>; schema: ReturnType<typeof getSchema> | null; impl?: HubImpl };
@@ -155,13 +155,24 @@ function touchClient(room: Room, clientId: string) {
 
 /**
  * Drops clients whose stream ended without the abort being observed (a
- * reload in dev, a proxy that swallows the close). Browsers re-announce
- * awareness every 15s, so a live client is never this quiet.
+ * reload in dev, a proxy that swallows the close).
+ *
+ * A stale client gets one liveness probe first. A hidden tab is throttled by
+ * the browser well past the window above while its stream is still open, and
+ * removing it would leave the page receiving nothing until a reload — the
+ * probe refreshes lastSeen when the stream accepts the write, and the client
+ * goes only when it does not.
  */
 function sweepStaleClients(now = Date.now()) {
   for (const room of hub.rooms.values()) {
     for (const c of room.clients.values()) {
-      if (now - (c.lastSeen ?? now) > STALE_CLIENT_MS) leaveRoom(room, c.id);
+      if (now - (c.lastSeen ?? now) <= STALE_CLIENT_MS) continue;
+      try {
+        c.send("ping", { section: room.sectionId });
+        c.lastSeen = now;
+      } catch {
+        leaveRoom(room, c.id);
+      }
     }
   }
 }

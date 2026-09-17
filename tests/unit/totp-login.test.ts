@@ -6,8 +6,28 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("@/lib/auth/current", () => ({ currentUser: async () => null, requireUser: async () => { throw new Error("no user"); } }));
-// The throttle reads request headers, which there are none of here.
-vi.mock("@/lib/auth/throttle", () => ({ isThrottled: async () => false, recordFailure: async () => {}, clearFailures: async () => {} }));
+// The throttle reads request headers, which there are none of here. `blocked` parks a request
+// between reading the pending session and spending the code — the window a second request can
+// slip into, and the window every race below is about.
+const throttle = vi.hoisted(() => {
+  const state = { blocked: false, waiting: [] as (() => void)[] };
+  const park = async () => {
+    if (state.blocked) await new Promise<void>((resolve) => state.waiting.push(resolve));
+  };
+  const release = () => {
+    state.blocked = false;
+    state.waiting.splice(0).forEach((resolve) => resolve());
+  };
+  return { state, park, release, totpFailures: { count: 0 } };
+});
+vi.mock("@/lib/auth/throttle", () => ({
+  isThrottled: async () => { await throttle.park(); return false; },
+  recordFailure: async () => {},
+  clearFailures: async () => {},
+  isTotpThrottled: async () => { await throttle.park(); return false; },
+  recordTotpFailure: async () => { throttle.totpFailures.count += 1; },
+  clearTotpFailures: async () => {},
+}));
 
 const completed: string[] = [];
 let pendingUserId: string | null = "totp-user";
@@ -52,9 +72,11 @@ describe("two-factor sign-in", () => {
   afterAll(() => vi.useRealTimers());
 
   it("refuses a wrong code", async () => {
+    const failures = throttle.totpFailures.count;
     const result = await verifyTotpAction(undefined, form("000000"));
     expect(result?.error).toMatch(/not right/i);
     expect(completed).toHaveLength(0);
+    expect(throttle.totpFailures.count).toBe(failures + 1);
   });
 
   it("accepts the code from the app", async () => {
@@ -81,4 +103,48 @@ describe("two-factor sign-in", () => {
     expect(result?.error).toMatch(/timed out/i);
     pendingUserId = "totp-user";
   });
+
+  it("spends a code for exactly one of two simultaneous requests", async () => {
+    db.insert(schema.users).values({ id: "totp-race", email: "race@x.test", name: "Race", passwordHash: "", totpSecret: SECRET }).run();
+    pendingUserId = "totp-race";
+    throttle.state.blocked = true;
+    const first = verifyTotpAction(undefined, form("287082"));
+    const second = verifyTotpAction(undefined, form("287082"));
+    await settleAtGate(2);
+    throttle.release();
+
+    const results = await Promise.allSettled([first, second]);
+    // The winner redirects; the loser is refused, not silently let in with a stale read.
+    expect(results.filter((r) => r.status === "rejected")).toHaveLength(1);
+    const refused = results.filter((r) => r.status === "fulfilled" && (r.value as { error?: string })?.error?.match(/already been used/i));
+    expect(refused).toHaveLength(1);
+    expect(db.select({ step: schema.users.totpLastStep }).from(schema.users).where(eq(schema.users.id, "totp-race")).get()?.step).toBe(1);
+    pendingUserId = "totp-user";
+  });
+
+  it("spends a recovery code for exactly one of two simultaneous requests", async () => {
+    const OTHER = "pqrs-tuvw-xyz2";
+    db.insert(schema.users)
+      .values({ id: "totp-rec-race", email: "rec-race@x.test", name: "Rec", passwordHash: "", totpSecret: SECRET, totpRecovery: [hashRecovery(RECOVERY), hashRecovery(OTHER)] })
+      .run();
+    pendingUserId = "totp-rec-race";
+    throttle.state.blocked = true;
+    const first = verifyTotpAction(undefined, form(RECOVERY));
+    const second = verifyTotpAction(undefined, form(RECOVERY));
+    await settleAtGate(2);
+    throttle.release();
+
+    const results = await Promise.allSettled([first, second]);
+    expect(results.filter((r) => r.status === "rejected")).toHaveLength(1);
+    // The spent code is gone, and the loser's write must not resurrect it over the winner's.
+    const left = db.select({ codes: schema.users.totpRecovery }).from(schema.users).where(eq(schema.users.id, "totp-rec-race")).get()?.codes;
+    expect(left).toEqual([hashRecovery(OTHER)]);
+    pendingUserId = "totp-user";
+  });
 });
+
+/** Flushes microtasks until `expected` requests are parked on the throttle gate. */
+async function settleAtGate(expected: number) {
+  for (let i = 0; i < 500 && throttle.state.waiting.length < expected; i++) await Promise.resolve();
+  expect(throttle.state.waiting).toHaveLength(expected);
+}

@@ -122,9 +122,11 @@ export function sectionDetails(sectionId: string): SectionDetails {
 
 // ---- Share link (public, read-only) ----
 
+/** The workspace behind a share token. An archived project serves nothing to clients. */
 export function workspaceByShareToken(token: string) {
   if (!token) return undefined;
-  return db.select().from(schema.workspaces).where(eq(schema.workspaces.shareToken, token)).get();
+  const ws = db.select().from(schema.workspaces).where(eq(schema.workspaces.shareToken, token)).get();
+  return ws && !ws.archivedAt ? ws : undefined;
 }
 
 export function listAssets(workspaceId: string) {

@@ -56,8 +56,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const share = url.searchParams.get("share");
   let allowed = false;
   if (share) {
-    const ws = db.select({ token: schema.workspaces.shareToken }).from(schema.workspaces).where(eq(schema.workspaces.id, asset.workspaceId)).get();
-    allowed = !!ws?.token && timingSafeEqualStr(ws.token, share);
+    const ws = db
+      .select({ token: schema.workspaces.shareToken, archivedAt: schema.workspaces.archivedAt })
+      .from(schema.workspaces)
+      .where(eq(schema.workspaces.id, asset.workspaceId))
+      .get();
+    allowed = !!ws?.token && !ws.archivedAt && timingSafeEqualStr(ws.token, share);
   }
   if (!allowed) {
     const user = await currentUser();

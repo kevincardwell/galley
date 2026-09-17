@@ -28,7 +28,10 @@ export default async function AssetsPage({ params, searchParams }: { params: Pro
   const all = listAssets(ws.id, slug);
   const items = applyFilters(all, filters);
   const canEdit = access.role === "admin" || access.role === "manager" || access.role === "editor";
+  const canManage = access.role === "admin" || access.role === "manager";
 
+  // The share token is a capability: only members who can manage the link get it, so it never
+  // rides along in the page data handed to a viewer.
   return (
     <Suspense>
       <AssetsView
@@ -42,7 +45,7 @@ export default async function AssetsPage({ params, searchParams }: { params: Pro
         filters={filters}
         selectedId={sp.asset && all.some((a) => a.id === sp.asset) ? sp.asset : null}
         canEdit={canEdit}
-        shareToken={ws.shareToken}
+        shareToken={canManage ? ws.shareToken : null}
         storageBytes={workspaceStorageBytes(ws.id)}
         maxUploadMb={getSettings().maxUploadMb}
       />

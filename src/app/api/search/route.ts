@@ -38,5 +38,6 @@ export async function GET(req: Request) {
       }
     }
   }
-  return Response.json(hits.slice(0, 25));
+  // Personalised results: keep them out of any shared proxy cache.
+  return Response.json(hits.slice(0, 25), { headers: { "Cache-Control": "private, no-store", Vary: "Cookie" } });
 }
