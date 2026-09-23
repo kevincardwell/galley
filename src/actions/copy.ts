@@ -12,7 +12,7 @@ import { logActivity } from "@/lib/activity";
 import { asDoc } from "@/lib/copy/serialize";
 import type { TiptapDoc } from "@/lib/copy/serialize";
 import type { SaveResult } from "@/lib/copy/types";
-import { getRoom, peekRoom, persistRoom, replaceDoc } from "@/lib/collab/hub";
+import { getRoom, peekRoom, persistRoom, replaceDoc, replaceText } from "@/lib/collab/hub";
 
 const MAX_TITLE = 120;
 
@@ -291,6 +291,26 @@ export async function resolveComment(commentId: string): Promise<void> {
 }
 
 /** Convenience for the empty-page state: the first section of a page. */
+/**
+ * Puts a client's suggested wording into the section and resolves the
+ * suggestion. It goes through the live document like a restore, so the editor
+ * shows it at once, and the words it replaces stay in the version history.
+ */
+export async function acceptSuggestion(commentId: string): Promise<{ version: number }> {
+  const user = await requireUser();
+  const comment = db.select().from(schema.comments).where(eq(schema.comments.id, commentId)).get();
+  if (!comment || !comment.sectionId || comment.suggestion == null || comment.resolvedAt) throw new Error("Not found");
+  const { workspace } = assertAccess(user, comment.workspaceId, "edit");
+  const { section, pageSlug } = sectionOrThrow(comment.sectionId);
+  const saved = replaceText(section.id, comment.suggestion, user.id);
+  if (!saved) throw new Error("Not found");
+  db.update(schema.comments).set({ resolvedAt: nowSec() }).where(eq(schema.comments.id, comment.id)).run();
+  logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "updated", subjectType: "section", subjectId: section.id, subjectTitle: section.title, meta: { acceptedSuggestionFrom: comment.guestName } });
+  revalidatePath(copyPath(workspace.slug, pageSlug));
+  if (workspace.shareToken) revalidatePath(`/share/${workspace.shareToken}`, "layout");
+  return { version: saved.version };
+}
+
 export async function createFirstSection(pageId: string): Promise<{ id: string }> {
   return createSection(pageId, "Start writing");
 }

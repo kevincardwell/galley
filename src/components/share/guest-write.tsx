@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { toast } from "@/components/ui/toast";
 import { guestWriteSection } from "@/actions/share";
-import { useGuestName } from "./guest-name";
+import { askForName, useGuestName } from "./guest-name";
 
 const message = (e: unknown, fallback: string) => (e instanceof Error && e.message && !/server/i.test(e.message) ? e.message : fallback);
 
@@ -30,11 +30,7 @@ export function GuestWrite({ token, sectionId, title, initialText }: { token: st
       toast("Write something first", { tone: "late" });
       return;
     }
-    if (!name.trim()) {
-      toast("Add your name below first", { tone: "late" });
-      document.getElementById(`name-${sectionId}`)?.focus();
-      return;
-    }
+    if (!name.trim()) return askForName();
     start(async () => {
       try {
         await guestWriteSection(token, sectionId, name.trim(), text);
@@ -65,7 +61,6 @@ export function GuestWrite({ token, sectionId, title, initialText }: { token: st
       />
 
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {/* The name field lives once per section, in the feedback box below. */}
         {saved && !dirty && <span className="mr-auto text-xs text-done">Sent to the studio</span>}
         <Button size="sm" variant="primary" icon="check" loading={pending} disabled={!text.trim()} onClick={save}>
           {pending ? "Sending…" : dirty ? "Send to the studio" : "Send again"}

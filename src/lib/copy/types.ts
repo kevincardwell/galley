@@ -43,6 +43,9 @@ export type CommentRow = {
   authorName: string | null;
   /** Set when a client left it through the share link (authorName is null then). */
   guestName: string | null;
+  /** A client's suggested rewording, and the text they started from. */
+  suggestion: string | null;
+  suggestionBase: string | null;
 };
 
 export type AttachedFile = { attachmentId: string; assetId: string; filename: string; kind: "image" | "video" | "pdf" };
@@ -60,7 +63,7 @@ export type SectionDetails = {
 };
 
 /** What the public share page needs per section when client review is on. */
-export type ShareComment = { id: string; body: string; createdAt: number; name: string };
+export type ShareComment = { id: string; body: string; createdAt: number; name: string; suggestion: string | null; suggestionBase: string | null };
 export type ShareSectionReview = { comments: ShareComment[]; clientApprovedAt: number | null; clientApprovedBy: string | null };
 
 export type SaveResult =

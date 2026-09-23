@@ -6,6 +6,41 @@ Galley applies database migrations when the container starts, and copies the dat
 `backups/pre-migration-<date>.db` first, so an upgrade that goes wrong can be stepped back by putting that file
 in place and running the previous tag.
 
+## Unreleased
+
+### Added
+
+- **Clients can suggest wording.** Every section on the share page has "Suggest wording": the client edits the
+  words, sees their changes highlighted as they type, and sends it with an optional reason. In the editor it
+  arrives as a comment showing only the paragraphs they changed, with **Accept** and **Dismiss**. Accepting
+  puts their words into the live section — anyone editing sees it at once — keeps its headings and lists, and
+  leaves the previous wording in the version history.
+- **The share page says what is waiting on the client.** A list at the top links to every section in review
+  that they have not approved yet, the page tabs carry a count, and a page with more than one such section
+  has **Approve all**. It is the same list the weekly digest sends, so the email and the page agree.
+
+### Changed
+
+- **New share links let the client comment, suggest and approve** from the start. That is what the link is
+  for; the box is still there to untick. Existing links keep whatever they had.
+- **The client gives their name once**, in the page header, instead of in a form under every section. The
+  per-section form is now three buttons — Approve, Suggest wording, Comment — and draft sections no longer
+  offer Approve.
+- **Sections a client writes keep their headings and lists** when the paragraph count is unchanged; only
+  the paragraphs they reworded lose bold, italic and links.
+
+### Fixed
+
+- **The details pane showed 0 characters** until the section's editor had reported in.
+- **Replacing words that had never been saved lost them.** Sample-project sections, and anything else with no
+  version history yet, now get their current wording recorded as a version before a restore, an accepted
+  suggestion or a client's write replaces it.
+- **On a phone, the share page cut the project and client names** to a few letters.
+
+### Upgrading
+
+- Migration `0012` adds two columns to `comments`. It runs on start, after the usual pre-migration backup.
+
 ## v1.1.0 — 2026-09-17
 
 ### Added

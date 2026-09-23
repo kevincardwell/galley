@@ -5,7 +5,7 @@ import { getSchema } from "@tiptap/core";
 import { prosemirrorJSONToYDoc, yDocToProsemirrorJSON } from "y-prosemirror";
 import { db, schema } from "@/db/client";
 import { listCollabUpdates } from "@/lib/queries/copy";
-import { asDoc } from "@/lib/copy/serialize";
+import { applyText, asDoc } from "@/lib/copy/serialize";
 import type { TiptapDoc } from "@/lib/copy/serialize";
 import { copyExtensions, Y_FIELD } from "./extensions";
 import { snapshotSection } from "./snapshot";
@@ -317,6 +317,17 @@ const setAwareness_: typeof setAwareness = (room, id, m) => impl.setAwareness(ro
 const persistRoom_: typeof persistRoom = (room, by) => impl.persistRoom(room, by);
 const replaceDoc_: typeof replaceDoc = (id, content, userId) => impl.replaceDoc(id, content, userId);
 const evictRoom_: typeof evictRoom = (room) => impl.evictRoom(room);
+
+/**
+ * A client's plain-text words applied over the live document, keeping its
+ * headings and lists where applyText can. Built on the delegating wrappers, so
+ * it is safe from any server layer.
+ */
+export function replaceText(sectionId: string, text: string, userId: string | null) {
+  const room = getRoom_(sectionId);
+  if (!room) return null;
+  return replaceDoc_(sectionId, applyText(docToJSON_(room.doc), text), userId);
+}
 
 export {
   docToJSON_ as docToJSON,

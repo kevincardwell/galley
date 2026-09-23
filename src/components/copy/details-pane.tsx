@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import { AttachPicker } from "@/components/assets/attach-picker";
 import { VersionDiff } from "./version-diff";
-import { tiptapToText } from "@/lib/copy/serialize";
-import { addComment, renameSection, resolveComment, restoreVersion, setSectionClientWrite, setSectionStatus } from "@/actions/copy";
+import { ChangedParagraphs } from "./diff-text";
+import { docToEditableText, tiptapToText } from "@/lib/copy/serialize";
+import { acceptSuggestion, addComment, renameSection, resolveComment, restoreVersion, setSectionClientWrite, setSectionStatus } from "@/actions/copy";
 import { STATUS_LABEL, statusTone, type SectionDetails, type SectionRow } from "@/lib/copy/types";
 import type { SaveState, Stats } from "./section-editor";
 
@@ -55,7 +56,7 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
   }
 
   const words = stats?.words ?? section.wordCount;
-  const chars = stats?.chars ?? 0;
+  const chars = stats?.chars ?? tiptapToText(section.content).length;
   const who = section.updatedByName === selfName ? "You" : section.updatedByName ?? "Someone";
   const approved = section.status === "approved";
 
@@ -151,7 +152,7 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
                 />
                 <span>
                   They write this one
-                  <span className="block text-xs text-ink-3">A box on the share page for their words. Formatting here is replaced by what they type.</span>
+                  <span className="block text-xs text-ink-3">A box on the share page for their words. Headings and lists stay unless they add or remove a paragraph.</span>
                 </span>
               </label>
             )}
@@ -175,7 +176,7 @@ export function DetailsPane({ workspaceId, section, details, saveState, stats, r
       </Block>
 
       <Block title="Comments" aside={details?.comments.length ? <span className="tnum text-xs text-ink-3">{details.comments.length}</span> : undefined}>
-        <Comments key={`c-${section.id}`} sectionId={section.id} comments={details?.comments ?? []} readOnly={readOnly} selfName={selfName} />
+        <Comments key={`c-${section.id}`} sectionId={section.id} comments={details?.comments ?? []} currentText={docToEditableText(section.content)} readOnly={readOnly} selfName={selfName} />
       </Block>
 
       <Block title="Attachments" aside={details?.attachments.length ? <span className="tnum text-xs text-ink-3">{details.attachments.length}</span> : undefined}>
@@ -306,7 +307,7 @@ function Versions({ sectionId, current, currentText, versions, readOnly, selfNam
   );
 }
 
-function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: string; comments: SectionDetails["comments"]; readOnly: boolean; selfName: string }) {
+function Comments({ sectionId, comments, currentText, readOnly, selfName }: { sectionId: string; comments: SectionDetails["comments"]; currentText: string; readOnly: boolean; selfName: string }) {
   const [pending, start] = useTransition();
   const [body, setBody] = useState("");
   const open = comments.filter((c) => !c.resolvedAt);
@@ -325,6 +326,15 @@ function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: stri
       submit();
     }
   };
+  const accept = (id: string) =>
+    start(async () => {
+      try {
+        await acceptSuggestion(id);
+        toast("Their wording is in. The old text is in Versions.", { tone: "done" });
+      } catch {
+        toast("Could not accept the suggestion", { tone: "late" });
+      }
+    });
   const item = (c: SectionDetails["comments"][number]) => (
     <li key={c.id} className={clsx("rounded-r border border-line bg-surface p-2.5 text-[13px]", c.resolvedAt ? "opacity-60" : null)}>
       <div className="mb-1.5 flex items-center gap-2 text-ink-2">
@@ -336,11 +346,27 @@ function Comments({ sectionId, comments, readOnly, selfName }: { sectionId: stri
         <span className="truncate">{c.guestName ?? c.authorName ?? "Someone"}</span>
         <span className="tnum ml-auto shrink-0 text-xs text-ink-3">{timeAgo(c.createdAt)}</span>
       </div>
-      <p className="m-0 whitespace-pre-wrap">{c.body}</p>
+      {c.suggestion != null ? (
+        <>
+          <p className="m-0 mb-1.5 text-xs font-medium text-ink-2">{c.resolvedAt ? "Suggested new wording" : "Suggests new wording"}</p>
+          <div className="max-h-56 overflow-y-auto rounded-r bg-surface-2 px-2.5 py-2">
+            <ChangedParagraphs from={c.suggestionBase ?? ""} to={c.suggestion} className="font-serif text-[14px] leading-relaxed" />
+          </div>
+          {c.body && <p className="m-0 mt-1.5 whitespace-pre-wrap">{c.body}</p>}
+          {!c.resolvedAt && (c.suggestionBase ?? "").trim() !== currentText.trim() && (
+            <p className="m-0 mt-1.5 text-xs text-review">The section has changed since. Accepting puts their whole version in place of the current wording.</p>
+          )}
+        </>
+      ) : (
+        <p className="m-0 whitespace-pre-wrap">{c.body}</p>
+      )}
       {!readOnly && (
-        <div className="mt-2 flex gap-2.5 text-xs font-medium">
+        <div className="mt-2 flex items-center gap-2.5 text-xs font-medium">
+          {c.suggestion != null && !c.resolvedAt && (
+            <Button size="sm" variant="primary" icon="check" disabled={pending} onClick={() => accept(c.id)}>Accept</Button>
+          )}
           <button type="button" disabled={pending} onClick={() => start(() => resolveComment(c.id))} className="cursor-pointer text-accent-text hover:underline disabled:cursor-not-allowed">
-            {c.resolvedAt ? "Reopen" : "Resolve"}
+            {c.resolvedAt ? "Reopen" : c.suggestion != null ? "Dismiss" : "Resolve"}
           </button>
         </div>
       )}

@@ -21,7 +21,7 @@
 
 A galley proof is the first typeset pull of a page, laid out so the words can be checked before anything goes to print. Galley does that for a website: the copy is written page by page and section by section, it moves from draft to in review to approved, and the client signs it off through a link — no account, nothing to install.
 
-Website projects rarely stall on the build. They stall waiting for the words, the logo and a decision. So the client's side of the link is not read-only: they can comment, approve, send files in, and write the sections you hand to them, and once a week they get a note saying what changed and what is still waiting on them.
+Website projects rarely stall on the build. They stall waiting for the words, the logo and a decision. So the client's side of the link is not read-only: they can approve, suggest their own wording, comment, send files in, and write the sections you hand to them, and once a week they get a note saying what changed and what is still waiting on them.
 
 The rest of the project lives in the same place — tasks, a calendar, the suppliers you book and the files you collect — because it is the same project. It is built for the person who runs the work: a web designer with six client sites on the go, a studio lead, someone organising an event. One screen per project, no seats to buy, no data leaving your server.
 
@@ -45,14 +45,16 @@ Open a project and you can see where it has got to: what is overdue, how much of
 
 ### The link you send the client
 
-One link, no account, nothing to install. Read-only by default; switch on what you want them to do.
+One link, no account, nothing to install. The top of it lists what is waiting on them; they give their name once.
 
-- **Comment and approve**, section by section. You are told the moment they do, and an approval lapses automatically if the wording changes afterwards — so it always refers to the words they actually agreed to.
+- **Approve**, section by section or a whole page at once. You are told the moment they do, and an approval lapses automatically if the wording changes afterwards — so it always refers to the words they actually agreed to.
+- **Suggest their own wording** instead of describing it in a comment. They edit the words, you see exactly what they changed, and one click on Accept puts it in the section — headings and lists kept, the old wording kept in the version history.
+- **Comment**, for everything that is not a rewrite.
 - **Send files in.** Their logo, photographs, the old brochure. Files land in the project's library labelled with who sent them.
 - **Write the sections you hand over.** Tick "they write this one" and the client gets a box for their words. It arrives in the version history like any other edit.
 - **A weekly note**, if you want one: what you changed, what is still waiting on them, and the link back.
 
-<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/share.webp" alt="The client share view showing approved copy, a client comment and an approve control" width="880">
+<img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/share.webp" alt="The client share view: a list of sections waiting on the client, and their suggested rewording of the hero line shown as a word-level diff" width="880">
 
 ### Copy written where it belongs
 

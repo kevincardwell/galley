@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Pill } from "@/components/ui/pill";
 import { findPage, listSections, shareReviewForPage, workspaceByShareToken } from "@/lib/queries/copy";
-import { SectionReview } from "./review";
+import { ApprovePage, SectionReview } from "./review";
 import { docToEditableText, isDocEmpty, tiptapToHtml } from "@/lib/copy/serialize";
 import { GuestWrite } from "@/components/share/guest-write";
 import { STATUS_LABEL, statusTone } from "@/lib/copy/types";
@@ -14,12 +14,16 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   if (!page) notFound();
   const sections = listSections(page.id);
   const review = ws.shareReview ? shareReviewForPage(page.id) : null;
+  const approvable = review ? sections.filter((s) => s.status !== "draft" && !review[s.id]?.clientApprovedAt).length : 0;
 
   return (
     <article className="mx-auto max-w-[68ch]">
-      <header className="mb-8">
-        <p className="tnum m-0 text-xs font-medium text-ink-3">{sections.length === 1 ? "1 section" : `${sections.length} sections`}</p>
-        <h2 className="m-0 mt-1.5 font-serif text-[30px] leading-tight font-medium tracking-tight">{page.title}</h2>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="tnum m-0 text-xs font-medium text-ink-3">{sections.length === 1 ? "1 section" : `${sections.length} sections`}</p>
+          <h2 className="m-0 mt-1.5 font-serif text-[30px] leading-tight font-medium tracking-tight">{page.title}</h2>
+        </div>
+        {approvable > 1 && <ApprovePage token={token} pageSlug={page.slug} count={approvable} />}
       </header>
 
       {sections.length === 0 ? (
@@ -27,7 +31,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
       ) : (
         <div className="flex flex-col">
           {sections.map((s) => (
-            <section key={s.id} id={`s-${s.id}`} className="border-t border-line-2 py-7 first:border-t-0 first:pt-0">
+            <section key={s.id} id={`s-${s.id}`} className="scroll-mt-16 border-t border-line-2 py-7 first:border-t-0 first:pt-0">
               <div className="mb-3.5 flex flex-wrap items-center gap-2.5">
                 <h3 className="m-0 min-w-0 truncate text-xs font-medium tracking-wide text-ink-3 uppercase">{s.title}</h3>
                 <Pill tone={statusTone(s.status)}>{STATUS_LABEL[s.status]}</Pill>
@@ -41,7 +45,16 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
               ) : (
                 <div className="prose-copy" dangerouslySetInnerHTML={{ __html: tiptapToHtml(s.content) }} />
               )}
-              {review && <SectionReview token={token} sectionId={s.id} review={review[s.id] ?? { comments: [], clientApprovedAt: null, clientApprovedBy: null }} />}
+              {review && (
+                <SectionReview
+                  token={token}
+                  sectionId={s.id}
+                  status={s.status}
+                  text={docToEditableText(s.content)}
+                  canSuggest={!s.clientCanWrite}
+                  review={review[s.id] ?? { comments: [], clientApprovedAt: null, clientApprovedBy: null }}
+                />
+              )}
             </section>
           ))}
         </div>

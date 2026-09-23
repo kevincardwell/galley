@@ -50,7 +50,7 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
   const review = useShareToggle(
     shareReview,
     (next) => setShareReview(workspaceId, next),
-    (next) => (next ? "Clients can now comment and approve" : "Client review turned off"),
+    (next) => (next ? "Clients can now comment, suggest and approve" : "Client review turned off"),
   );
   const uploads = useShareToggle(
     shareUploads,
@@ -61,7 +61,7 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
   return (
     <div className="flex gap-2">
       {canManage && (
-        <Button icon="share" size="sm" onClick={() => setOpen(true)} title="Share a read-only link with the client">
+        <Button icon="share" size="sm" onClick={() => setOpen(true)} title="Send the client a link to read, approve and suggest changes">
           Share
         </Button>
       )}
@@ -80,7 +80,7 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
         Export
       </Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Share with client">
-        <p className="m-0 mb-3 text-ink-2">Anyone with the link can read the copy and browse the files. They cannot edit anything or see tasks.</p>
+        <p className="m-0 mb-3 text-ink-2">Anyone with the link can read the copy and browse the files. Nothing they send changes the copy until you accept it, and they never see tasks.</p>
         {shareToken ? (
           <div className="flex flex-col gap-3">
             <div className="flex gap-2">
@@ -100,8 +100,8 @@ export function WorkspaceHeaderActions({ workspaceId, slug, shareToken, canManag
             <label className="flex cursor-pointer items-start gap-2 text-[13px] text-ink">
               <input type="checkbox" checked={review.on} disabled={review.pending} onChange={(e) => review.toggle(e.target.checked)} className="mt-0.5 accent-[var(--accent)]" />
               <span>
-                Let the client comment and approve sections
-                <span className="block text-xs text-ink-2">They give a name, no account needed. Comments and approvals show up in the editor and your inbox.</span>
+                Let the client comment, suggest wording and approve
+                <span className="block text-xs text-ink-2">They give a name, no account needed. Everything they send shows up in the editor and your inbox.</span>
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-2 text-[13px] text-ink">

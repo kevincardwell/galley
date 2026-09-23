@@ -85,6 +85,13 @@
       "when": 1789486338307,
       "tag": "0011_zippy_owl",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1790141950991,
+      "tag": "0012_same_bug",
+      "breakpoints": true
     }
   ]
 }

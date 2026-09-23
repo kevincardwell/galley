@@ -3,18 +3,16 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { Input, Label } from "@/components/ui/field";
 import { clsx } from "@/lib/clsx";
 import { useUploads } from "@/components/assets/upload-client";
-import { useGuestName } from "./guest-name";
+import { askForName, useGuestName } from "./guest-name";
 import { UploadProgress } from "@/components/assets/upload-progress";
 
 export function GuestUpload({ token, maxUploadMb }: { token: string; maxUploadMb: number }) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [name, setName, settleName] = useGuestName();
+  const [name] = useGuestName();
   const [dragging, setDragging] = useState(false);
-  const [asked, setAsked] = useState(false);
 
   const { uploads, uploadFiles, dismiss } = useUploads({
     shareToken: token,
@@ -25,11 +23,7 @@ export function GuestUpload({ token, maxUploadMb }: { token: string; maxUploadMb
 
   const send = (files: File[]) => {
     if (files.length === 0) return;
-    if (!name.trim()) {
-      setAsked(true);
-      document.getElementById("guest-name")?.focus();
-      return;
-    }
+    if (!name.trim()) return askForName();
     void uploadFiles(files);
   };
 
@@ -49,21 +43,6 @@ export function GuestUpload({ token, maxUploadMb }: { token: string; maxUploadMb
         <p className="m-0 max-w-sm text-xs text-ink-2">
           Your logo, photographs, the old brochure — drop them here and they go straight to the studio. Up to {maxUploadMb} MB each.
         </p>
-        {(asked || !name.trim()) && (
-          <Label htmlFor="guest-name" className="mt-1 w-full max-w-xs text-left">
-            <span className="text-xs font-medium text-ink-2">Your name</span>
-            <Input
-              id="guest-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={settleName}
-              maxLength={60}
-              placeholder="Tom Marlow"
-              aria-invalid={asked && !name.trim()}
-            />
-            {asked && !name.trim() && <span className="text-xs text-late">Tell us who you are first.</span>}
-          </Label>
-        )}
         <Button icon="upload" size="sm" className="mt-1" onClick={() => fileInput.current?.click()}>Choose files</Button>
         <input
           ref={fileInput}

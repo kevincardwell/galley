@@ -3,10 +3,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "@/lib/clsx";
 
-export function ShareNav({ token, pages }: { token: string; pages: { slug: string; title: string }[] }) {
+export function ShareNav({ token, pages }: { token: string; pages: { slug: string; title: string; waiting: number }[] }) {
   const path = usePathname();
   const base = `/share/${token}`;
-  const items = [...pages.map((p) => ({ href: `${base}/${p.slug}`, label: p.title })), { href: `${base}/files`, label: "Files" }];
+  const items = [...pages.map((p) => ({ href: `${base}/${p.slug}`, label: p.title, waiting: p.waiting })), { href: `${base}/files`, label: "Files", waiting: 0 }];
   return (
     <nav className="-mb-px flex gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Pages">
       {items.map((t) => {
@@ -22,6 +22,11 @@ export function ShareNav({ token, pages }: { token: string; pages: { slug: strin
             )}
           >
             {t.label}
+            {t.waiting > 0 && (
+              <span className="tnum ml-1.5 rounded-full bg-accent-soft px-1.5 text-[11px] font-medium text-accent-text" aria-label={`${t.waiting} waiting for your approval`}>
+                {t.waiting}
+              </span>
+            )}
           </Link>
         );
       })}

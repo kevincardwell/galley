@@ -1,5 +1,6 @@
 "use client";
 import { useState, useSyncExternalStore } from "react";
+import { toast } from "@/components/ui/toast";
 
 /**
  * The name a client gives on the share pages, remembered in this browser.
@@ -53,4 +54,12 @@ export function useGuestName() {
   };
   const settle = () => setDraft(null);
   return [name, update, settle] as const;
+}
+
+/** Sends the client to the one name field, in the page header, when an action needs a name. */
+export function askForName() {
+  toast("Add your name at the top first", { tone: "late" });
+  const field = document.getElementById("guest-name");
+  field?.scrollIntoView({ block: "center", behavior: "smooth" });
+  field?.focus({ preventScroll: true });
 }

@@ -115,7 +115,8 @@ export async function toggleCalendarFeed(workspaceId: string, enable: boolean) {
 export async function toggleShareLink(workspaceId: string, enable: boolean) {
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, "manage");
-  db.update(schema.workspaces).set({ shareToken: enable ? newToken() : null }).where(eq(schema.workspaces.id, workspace.id)).run();
+  // A new link lets the client comment, suggest and approve: sign-off is what the link is for. Unticking it is one click.
+  db.update(schema.workspaces).set(enable ? { shareToken: newToken(), shareReview: true } : { shareToken: null }).where(eq(schema.workspaces.id, workspace.id)).run();
   logAudit({ actorId: user.id, action: enable ? "share.enabled" : "share.disabled", subjectType: "workspace", subjectId: workspace.id });
   revalidatePath(`/w/${workspace.slug}`, "layout");
 }

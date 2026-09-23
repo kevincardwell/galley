@@ -29,3 +29,15 @@ export function diffSummary(d: PlainDiff): string {
   if (d.removed) bits.push(d.added ? `${d.removed} removed` : `${d.removed} ${d.removed === 1 ? "word" : "words"} removed`);
   return bits.length ? bits.join(", ") : "Only spacing changed";
 }
+
+/**
+ * Only the paragraphs that differ, each diffed on its own, so a two-word change
+ * to a long section reads as two words. When paragraphs were added or removed
+ * they cannot be paired up, and the whole text comes back as one diff.
+ */
+export function changedParagraphs(a: string, b: string): PlainDiff[] {
+  const pa = (a ?? "").split(/\n{2,}/);
+  const pb = (b ?? "").split(/\n{2,}/);
+  if (pa.length !== pb.length) return [diffPlainText(a, b)];
+  return pa.flatMap((p, i) => (p.trim() === pb[i].trim() ? [] : [diffPlainText(p, pb[i])]));
+}

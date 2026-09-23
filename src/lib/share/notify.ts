@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { notify } from "@/lib/notify";
 
-export type ShareNotifyKind = "client_comment" | "client_approved" | "client_upload" | "client_wrote";
+export type ShareNotifyKind = "client_comment" | "client_approved" | "client_upload" | "client_wrote" | "client_suggested";
 
 /**
  * One inbox row (and an email when mail is configured) per manager/editor of the

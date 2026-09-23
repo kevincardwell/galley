@@ -318,6 +318,28 @@ Also noted: `/api/health` reports `"version":"latest"` on main-branch builds, be
 - Fixed while here: `tests/e2e/access.spec.ts` matched workspace names by text, which also hit the template
   picker's `<option>`s — it had been failing before any of this work. It matches the card link now.
 
+## v1.2 work 2026-09-23: the client page
+
+A fresh review concluded that breadth was not the lever: the one thing Galley does that nothing else self-hosted
+does is client sign-off of copy, and that was still weaker than a Google Doc. Two changes, both unreleased:
+
+- **Suggested wording.** Stored on `comments` (`suggestion`, `suggestion_base`, migration `0012`) rather than a
+  new table, so listing, resolving (= dismissing) and notifying were already there. `guestSuggest` stores the
+  text the share page showed as the base; `acceptSuggestion` goes through `replaceText` in the hub, which lays
+  the text over the live doc with `applyText` (src/lib/copy/serialize.ts): same paragraph count → every block
+  keeps its type and untouched blocks keep their marks; different count → falls back to `textToDoc`. Client
+  writes use the same path now. `changedParagraphs` (src/lib/copy/diff.ts) keeps the diff to what changed.
+- **Share page rework.** Name once in the header (`guest-identity.tsx`, `askForName()` sends every action
+  there), "waiting for your approval" list plus per-page counts from `waitingOnClient` (shared with the digest),
+  Approve / Suggest wording / Comment buttons instead of a form per section, no Approve on drafts,
+  `guestApprovePage`, new links default to review on. Guest actions revalidate the share *layout* so the list
+  updates after an approval.
+- TRAP found in the browser: the header name field collapsed into "You are T" after the first keystroke,
+  because "has a name" was the condition for collapsing. It stays a field while focused now.
+- Found by clicking Accept: sample sections have no version rows, so the replaced words vanished from
+  history. `snapshotSection` now records the outgoing content as a version when none exists for it — fixed in
+  the shared function, so restore and client writes are covered too.
+
 ## Not yet done (pick up here)
 1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.

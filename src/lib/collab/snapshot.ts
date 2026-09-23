@@ -38,6 +38,19 @@ export function snapshotSection(sectionId: string, content: TiptapDoc, userId: s
   const version = section.version + 1;
   const updatedAt = Math.floor(Date.now() / 1000);
 
+  // Words that never went through a save (the sample project, a template copy) have no history
+  // row. Keep them before they are replaced, or accepting a suggestion or a restore loses them.
+  const kept = db
+    .select({ id: schema.sectionVersions.id })
+    .from(schema.sectionVersions)
+    .where(and(eq(schema.sectionVersions.sectionId, sectionId), eq(schema.sectionVersions.version, section.version)))
+    .get();
+  if (!kept && section.plainText.trim()) {
+    db.insert(schema.sectionVersions)
+      .values({ id: newId(), sectionId, version: section.version, content: asDoc(section.content), plainText: section.plainText, wordCount: section.wordCount, createdBy: section.updatedBy, createdAt: section.updatedAt })
+      .run();
+  }
+
   // A client approved a particular wording, not the section forever. Editing it
   // after sign-off drops the approval rather than leaving the share view and the
   // details pane both claiming the new text was approved.

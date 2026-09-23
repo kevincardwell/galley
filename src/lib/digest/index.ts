@@ -5,6 +5,7 @@ import { getSettings } from "@/lib/settings";
 import { sendEmail } from "@/lib/email";
 import { digestEmail } from "@/lib/email/templates";
 import { resolveBaseUrl } from "@/lib/queries/admin";
+import { waitingOnClient } from "@/lib/queries/copy";
 import type { Workspace } from "@/db/schema";
 
 /**
@@ -73,20 +74,7 @@ export function buildDigest(workspaceId: string, since: number): Digest {
     if (changes.length >= 8) break;
   }
 
-  const waitingOn = db
-    .select({ title: schema.sections.title, page: schema.pages.title })
-    .from(schema.sections)
-    .innerJoin(schema.pages, eq(schema.pages.id, schema.sections.pageId))
-    .where(
-      and(
-        eq(schema.sections.workspaceId, workspaceId),
-        eq(schema.sections.status, "review"),
-        isNull(schema.sections.clientApprovedAt),
-      ),
-    )
-    .orderBy(schema.pages.position, schema.sections.position)
-    .all()
-    .map((r) => `${r.page} › ${r.title}`);
+  const waitingOn = waitingOnClient(workspaceId).map((r) => `${r.pageTitle} › ${r.title}`);
 
   return { changes, waitingOn, worthSending: changes.length > 0 || waitingOn.length > 0 };
 }

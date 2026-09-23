@@ -208,6 +208,10 @@ export const comments = sqliteTable("comments", {
   body: text("body").notNull(),
   authorId: text("author_id").references(() => users.id, { onDelete: "set null" }),
   guestName: text("guest_name"), // set when a client left it through the share link
+  // A client's suggested rewording of the section, and the text they started from. Accepting it
+  // replaces the section's words; resolving it without accepting is dismissing it.
+  suggestion: text("suggestion"),
+  suggestionBase: text("suggestion_base"),
   resolvedAt: integer("resolved_at"),
   createdAt: integer("created_at").notNull().default(now()),
 });

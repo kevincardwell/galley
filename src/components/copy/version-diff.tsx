@@ -3,7 +3,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
-import { clsx } from "@/lib/clsx";
+import { DiffText } from "./diff-text";
 import { timeAgo } from "@/lib/format";
 import { diffPlainText, diffSummary } from "@/lib/copy/diff";
 import { restoreVersion } from "@/actions/copy";
@@ -80,19 +80,7 @@ export function VersionDiff({ sectionId, version, currentText, open, onClose, re
             {diff.parts.length === 0 || (!diff.changed && !currentText.trim()) ? (
               <p className="m-0 text-[13px] text-ink-3">Both are empty.</p>
             ) : (
-              <p className="m-0 whitespace-pre-wrap font-serif text-[17px] leading-relaxed text-ink">
-                {diff.parts.map((p, i) => (
-                  <span
-                    key={i}
-                    className={clsx(
-                      p.removed && "rounded-[3px] bg-late-soft text-late line-through decoration-late/60",
-                      p.added && "rounded-[3px] bg-done-soft text-done",
-                    )}
-                  >
-                    {p.value}
-                  </span>
-                ))}
-              </p>
+              <DiffText diff={diff} className="font-serif text-[17px] leading-relaxed" />
             )}
           </div>
 

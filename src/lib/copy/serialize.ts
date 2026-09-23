@@ -43,19 +43,49 @@ export function asDoc(value: unknown): TiptapDoc {
  * through the share link can type.
  */
 export function textToDoc(text: string): TiptapDoc {
-  const blocks = text.replace(/\r\n/g, "\n").split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  const blocks = splitBlocks(text);
   if (blocks.length === 0) return emptyDoc();
-  return {
-    type: "doc",
-    content: blocks.map((block) => {
-      const content: TiptapNode[] = [];
-      block.split("\n").forEach((line, i) => {
-        if (i > 0) content.push({ type: "hardBreak" });
-        if (line) content.push({ type: "text", text: line });
-      });
-      return { type: "paragraph", content };
-    }),
+  return { type: "doc", content: blocks.map((block) => ({ type: "paragraph", content: inlineNodes(block) })) };
+}
+
+function splitBlocks(text: string): string[] {
+  return text.replace(/\r\n/g, "\n").split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+}
+
+function inlineNodes(block: string): TiptapNode[] {
+  const content: TiptapNode[] = [];
+  block.split("\n").forEach((line, i) => {
+    if (i > 0) content.push({ type: "hardBreak" });
+    if (line) content.push({ type: "text", text: line });
+  });
+  return content;
+}
+
+/**
+ * Plain text typed by a client laid back over the document it was taken from.
+ *
+ * While the number of paragraphs is unchanged, every block keeps its type
+ * (heading, list item, quote), and a block whose words did not change keeps
+ * its bold, italic and links as well: only the edited paragraphs become plain.
+ * A different paragraph count cannot be matched up, so it falls back to
+ * textToDoc and the section comes back as plain paragraphs.
+ */
+// ponytail: blocks are matched by position; adding or removing a paragraph flattens the section. Align them with diffArrays if that bites.
+export function applyText(doc: TiptapDoc, text: string): TiptapDoc {
+  const blocks = splitBlocks(text);
+  const next = structuredClone(doc);
+  const leaves: TiptapNode[] = [];
+  const collect = (n: TiptapNode) => {
+    if (n.type === "paragraph" || n.type === "heading") {
+      if (inlineText(n.content).trim()) leaves.push(n);
+    } else n.content?.forEach(collect);
   };
+  next.content?.forEach(collect);
+  if (leaves.length !== blocks.length) return textToDoc(text);
+  leaves.forEach((leaf, i) => {
+    if (inlineText(leaf.content).trim() !== blocks[i]) leaf.content = inlineNodes(blocks[i]);
+  });
+  return next;
 }
 
 /**

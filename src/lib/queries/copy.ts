@@ -98,6 +98,8 @@ export function listComments(sectionId: string): CommentRow[] {
       resolvedAt: schema.comments.resolvedAt,
       authorName: schema.users.name,
       guestName: schema.comments.guestName,
+      suggestion: schema.comments.suggestion,
+      suggestionBase: schema.comments.suggestionBase,
     })
     .from(schema.comments)
     .leftJoin(schema.users, eq(schema.users.id, schema.comments.authorId))
@@ -161,7 +163,16 @@ export function shareReviewForPage(pageId: string): Record<string, ShareSectionR
     .all();
   for (const s of secs) out[s.id] = { comments: [], clientApprovedAt: s.clientApprovedAt, clientApprovedBy: s.clientApprovedBy };
   const rows = db
-    .select({ id: schema.comments.id, sectionId: schema.comments.sectionId, body: schema.comments.body, createdAt: schema.comments.createdAt, authorName: schema.users.name, guestName: schema.comments.guestName })
+    .select({
+      id: schema.comments.id,
+      sectionId: schema.comments.sectionId,
+      body: schema.comments.body,
+      createdAt: schema.comments.createdAt,
+      authorName: schema.users.name,
+      guestName: schema.comments.guestName,
+      suggestion: schema.comments.suggestion,
+      suggestionBase: schema.comments.suggestionBase,
+    })
     .from(schema.comments)
     .innerJoin(schema.sections, eq(schema.sections.id, schema.comments.sectionId))
     .leftJoin(schema.users, eq(schema.users.id, schema.comments.authorId))
@@ -170,9 +181,24 @@ export function shareReviewForPage(pageId: string): Record<string, ShareSectionR
     .all();
   for (const c of rows) {
     if (!c.sectionId) continue;
-    out[c.sectionId]?.comments.push({ id: c.id, body: c.body, createdAt: c.createdAt, name: c.guestName ?? c.authorName ?? "Someone" });
+    out[c.sectionId]?.comments.push({ id: c.id, body: c.body, createdAt: c.createdAt, name: c.guestName ?? c.authorName ?? "Someone", suggestion: c.suggestion, suggestionBase: c.suggestionBase });
   }
   return out;
+}
+
+/**
+ * Sections waiting on the client: in review and not yet approved by them. The
+ * weekly digest and the share page both read this, so the email and the page
+ * always name the same sections.
+ */
+export function waitingOnClient(workspaceId: string) {
+  return db
+    .select({ id: schema.sections.id, title: schema.sections.title, pageTitle: schema.pages.title, pageSlug: schema.pages.slug })
+    .from(schema.sections)
+    .innerJoin(schema.pages, eq(schema.pages.id, schema.sections.pageId))
+    .where(and(eq(schema.sections.workspaceId, workspaceId), eq(schema.sections.status, "review"), isNull(schema.sections.clientApprovedAt)))
+    .orderBy(asc(schema.pages.position), asc(schema.sections.position))
+    .all();
 }
 
 // ---- Collaboration ----
