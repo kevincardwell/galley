@@ -24,7 +24,10 @@ export function AddTaskInput({ sectionId, className }: { sectionId: string; clas
   const submit = () => {
     const title = value.trim();
     if (!title) { close(); return; }
-    board.createTask(sectionId, title);
+    board.createTask(sectionId, title, () => {
+      setOpen(true);
+      setValue((v) => v || title);
+    });
     setValue("");
   };
 

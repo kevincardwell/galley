@@ -11,10 +11,11 @@ import { newId } from "@/lib/ids";
 import { logActivity } from "@/lib/activity";
 import { spawnNextOccurrence } from "@/lib/tasks/recur";
 import type { TaskPatch } from "@/components/tasks/types";
+import { splitTaskTitle, TASK_TITLE_MAX } from "@/lib/tasks/title";
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 
-const titleSchema = z.string().trim().min(1, "Give the task a title").max(200, "Keep the title under 200 characters");
+const titleSchema = z.string().trim().min(1, "Give the task a title").max(TASK_TITLE_MAX, `Keep the title under ${TASK_TITLE_MAX} characters`);
 const sectionNameSchema = z.string().trim().min(1, "Give the section a name").max(80, "Keep the name under 80 characters");
 const textSchema = z.string().trim().min(1, "Write something first").max(2000, "Keep it under 2000 characters");
 const patchSchema = z.object({
@@ -91,14 +92,16 @@ function assertAssignable(workspaceId: string, userId: string) {
 export async function createTask(workspaceId: string, sectionId: string, rawTitle: string): Promise<string> {
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, "edit");
-  const parsed = titleSchema.safeParse(rawTitle);
+  // Long text is kept, not refused: the title is its first line's worth and the description is all of it.
+  const parsed = z.string().trim().min(1, "Give the task a title").max(20000, "That is too long for one task").safeParse(rawTitle);
   if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  const { title, body } = splitTaskTitle(parsed.data);
   const section = sectionIn(workspace.id, sectionId);
   const id = newId();
   db.insert(schema.tasks)
-    .values({ id, workspaceId: workspace.id, sectionId: section.id, title: parsed.data, position: nextTaskPosition(section.id), createdBy: user.id })
+    .values({ id, workspaceId: workspace.id, sectionId: section.id, title, body, position: nextTaskPosition(section.id), createdBy: user.id })
     .run();
-  logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "created", subjectType: "task", subjectId: id, subjectTitle: parsed.data });
+  logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "created", subjectType: "task", subjectId: id, subjectTitle: title });
   refresh(workspace);
   return id;
 }

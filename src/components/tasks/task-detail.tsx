@@ -13,6 +13,7 @@ import { TaskCheckbox } from "./task-checkbox";
 import { Checklist } from "./checklist";
 import { Comments } from "./comments";
 import type { TaskItem, TaskStatus, TaskRepeat } from "./types";
+import { TASK_TITLE_MAX } from "@/lib/tasks/title";
 
 const STATUS_LABEL: Record<TaskStatus, string> = { todo: "To do", doing: "Doing", done: "Done" };
 const REPEAT_LABEL: Record<TaskRepeat, string> = { weekly: "Every week", fortnightly: "Every two weeks", monthly: "Every month", quarterly: "Every quarter", yearly: "Every year" };
@@ -63,6 +64,7 @@ export function TaskDetail({ task, sections }: { task: TaskItem; sections: { id:
           <input
             value={title}
             readOnly={readOnly}
+            maxLength={TASK_TITLE_MAX}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={saveTitle}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); } }}

@@ -32,6 +32,7 @@ import { useViewPref } from "./use-view-pref";
 import { useCollapsed } from "./use-collapsed";
 import { SECTION_PREFIX, containerOf } from "./dnd";
 import type { Member, SectionWithTasks, TaskItem, TaskPatch, TaskView } from "./types";
+import { splitTaskTitle } from "@/lib/tasks/title";
 
 type Props = {
   workspaceId: string;
@@ -98,12 +99,13 @@ export function TaskBoard(props: Props) {
   }, [sections]);
 
   const run = useCallback(
-    (fn: () => Promise<unknown>) => {
+    (fn: () => Promise<unknown>, onFail?: () => void) => {
       startTransition(async () => {
         try {
           await fn();
         } catch (e) {
           setError(e instanceof Error && e.message ? e.message : "That did not save. Try again.");
+          onFail?.();
           router.refresh();
         }
       });
@@ -162,14 +164,16 @@ export function TaskBoard(props: Props) {
     run(() => actions.updateTask(id, patch));
   }, [members, run]);
 
-  const createTask = useCallback((sectionId: string, title: string) => {
+  /** `onFail` gets the words back to whoever typed them, so a failed save never eats a task. */
+  const createTask = useCallback((sectionId: string, text: string, onFail?: () => void) => {
     const id = tempId();
+    const { title, body } = splitTaskTitle(text);
     const draft: TaskItem = {
-      id, workspaceId, sectionId, title, body: "", status: "todo", assigneeId: null, assigneeName: null, dueOn: null, repeatEvery: null,
+      id, workspaceId, sectionId, title, body, status: "todo", assigneeId: null, assigneeName: null, dueOn: null, repeatEvery: null,
       position: Number.MAX_SAFE_INTEGER, createdAt: nowSec(), completedAt: null, checklist: [], attachments: [], comments: [],
     };
     setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, tasks: [...s.tasks, draft] } : s)));
-    run(() => actions.createTask(workspaceId, sectionId, title));
+    run(() => actions.createTask(workspaceId, sectionId, text), onFail);
   }, [workspaceId, run]);
 
   const deleteTask = useCallback((id: string) => {

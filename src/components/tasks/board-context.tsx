@@ -19,7 +19,7 @@ export type BoardApi = {
   setHighlight: (id: string | null) => void;
   requestNewTask: (sectionId?: string) => void;
   cancelNewTask: () => void;
-  createTask: (sectionId: string, title: string) => void;
+  createTask: (sectionId: string, title: string, onFail?: () => void) => void;
   updateTask: (id: string, patch: TaskPatch) => void;
   toggleDone: (id: string) => void;
   deleteTask: (id: string) => void;

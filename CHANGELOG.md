@@ -15,6 +15,12 @@ in place and running the previous tag.
   public key and stores it as a GitHub Actions secret; it keeps none of them, and shows only which are set
   and when. The site's token needs Secrets: Read and write for this.
 
+### Fixed
+
+- **A long task is no longer lost.** Typing more than 200 characters into Add task used to fail and throw the
+  words away. Now the first part (cut at a word) becomes the title and the whole text the description, and if
+  adding a task ever fails for another reason, what you typed goes back into the box.
+
 ## v1.3.0 — 2026-10-12
 
 ### Added
