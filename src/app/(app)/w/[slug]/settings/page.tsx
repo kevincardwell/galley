@@ -8,6 +8,7 @@ import { MembersPanel } from "@/components/workspaces/members-panel";
 import { DangerZone } from "@/components/workspaces/danger-zone";
 import { SiteSettings } from "@/components/site/site-settings";
 import { getSite } from "@/lib/site";
+import { githubRepo } from "@/lib/site/github";
 
 export default async function SettingsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -36,7 +37,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
           <Section title="Site" className="border-t border-line pt-6">
             <SiteSettings
               workspaceId={ws.id}
-              site={{ repoUrl: site.repoUrl, baseBranch: site.baseBranch, workBranch: site.workBranch, root: site.root, hasToken: !!site.token }}
+              site={{ repoUrl: site.repoUrl, baseBranch: site.baseBranch, workBranch: site.workBranch, root: site.root, hasToken: !!site.token, github: !!githubRepo(site.repoUrl) }}
             />
           </Section>
         )}

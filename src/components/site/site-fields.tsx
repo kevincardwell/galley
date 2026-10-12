@@ -23,8 +23,8 @@ export function SiteFields({ idPrefix, required = false }: { idPrefix: string; r
         <Name>Access token</Name>
         <Input id={`${idPrefix}-token`} name="token" type="password" autoComplete="off" spellCheck={false} placeholder="github_pat_…" />
         <Hint>
-          A GitHub fine-grained token for this one repository, with Contents and Pull requests set to Read and write, and Actions set to Read. Needed to send changes for review,
-          and to read a private repository. It stays on this server.
+          A GitHub fine-grained token for this one repository, with Contents and Pull requests set to Read and write, and Actions set to Read (add Secrets: Read and write to
+          manage deploy details from Galley). Needed to send changes for review, and to read a private repository. It stays on this server.
         </Hint>
       </Label>
       <details className="group text-xs text-ink-2">

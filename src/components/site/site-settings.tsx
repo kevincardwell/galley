@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { disconnectSite, updateSiteSettings } from "@/actions/site";
+import { DeploySecrets } from "./deploy-secrets";
 
 const Name = ({ children }: { children: React.ReactNode }) => <span className="font-medium text-ink-2">{children}</span>;
 const Hint = ({ children }: { children: React.ReactNode }) => <span className="text-xs text-ink-3">{children}</span>;
 
-export function SiteSettings({ workspaceId, site }: { workspaceId: string; site: { repoUrl: string; baseBranch: string; workBranch: string; root: string; hasToken: boolean } }) {
+export function SiteSettings({ workspaceId, site }: { workspaceId: string; site: { repoUrl: string; baseBranch: string; workBranch: string; root: string; hasToken: boolean; github: boolean } }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
@@ -26,7 +27,7 @@ export function SiteSettings({ workspaceId, site }: { workspaceId: string; site:
         <Label htmlFor="site-token">
           <Name>Access token</Name>
           <Input id="site-token" name="token" type="password" autoComplete="off" placeholder={site.hasToken ? "Saved. Leave empty to keep it." : "github_pat_…"} />
-          <Hint>Contents and Pull requests: Read and write. Actions: Read.</Hint>
+          <Hint>Contents and Pull requests: Read and write. Actions: Read. Secrets: Read and write, for the deploy details below.</Hint>
         </Label>
         <Label htmlFor="site-root">
           <Name>Website folder</Name>
@@ -43,6 +44,7 @@ export function SiteSettings({ workspaceId, site }: { workspaceId: string; site:
           )}
         </div>
       </form>
+      {site.github && site.hasToken && <DeploySecrets workspaceId={workspaceId} />}
       <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
         {confirm ? (
           <>

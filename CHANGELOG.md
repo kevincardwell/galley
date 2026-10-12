@@ -6,6 +6,15 @@ Galley applies database migrations when the container starts, and copies the dat
 `backups/pre-migration-<date>.db` first, so an upgrade that goes wrong can be stepped back by putting that file
 in place and running the previous tag.
 
+## Unreleased
+
+### Added
+
+- **Deploy details from Galley.** Settings → Site has fields for the FTP server, username and password (and
+  any other secret the repository's deploy workflow reads). Galley encrypts each value to the repository's
+  public key and stores it as a GitHub Actions secret; it keeps none of them, and shows only which are set
+  and when. The site's token needs Secrets: Read and write for this.
+
 ## v1.3.0 — 2026-10-12
 
 ### Added

@@ -11,7 +11,7 @@ import { assertAccess } from "@/lib/permissions";
 import { logActivity, logAudit } from "@/lib/activity";
 import { cleanRel, readEditable, siteRoot, writeEditable } from "@/lib/site/files";
 import { siteDir, withRepoLock } from "@/lib/site/git";
-import { buildState, githubRepo, openReview, reviewState, type BuildState, type Review } from "@/lib/site/github";
+import { buildState, deleteSecret, githubRepo, listSecrets, openReview, reviewState, setSecrets, type BuildState, type RepoSecret, type Review } from "@/lib/site/github";
 import { applyTextEdit } from "@/lib/site/html";
 import { connectSite as connect, editorsSince, getSite, previewPrefix, siteFromForm } from "@/lib/site";
 import { changes, commitAndPush, fetchRemote, fileDiff, listFiles, revertFile, syncState, updateFromBase, type Change } from "@/lib/site/repo";
@@ -227,4 +227,41 @@ export async function updateSiteFromRemote(workspaceId: string) {
   if (outcome === "reset") db.update(schema.sites).set({ prNumber: null, prHeadSha: null, fetchedAt: now() }).where(eq(schema.sites.workspaceId, site.workspaceId)).run();
   revalidatePath(sitePath(workspace.slug));
   return outcome;
+}
+
+/** GitHub's rule for secret names; GITHUB_ is theirs. */
+const SECRET_NAME = /^(?!GITHUB_)[A-Z_][A-Z0-9_]{0,99}$/;
+
+/** The repository's deploy secrets, by name only. Managers only: they decide where the site goes. */
+export async function deploySecrets(workspaceId: string): Promise<RepoSecret[]> {
+  const { site } = await siteAccess(workspaceId, "manage");
+  if (!githubRepo(site.repoUrl) || !site.token) return [];
+  return listSecrets(site);
+}
+
+/**
+ * Stores deploy details as encrypted Actions secrets in the repository, where its deploy workflow reads
+ * them. The values pass through on their way to GitHub and are never written down here. An empty field
+ * leaves that secret as it is.
+ */
+export async function saveDeploySecrets(workspaceId: string, values: Record<string, string>) {
+  const { user, workspace, site } = await siteAccess(workspaceId, "manage");
+  if (!githubRepo(site.repoUrl)) throw new Error("Deploy details can only be stored for a GitHub repository");
+  if (!site.token) throw new Error("Add an access token first");
+  const chosen: Record<string, string> = {};
+  for (const [name, value] of Object.entries(values)) {
+    if (!SECRET_NAME.test(name)) throw new Error(`"${name}" can't be a secret name: capital letters, digits and _ only`);
+    if (typeof value !== "string" || value.length > 48_000) throw new Error(`${name} is too long`);
+    if (value.trim()) chosen[name] = value;
+  }
+  if (!Object.keys(chosen).length) throw new Error("Nothing to save: every field was empty");
+  await setSecrets(site, chosen);
+  logAudit({ actorId: user.id, action: "site.secrets_set", subjectType: "workspace", subjectId: workspace.id, meta: { names: Object.keys(chosen) } });
+}
+
+export async function removeDeploySecret(workspaceId: string, name: string) {
+  const { user, workspace, site } = await siteAccess(workspaceId, "manage");
+  if (!SECRET_NAME.test(name)) throw new Error("Not found");
+  await deleteSecret(site, name);
+  logAudit({ actorId: user.id, action: "site.secret_removed", subjectType: "workspace", subjectId: workspace.id, meta: { name } });
 }
