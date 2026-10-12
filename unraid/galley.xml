@@ -16,9 +16,9 @@
   <Overview>
     Galley is a self-hosted home for the work around a project: what needs doing, what it will say, who you are hiring, when it happens, and the files that go with it.
 
-    Each project gets its own space with tasks, a copy editor with approval states and version history, a calendar of deadlines and scheduled entries, a shared supplier directory, and an asset library with thumbnails and colour palettes. You can hand a client a read-only link, or let them comment on and approve individual sections without an account.
+    Each project gets its own space with tasks, a copy editor with approval states and version history, a calendar of deadlines and scheduled entries, a shared supplier directory, and an asset library with thumbnails and colour palettes. You can hand a client a read-only link, or let them comment on and approve individual sections without an account. Connect a project to its website's git repository and the team can edit the site in a live preview and send their changes to GitHub as a pull request.
 
-    Everything lives in one SQLite file and one uploads folder inside the appdata path, so backing it up is a folder copy. Access is invite only: the first account you create is the admin, and everyone else sees only the projects they are added to.
+    Everything lives in one SQLite file, an uploads folder and the website working copies inside the appdata path, so backing it up is a folder copy. Access is invite only: the first account you create is the admin, and everyone else sees only the projects they are added to.
 
     After the container starts, open the WebUI and create the admin account. Tick the box on that screen to load a worked example so nothing starts empty.
 

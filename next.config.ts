@@ -9,7 +9,8 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   {
     // A pragmatic policy: no nonce yet, so inline scripts are allowed, but nothing may be loaded
-    // from another origin, no plugins, no framing, and no <base> rewriting.
+    // from another origin, no plugins, no framing other than Galley's own site preview, and no
+    // <base> rewriting.
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
@@ -21,7 +22,7 @@ const securityHeaders = [
       "media-src 'self' blob:",
       // The dev server talks to itself over a websocket for hot reload.
       `connect-src 'self'${dev ? " ws: http:" : ""}`,
-      "frame-src 'none'",
+      "frame-src 'self'",
       "object-src 'none'",
       "base-uri 'none'",
       "form-action 'self'",
@@ -54,7 +55,8 @@ const nextConfig: NextConfig = {
           { key: "Service-Worker-Allowed", value: "/" },
         ],
       },
-      { source: "/(.*)", headers: securityHeaders },
+      // The site preview sets its own, sandboxed policy (src/app/api/site/...), so it is left out here.
+      { source: "/((?!api/site/).*)", headers: securityHeaders },
     ];
   },
 };

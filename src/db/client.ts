@@ -8,6 +8,8 @@ import * as schema from "./schema";
 
 export const DATA_DIR = process.env.GALLEY_DATA_DIR || path.join(process.cwd(), "data");
 export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+/** One git working copy per workspace that has connected a website repository. */
+export const SITES_DIR = path.join(DATA_DIR, "sites");
 const DB_PATH = path.join(DATA_DIR, "galley.db");
 
 // Search tables live outside Drizzle's schema: FTS5 virtual tables kept in sync by triggers.

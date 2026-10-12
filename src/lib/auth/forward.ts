@@ -113,7 +113,7 @@ export function resolveForwardAuth(headers: Headers, config = forwardAuthConfig(
     isAdmin,
     totpSecret: null,
     totpLastStep: null,
-    totpRecovery: null,
+    totpRecovery: null, gitEmail: null,
     deactivatedAt: null,
     lastSeenAt: null,
     createdAt: Math.floor(Date.now() / 1000),

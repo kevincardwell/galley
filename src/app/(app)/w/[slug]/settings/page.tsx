@@ -6,12 +6,15 @@ import { PageHeader, Screen, Section } from "@/components/ui/page";
 import { SettingsForm } from "@/components/workspaces/settings-form";
 import { MembersPanel } from "@/components/workspaces/members-panel";
 import { DangerZone } from "@/components/workspaces/danger-zone";
+import { SiteSettings } from "@/components/site/site-settings";
+import { getSite } from "@/lib/site";
 
 export default async function SettingsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const user = await requireUser();
   const { workspace: ws } = requireAccess(user, slug, "manage");
   const members = listMembers(ws.id);
+  const site = getSite(ws.id);
   const everyone = user.isAdmin ? db.select({ id: schema.users.id, name: schema.users.name, email: schema.users.email }).from(schema.users).all() : [];
   return (
     <Screen width="narrow">
@@ -29,6 +32,14 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
             selfId={user.id}
           />
         </Section>
+        {site && (
+          <Section title="Site" className="border-t border-line pt-6">
+            <SiteSettings
+              workspaceId={ws.id}
+              site={{ repoUrl: site.repoUrl, baseBranch: site.baseBranch, workBranch: site.workBranch, root: site.root, hasToken: !!site.token }}
+            />
+          </Section>
+        )}
         <div className="border-t border-line pt-6">
           <DangerZone workspaceId={ws.id} name={ws.name} archived={!!ws.archivedAt} />
         </div>

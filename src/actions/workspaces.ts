@@ -13,6 +13,10 @@ import { logActivity, logAudit } from "@/lib/activity";
 import { storage } from "@/lib/storage";
 import { copyStructure } from "@/lib/workspaces/template";
 import { fetchFavicon } from "@/lib/favicon";
+import { newSite, siteFromForm } from "@/lib/site";
+import { siteDir, withRepoLock } from "@/lib/site/git";
+import { cloneSite } from "@/lib/site/repo";
+import fsp from "node:fs/promises";
 
 const wsInput = z.object({
   name: z.string().trim().min(1, "Give the workspace a name").max(80),
@@ -51,16 +55,27 @@ export async function createWorkspace(form: FormData) {
   const template = templateId && accessFor(user, templateId, "view") ? templateId : null;
   const id = newId();
   const slug = uniqueSlug(name);
-  db.transaction((tx) => {
-    tx.insert(schema.workspaces).values({ id, name, slug, url, clientName, accent: accent ?? "#2F6B4F", createdBy: user.id }).run();
-    tx.insert(schema.memberships).values({ workspaceId: id, userId: user.id, role: "manager", addedBy: user.id }).run();
-    if (template) {
-      copyStructure(tx, template, id, user.id);
-    } else {
-      DEFAULT_SECTIONS.forEach((n, i) => tx.insert(schema.taskSections).values({ id: newId(), workspaceId: id, name: n, position: i }).run());
-      tx.insert(schema.pages).values({ id: newId(), workspaceId: id, title: "Home", slug: "home", position: 0 }).run();
-    }
-  });
+  // The website repository is optional. Clone before anything is saved, so a wrong address or token
+  // is reported in the dialog and leaves no half-made project behind.
+  const siteInput = siteFromForm(form);
+  const site = siteInput ? newSite(id, siteInput, user.id) : null;
+  if (site) await withRepoLock(id, () => cloneSite(site));
+  try {
+    db.transaction((tx) => {
+      tx.insert(schema.workspaces).values({ id, name, slug, url, clientName, accent: accent ?? "#2F6B4F", createdBy: user.id }).run();
+      tx.insert(schema.memberships).values({ workspaceId: id, userId: user.id, role: "manager", addedBy: user.id }).run();
+      if (site) tx.insert(schema.sites).values(site).run();
+      if (template) {
+        copyStructure(tx, template, id, user.id);
+      } else {
+        DEFAULT_SECTIONS.forEach((n, i) => tx.insert(schema.taskSections).values({ id: newId(), workspaceId: id, name: n, position: i }).run());
+        tx.insert(schema.pages).values({ id: newId(), workspaceId: id, title: "Home", slug: "home", position: 0 }).run();
+      }
+    });
+  } catch (err) {
+    if (site) await fsp.rm(siteDir(id), { recursive: true, force: true }).catch(() => {});
+    throw err;
+  }
   logActivity({ workspaceId: id, actorId: user.id, verb: "created", subjectType: "workspace", subjectId: id, subjectTitle: name });
   if (url) fetchFavicon(id, url).catch(() => {});
   redirect(`/w/${slug}`);

@@ -72,6 +72,7 @@
   /* Removes the 300ms tap delay without disabling pinch zoom. */
   button, a, summary, [role="button"], [role="tab"], [role="radio"], input[type="checkbox"], input[type="radio"], label { touch-action: manipulation; }
   dialog { margin: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 0; max-width: min(92vw, 520px); width: 100%; max-height: min(90dvh, 720px); overflow: auto; }
+  dialog[data-wide] { max-width: min(96vw, 980px); }
   dialog[open] { animation: dialog-in 160ms ease-out; }
   dialog::backdrop { background: rgba(20, 18, 14, 0.45); backdrop-filter: blur(2px); }
   @keyframes dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }

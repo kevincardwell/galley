@@ -60,6 +60,9 @@ jobs:
           if docker logs galley-ci 2>&1 | grep -qE "MODULE_NOT_FOUND|Cannot find module"; then
             echo "::error::a module is missing from the standalone bundle"; exit 1
           fi
+          # The Site tab clones over https as the dropped-privilege user.
+          docker exec --user 99:100 galley-ci git --version || { echo "::error::git is missing from the image"; exit 1; }
+          docker exec --user 99:100 galley-ci sh -c 'HOME=/tmp git ls-remote https://github.com/git/git HEAD' >/dev/null || { echo "::error::git cannot reach an https remote (ca-certificates?)"; exit 1; }
           # galley.db is created by the app after the entrypoint has dropped
           # privileges, so its ownership is proof of which user the app ran as.
           # Root would have left a root-owned file here.

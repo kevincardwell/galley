@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC = [/^\/login/, /^\/setup/, /^\/invite\//, /^\/share\//, /^\/sw\.js$/, /^\/offline$/, /^\/manifest\.webmanifest$/, /^\/api\/health/, /^\/api\/file\//, /^\/api\/calendar\//, /^\/api\/upload$/, /^\/api\/auth\/forward$/, /^\/_next\//, /^\/favicon/];
+const PUBLIC = [/^\/login/, /^\/setup/, /^\/invite\//, /^\/share\//, /^\/sw\.js$/, /^\/offline$/, /^\/manifest\.webmanifest$/, /^\/api\/health/, /^\/api\/file\//, /^\/api\/calendar\//, /^\/api\/site\//, /^\/api\/upload$/, /^\/api\/auth\/forward$/, /^\/_next\//, /^\/favicon/];
 const COOKIE = "galley_session";
 
 // Set when Galley sits behind a proxy that has already authenticated the caller.

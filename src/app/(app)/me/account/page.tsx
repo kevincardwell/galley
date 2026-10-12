@@ -10,7 +10,7 @@ export default async function AccountPage() {
   return (
     <Screen width="narrow">
       <PageHeader eyebrow="You" title="Account" description="Your name, sign-in details and role on this instance." />
-      <AccountForm name={user.name} email={user.email} role={user.isAdmin ? "Admin" : "Member"} />
+      <AccountForm name={user.name} email={user.email} gitEmail={user.gitEmail} role={user.isAdmin ? "Admin" : "Member"} />
       <TotpForm enabled={Boolean(user.totpSecret)} hasPassword={Boolean(user.passwordHash)} />
     </Screen>
   );

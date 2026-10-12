@@ -62,6 +62,12 @@ Pages and sections, each with its own draft, in review and approved state. Sever
 
 <img src="https://raw.githubusercontent.com/kevincardwell/galley/main/docs/media/copy.webp" alt="The copy editor with a page outline, the text in a serif column, and a details pane showing status, word count, versions and comments" width="880">
 
+### The website itself, editable by anyone on the project
+
+Connect a project to the site's git repository (GitHub or any https host, public or private) and the **Site** tab shows a live preview of it. Click any heading or paragraph in the preview to retype it; open **Code** for an editor with the file list beside the preview. Nothing goes live from Galley: **Send for review** commits the changes as the person who sent them, credits everyone else who edited, pushes a `galley` branch and opens (or updates) one pull request, with the build's pass or fail shown in the toolbar. You merge it on GitHub; once it is merged, Galley starts the next round from your main branch.
+
+Builds and deploys belong in the repository's own GitHub Actions, so no one's code ever runs on the Galley server. The preview runs the site's scripts in a sandboxed frame that cannot see anyone's Galley session, and members can never touch `.git/` or `.github/`. The token wants Contents and Pull requests set to Read and write, and Actions set to Read, on that one repository.
+
 ### Tasks that behave like a to-do list, not a ticketing system
 
 Sections you name yourself, a list or a board, drag to reorder, due dates that go amber then red, assignees, checklists, comments and attached files.
@@ -270,7 +276,8 @@ Worth knowing before you install it, rather than after.
 - **One instance is one organisation.** Workspaces are projects, not tenants. Everyone invited shares one supplier directory, one set of instance settings and one admin panel. It is not built to host several unrelated businesses.
 - **Recovery codes are the only way back in.** If someone turns two-factor on, loses their phone and loses their recovery codes, no admin screen can let them back in: clear `totp_secret` for that row in `galley.db` with Galley stopped.
 - **There is no OIDC or LDAP.** Accounts are invite-only email and password. Galley will trust a reverse proxy that has already signed someone in (Authelia, Authentik, oauth2-proxy, Tailscale — see Running it), but it does not speak either protocol itself.
-- **Mail credentials are stored in plain text** in the database, so treat a backup like a password. This is called out again under Backing up.
+- **Mail credentials and site access tokens are stored in plain text** in the database, so treat a backup like a password. This is called out again under Backing up. Give each site a fine-grained token for that one repository.
+- **The Site tab edits static files.** It previews what is in the repository as it stands, so a site that needs a build step to produce its HTML (Astro, Next, Hugo and the like) shows its source rather than the built pages. PHP and other server code does not run in the preview.
 - **The container starts as root** for a moment, to take ownership of the data directory, then drops to `PUID:PGID` and runs the application unprivileged. Pass `--user` if you would rather it never ran as root at all — you then own chowning the directory yourself.
 - **Dates are formatted `en-GB`** — "14 Sept", not "Sep 14". Currency is a setting; the date format is not one yet. If that grates, say so in an issue.
 

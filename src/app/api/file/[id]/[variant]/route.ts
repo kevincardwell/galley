@@ -1,11 +1,11 @@
 import fs from "node:fs";
-import { timingSafeEqual } from "node:crypto";
 import fsp from "node:fs/promises";
 import { Readable } from "node:stream";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { currentUser } from "@/lib/auth/current";
 import { accessFor } from "@/lib/permissions";
+import { timingSafeEqualStr } from "@/lib/secure-compare";
 import { storage, type Variant } from "@/lib/storage";
 import { variantExt, variantMime, variantPath } from "@/lib/media/paths";
 
@@ -34,14 +34,6 @@ function parseRange(header: string | null, size: number): { start: number; end: 
   const end = b === "" ? size - 1 : Math.min(Number(b), size - 1);
   if (start > end || start >= size) return "bad";
   return { start, end };
-}
-
-/** Constant-time string compare, so a share token cannot be probed byte by byte. */
-function timingSafeEqualStr(a: string | null, b: string | null): boolean {
-  if (!a || !b) return false;
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string; variant: string }> }) {

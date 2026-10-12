@@ -6,6 +6,30 @@ Galley applies database migrations when the container starts, and copies the dat
 `backups/pre-migration-<date>.db` first, so an upgrade that goes wrong can be stepped back by putting that file
 in place and running the previous tag.
 
+## Unreleased
+
+### Added
+
+- **The Site tab: edit the website itself.** Connect a project to its git repository, when you create it or
+  later, and everyone on the project gets a live preview of the site. Click text in the preview to change
+  it, or open the code editor beside it. **Send for review** commits as the sender (with Co-authored-by lines
+  for everyone else who edited), pushes a `galley` branch and opens or updates a pull request, and the
+  toolbar shows the GitHub Actions build for it. After the merge, **N new on main** brings the working copy
+  up to date and starts the next round.
+- **Commit email** on your account page, for when your sign-in address should not appear on public commits.
+
+### Security
+
+- The preview is served with `Content-Security-Policy: sandbox`, so the site's own scripts run in an opaque
+  origin and cannot use the viewer's Galley session. Members cannot read or write `.git/` or `.github/`, so
+  editing a file can neither run code on the server nor change the workflows that hold the repository's
+  secrets. Repository addresses are https only, and the token never touches `.git/config` or a command line.
+
+### Upgrading
+
+- The image now includes `git`. Migration `0013` adds the `sites` table and `users.git_email`.
+- Backups include `sites/` (the working copies, which hold edits nobody has sent yet).
+
 ## v1.2.0 — 2026-09-23
 
 ### Added

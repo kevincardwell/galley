@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); }, redirect: (u: string) => { throw new Error("REDIRECT:" + u); } }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("@/lib/notify", () => ({ notify: async () => {} }));
-const actor = { id: "sg-ed", email: "ed@x.test", name: "Ed", passwordHash: "", isAdmin: false, totpSecret: null, totpLastStep: null, totpRecovery: null, deactivatedAt: null, lastSeenAt: null, createdAt: 0 };
+const actor = { id: "sg-ed", email: "ed@x.test", name: "Ed", passwordHash: "", isAdmin: false, totpSecret: null, totpLastStep: null, totpRecovery: null, gitEmail: null, deactivatedAt: null, lastSeenAt: null, createdAt: 0 };
 vi.mock("@/lib/auth/current", () => ({ requireUser: async () => actor, currentUser: async () => actor }));
 
 import { db, schema } from "@/db/client";

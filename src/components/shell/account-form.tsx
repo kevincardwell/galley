@@ -25,7 +25,7 @@ function Message({ notice }: { notice: Notice }) {
   );
 }
 
-export function AccountForm({ name, email, role }: { name: string; email: string; role: string }) {
+export function AccountForm({ name, email, gitEmail, role }: { name: string; email: string; gitEmail: string | null; role: string }) {
   const [profileNotice, setProfileNotice] = useState<Notice>(null);
   const [passwordNotice, setPasswordNotice] = useState<Notice>(null);
   const [profilePending, startProfile] = useTransition();
@@ -35,10 +35,11 @@ export function AccountForm({ name, email, role }: { name: string; email: string
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const next = String(form.get("name") || "");
+    const commit = String(form.get("gitEmail") || "");
     setProfileNotice(null);
     startProfile(async () => {
-      const r: AccountResult = await updateProfile(next);
-      setProfileNotice(r.ok ? { tone: "ok", text: "Name saved." } : { tone: "error", text: r.error });
+      const r: AccountResult = await updateProfile(next, commit);
+      setProfileNotice(r.ok ? { tone: "ok", text: "Profile saved." } : { tone: "error", text: r.error });
     });
   }
 
@@ -77,6 +78,11 @@ export function AccountForm({ name, email, role }: { name: string; email: string
             <Input id="account-email" value={email} readOnly className="bg-surface-2 text-ink-2" />
             <Hint>Your sign-in address. An admin can change it for you.</Hint>
           </Label>
+          <Label htmlFor="account-git-email">
+            <Name>Commit email</Name>
+            <Input id="account-git-email" name="gitEmail" type="email" defaultValue={gitEmail ?? ""} placeholder={email} autoComplete="off" />
+            <Hint>Put on the changes you send from a project&rsquo;s Site tab, where anyone who can see the repository can read it. Leave empty to use your sign-in email; GitHub users often use their noreply address.</Hint>
+          </Label>
           <div className="flex flex-col gap-1 text-xs">
             <Name>Role</Name>
             <span className="inline-flex items-center gap-1.5 text-sm text-ink">
@@ -88,7 +94,7 @@ export function AccountForm({ name, email, role }: { name: string; email: string
           <Message notice={profileNotice} />
           <div>
             <Button variant="primary" type="submit" icon="check" loading={profilePending}>
-              {profilePending ? "Saving…" : "Save name"}
+              {profilePending ? "Saving…" : "Save profile"}
             </Button>
           </div>
         </form>

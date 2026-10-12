@@ -4,7 +4,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { UPLOAD_DIR } from "@/db/client";
+import { SITES_DIR, UPLOAD_DIR } from "@/db/client";
 
 export type Variant = "original" | "thumb" | "preview" | "poster";
 
@@ -29,6 +29,7 @@ export const storage = {
   },
   async removeWorkspace(workspaceId: string) {
     await fsp.rm(path.join(UPLOAD_DIR, workspaceId), { recursive: true, force: true });
+    await fsp.rm(path.join(SITES_DIR, workspaceId), { recursive: true, force: true });
   },
   exists(p: string) {
     return fs.existsSync(p);

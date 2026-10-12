@@ -14,6 +14,7 @@ export function WorkspaceTabs({ slug, counts, canManage }: { slug: string; count
     { href: `${base}/tasks`, label: "Tasks", icon: "checklist", n: `${counts.open} open` },
     { href: `${base}/copy`, label: "Copy", icon: "text", n: `${counts.approved} of ${counts.sections} approved` },
     { href: `${base}/assets`, label: "Assets", icon: "image", n: String(counts.assets) },
+    { href: `${base}/site`, label: "Site", icon: "globe" },
     { href: `${base}/calendar`, label: "Calendar", icon: "calendar" },
     { href: `${base}/suppliers`, label: "Suppliers", icon: "supplier" },
     ...(canManage ? [{ href: `${base}/settings`, label: "Settings", icon: "settings" as IconName }] : []),

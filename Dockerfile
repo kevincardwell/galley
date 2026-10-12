@@ -28,7 +28,8 @@ ENV GALLEY_VERSION=$VERSION \
 # The `command -v setpriv` is a build-time assertion: the entrypoint drops
 # privileges with it, so a future base image that stopped shipping util-linux
 # should fail the build here rather than someone's server at midnight.
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl tini tzdata \
+# git (with ca-certificates for https) keeps the Site tab's working copies.
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl tini tzdata git ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /data && chown node:node /data \
     && command -v setpriv >/dev/null

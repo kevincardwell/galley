@@ -37,8 +37,9 @@ test.describe.serial("invite-only access", () => {
     for (const name of ["Peak Physio", "Harbourside Bakery"]) {
       await page.goto("/");
       await page.getByRole("button", { name: "New workspace" }).first().click();
-      await page.fill("#ws-name", name);
-      await page.getByRole("button", { name: "Create workspace" }).click();
+      const dialog = page.getByRole("dialog", { name: "New workspace" });
+      await dialog.getByLabel("Website name").fill(name);
+      await dialog.getByRole("button", { name: "Create workspace" }).click();
       await expect(page.getByRole("heading", { name })).toBeVisible();
     }
   });

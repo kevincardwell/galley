@@ -14,12 +14,15 @@ import type { User } from "@/db/schema";
 
 export type AccountResult = { ok: true } | { ok: false; error: string };
 
-export async function updateProfile(name: string): Promise<AccountResult> {
+export async function updateProfile(name: string, gitEmail?: string): Promise<AccountResult> {
   const user = await requireUser();
   const parsed = z.string().trim().min(1, "Enter your name").max(80, "Keep your name under 80 characters").safeParse(name);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter your name" };
-  if (parsed.data === user.name) return { ok: true };
-  db.update(schema.users).set({ name: parsed.data }).where(eq(schema.users.id, user.id)).run();
+  // The address on commits sent from a site; empty means the sign-in email.
+  const commit = gitEmail === undefined ? user.gitEmail : gitEmail.trim() || null;
+  if (commit && !/^[^@\s<>]+@[^@\s<>]+$/.test(commit)) return { ok: false, error: "Enter a valid commit email address, or leave it empty" };
+  if (parsed.data === user.name && commit === user.gitEmail) return { ok: true };
+  db.update(schema.users).set({ name: parsed.data, gitEmail: commit }).where(eq(schema.users.id, user.id)).run();
   logAudit({ actorId: user.id, action: "user.profile.updated", subjectType: "user", subjectId: user.id, meta: { from: user.name, to: parsed.data } });
   revalidatePath("/", "layout");
   return { ok: true };

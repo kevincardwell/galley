@@ -14,6 +14,8 @@ export const users = sqliteTable("users", {
   totpSecret: text("totp_secret"),
   totpLastStep: integer("totp_last_step"),
   totpRecovery: text("totp_recovery", { mode: "json" }).$type<string[]>(),
+  /** Address on the commits they send from a site, when it should not be their sign-in email. */
+  gitEmail: text("git_email"),
   deactivatedAt: integer("deactivated_at"),
   lastSeenAt: integer("last_seen_at"),
   createdAt: integer("created_at").notNull().default(now()),
@@ -105,6 +107,24 @@ export const memberships = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.workspaceId, t.userId] }), index("memberships_user").on(t.userId)],
 );
+
+// ---- Site ----
+/** A workspace's website repository: Galley keeps a working copy, people edit it, and changes go out as a pull request. */
+export const sites = sqliteTable("sites", {
+  workspaceId: text("workspace_id").primaryKey().references(() => workspaces.id, { onDelete: "cascade" }),
+  repoUrl: text("repo_url").notNull(), // https only
+  baseBranch: text("base_branch").notNull().default("main"),
+  workBranch: text("work_branch").notNull().default("galley"),
+  root: text("root").notNull().default(""), // the folder inside the repo that is the website; "" is the repo root
+  // An access token for the repository, kept in plain text like the mail credentials. Never sent to a browser.
+  token: text("token"),
+  previewToken: text("preview_token").notNull().unique(),
+  prNumber: integer("pr_number"),
+  prHeadSha: text("pr_head_sha"),
+  fetchedAt: integer("fetched_at"),
+  createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at").notNull().default(now()),
+});
 
 // ---- Tasks ----
 export const taskSections = sqliteTable("task_sections", {
@@ -425,3 +445,4 @@ export type Comment = typeof comments.$inferSelect;
 export type Supplier = typeof suppliers.$inferSelect;
 export type WorkspaceSupplier = typeof workspaceSuppliers.$inferSelect;
 export type ScheduleItem = typeof scheduleItems.$inferSelect;
+export type Site = typeof sites.$inferSelect;

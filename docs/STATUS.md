@@ -349,3 +349,48 @@ does is client sign-off of copy, and that was still weaker than a Google Doc. Tw
 
 ## Layout of the code
 See `docs/AGENT-BRIEF.md` for conventions (server-action guard pattern, tokens, contracts) and `docs/PLAN.md` for intent.
+
+## Site tab 2026-10-12 (branch `site-tab`, unreleased)
+
+Edit a project's website itself: a git working copy per workspace, a live preview with click-to-edit, a
+CodeMirror editor, and changes sent as a pull request. Decisions with Jasper: builds and deploys run in the
+repository's GitHub Actions (never on the Galley server); changes go out as a branch + PR; every member edits
+(viewers too); connecting the repository and holding its token is manager-only. Plan:
+`~/.claude/plans/abstract-booping-taco.md`.
+
+- **Storage.** `sites` table (migration `0013`), working copy at `DATA_DIR/sites/<workspaceId>`, included in
+  backups, removed with the workspace (`storage.removeWorkspace`). `users.git_email` for commit addresses.
+- **Git** (`src/lib/site/git.ts`, `repo.ts`): execFile with a timeout; every setting via `GIT_CONFIG_*`
+  (hooks and fsmonitor off, https only, token as an `http.extraHeader` in the environment, never argv or
+  `.git/config`); per-workspace in-process lock. Clone goes to a temp folder first. Send = `add --all`,
+  commit as the sender with Co-authored-by for other editors since the last send (from activity rows),
+  `push --force-with-lease` to the work branch. Update = reset to `origin/main` once the PR is merged/closed
+  and nothing new was written, else `rebase --autostash`, aborting cleanly on conflict.
+- **GitHub** (`github.ts`): find-or-create the PR from the work branch, PR state, Actions runs for the head
+  sha. Other hosts get a pushed branch only.
+- **Preview** (`src/app/api/site/[id]/[token]/[[...path]]/route.ts`): token-guarded, public in proxy.ts,
+  excluded from the global headers in next.config.ts. Every response carries `CSP: sandbox allow-scripts …`,
+  `Referrer-Policy: no-referrer` (the token is in the URL) and `ACAO: *` (an opaque origin makes fonts and
+  fetches CORS). Paths go through `cleanRel` (no `..`, no `.git`/`.github`) and `realpath` (symlinks cannot
+  leave the site). `.php` answers 503; a missing page gets the site's own 404.html.
+- **Click to edit** (`src/lib/site/html.ts`, `public/site-editor.js`): parse5 with source locations marks the
+  outermost text-and-inline-only elements that have an explicit end tag with their source offsets and a hash;
+  root-relative URLs are rewritten (HTML attributes, srcset, inline/`<style>` CSS, CSS files) and the helper
+  patches fetch/XHR and watches the DOM for the rest. An edit comes back by postMessage (the parent checks
+  `event.source`), is sanitised to inline tags, and is spliced in only if the slice still hashes the same.
+- **UI**: `Site` tab (`src/components/site/*`), connect form shared with the New workspace dialog (which
+  clones before saving anything), Site section in Settings, commit email on the account page, `Dialog wide`.
+- Found and fixed on the way: every field id in the New workspace dialog was duplicated, because the page can
+  hold two of its buttons (now `useId`); the e2e test now finds the field by its label.
+
+Verified: 264 unit tests (new: site-html, site-files, site-repo against a local bare repo, site-github with a
+mocked API), lint, build, e2e 6/6. In a browser against a bare copy of cardwellbridge: created a project with
+the repository, preview rendered with fonts/map/JS, clicked the sessions heading and retyped it (one-line
+diff), edited style.css in the code panel (Ctrl+S), Changes dialog diff, Send pushed `galley` authored as the
+sender, merged on the "remote", **1 new on main** brought it level. Inside the frame: `document.cookie`,
+`localStorage` and `parent.document` all throw, `self.origin` is "null". `../`, `%2e%2e`, `.git/config` and
+`.github/` 404; a wrong token 404s. Docker image built and run: `git --version` and an https clone work as
+99:100.
+
+Not yet: a real GitHub PR round trip (needs Jasper's token), the Cardwell deploy workflow (separate repo), and
+the dark-theme look of the code editor has not been eyeballed.

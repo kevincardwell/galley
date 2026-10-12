@@ -4,7 +4,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { ZipArchive } from "archiver";
 import { desc, eq } from "drizzle-orm";
-import { db, schema, sqlite, DATA_DIR, UPLOAD_DIR } from "@/db/client";
+import { db, schema, sqlite, DATA_DIR, SITES_DIR, UPLOAD_DIR } from "@/db/client";
 import { newId } from "@/lib/ids";
 import "./scheduler"; // arms the scheduled-backup interval whenever this module is loaded
 
@@ -46,7 +46,8 @@ export function backupPath(row: Pick<BackupRow, "filename">): string {
 
 /**
  * Writes `/data/backups/galley-YYYYMMDD-HHMMSS.zip` containing a consistent copy of the
- * database (VACUUM INTO), every upload and the cached favicons, then records it.
+ * database (VACUUM INTO), every upload, the cached favicons and the website working copies
+ * (which hold edits nobody has sent for review yet), then records it.
  */
 export async function createBackup({ createdBy, kind }: { createdBy: string | null; kind: BackupKind }): Promise<BackupRow> {
   await fsp.mkdir(BACKUP_DIR, { recursive: true });
@@ -77,6 +78,7 @@ export async function createBackup({ createdBy, kind }: { createdBy: string | nu
       archive.file(tmpDb, { name: "galley.db" });
       if (fs.existsSync(UPLOAD_DIR)) archive.directory(UPLOAD_DIR, "uploads");
       if (fs.existsSync(FAVICON_DIR)) archive.directory(FAVICON_DIR, "favicons");
+      if (fs.existsSync(SITES_DIR)) archive.directory(SITES_DIR, "sites");
       archive.finalize().catch(reject);
     });
 
@@ -134,7 +136,7 @@ export async function pruneBackups(keep: number): Promise<number> {
 /** Plain-language restore instructions shown on the admin page. */
 export function restoreNote(): string {
   return [
-    "Restoring is manual. Stop the container, then unzip the backup into the data directory so that galley.db, uploads/ and favicons/ replace what is there.",
+    "Restoring is manual. Stop the container, then unzip the backup into the data directory so that galley.db, uploads/, favicons/ and sites/ replace what is there.",
     "The galley.db inside a backup zip is a complete snapshot, so delete any galley.db-wal and galley.db-shm left beside it before starting again. Only do that when restoring from a zip: deleting the -wal next to a database you copied by hand throws away its most recent writes.",
     "Backups live in the backups/ folder of the same data directory; copy them somewhere else too, since a lost volume takes them with it.",
   ].join(" ");
