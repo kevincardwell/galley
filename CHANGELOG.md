@@ -6,7 +6,7 @@ Galley applies database migrations when the container starts, and copies the dat
 `backups/pre-migration-<date>.db` first, so an upgrade that goes wrong can be stepped back by putting that file
 in place and running the previous tag.
 
-## Unreleased
+## v1.3.0 — 2026-10-12
 
 ### Added
 
