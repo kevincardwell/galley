@@ -1,4 +1,5 @@
 import "server-only";
+import { UserError } from "@/lib/user-error";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import type { Site } from "@/db/schema";
@@ -69,14 +70,14 @@ export const MAX_EDIT_BYTES = 1024 * 1024;
 /** Reads a file for the code editor. Refuses binaries, big files and symlinks. */
 export async function readEditable(root: string, rel: string): Promise<{ text: string; hash: string }> {
   const clean = cleanRel(rel);
-  if (!clean) throw new Error("That file can't be opened here");
+  if (!clean) throw new UserError("That file can't be opened here");
   const file = path.join(root, clean);
   const stat = await fsp.lstat(file).catch(() => null);
-  if (!stat?.isFile()) throw new Error(stat?.isSymbolicLink() ? "Linked files can't be edited here" : "That file no longer exists");
-  if (stat.size > MAX_EDIT_BYTES) throw new Error("That file is too big to edit here");
-  if (!(await realInside(root, file))) throw new Error("That file can't be opened here");
+  if (!stat?.isFile()) throw new UserError(stat?.isSymbolicLink() ? "Linked files can't be edited here" : "That file no longer exists");
+  if (stat.size > MAX_EDIT_BYTES) throw new UserError("That file is too big to edit here");
+  if (!(await realInside(root, file))) throw new UserError("That file can't be opened here");
   const buf = await fsp.readFile(file);
-  if (buf.includes(0)) throw new Error("That is not a text file");
+  if (buf.includes(0)) throw new UserError("That is not a text file");
   const text = buf.toString("utf8");
   return { text, hash: contentHash(text) };
 }
@@ -87,17 +88,17 @@ export async function readEditable(root: string, rel: string): Promise<{ text: s
  */
 export async function writeEditable(root: string, rel: string, text: string, baseHash: string): Promise<{ hash: string }> {
   const clean = cleanRel(rel);
-  if (!clean) throw new Error("That file can't be saved here");
-  if (Buffer.byteLength(text) > MAX_EDIT_BYTES) throw new Error("That file is too big to save here");
-  if (text.includes("\0")) throw new Error("That is not a text file");
+  if (!clean) throw new UserError("That file can't be saved here");
+  if (Buffer.byteLength(text) > MAX_EDIT_BYTES) throw new UserError("That file is too big to save here");
+  if (text.includes("\0")) throw new UserError("That is not a text file");
   const file = path.join(root, clean);
   const stat = await fsp.lstat(file).catch(() => null);
-  if (stat?.isSymbolicLink()) throw new Error("Linked files can't be edited here");
-  if (stat && !stat.isFile()) throw new Error("That is a folder");
+  if (stat?.isSymbolicLink()) throw new UserError("Linked files can't be edited here");
+  if (stat && !stat.isFile()) throw new UserError("That is a folder");
   const current = stat ? contentHash(await fsp.readFile(file, "utf8")) : "";
-  if (current !== baseHash) throw new Error("Someone else changed this file. Reopen it to see their version.");
+  if (current !== baseHash) throw new UserError("Someone else changed this file. Reopen it to see their version.");
   await fsp.mkdir(path.dirname(file), { recursive: true });
-  if (!(await realInside(root, path.dirname(file)))) throw new Error("That file can't be saved here");
+  if (!(await realInside(root, path.dirname(file)))) throw new UserError("That file can't be saved here");
   await fsp.writeFile(file, text);
   return { hash: contentHash(text) };
 }

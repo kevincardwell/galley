@@ -1,4 +1,5 @@
 "use server";
+import { UserError } from "@/lib/user-error";
 import { and, eq, isNull, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db, schema } from "@/db/client";
@@ -19,22 +20,22 @@ const MAX_SECTION_TEXT = 20_000;
 
 function cleanBody(body: string): string {
   const b = (body ?? "").trim().slice(0, MAX_BODY);
-  if (!b) throw new Error("Write something first");
+  if (!b) throw new UserError("Write something first");
   return b;
 }
 
 /** Workspace + section + page for a share token, or throws "Not found" without saying why. */
 function guestContext(token: string, sectionId: string) {
-  if (!sectionId) throw new Error("Not found");
+  if (!sectionId) throw new UserError("Not found");
   const ws = shareWorkspace(token, "shareReview");
-  if (!ws) throw new Error("Not found");
+  if (!ws) throw new UserError("Not found");
   const row = db
     .select({ section: schema.sections, pageSlug: schema.pages.slug, pageTitle: schema.pages.title })
     .from(schema.sections)
     .innerJoin(schema.pages, eq(schema.pages.id, schema.sections.pageId))
     .where(and(eq(schema.sections.id, sectionId), eq(schema.sections.workspaceId, ws.id)))
     .get();
-  if (!row) throw new Error("Not found");
+  if (!row) throw new UserError("Not found");
   return { ws, ...row };
 }
 
@@ -84,14 +85,14 @@ export async function guestApprove(token: string, sectionId: string, name: strin
 export async function guestWriteSection(token: string, sectionId: string, name: string, text: string): Promise<{ version: number }> {
   const guest = cleanGuestName(name);
   const { ws, section, pageSlug, pageTitle } = guestContext(token, sectionId);
-  if (!section.clientCanWrite) throw new Error("Not found");
+  if (!section.clientCanWrite) throw new UserError("Not found");
   guestRateLimit(`write:${token}`, 60);
 
   const body = (text ?? "").slice(0, MAX_SECTION_TEXT);
-  if (!body.trim()) throw new Error("Write something first");
+  if (!body.trim()) throw new UserError("Write something first");
 
   const saved = replaceText(section.id, body, null);
-  if (!saved) throw new Error("Not found");
+  if (!saved) throw new UserError("Not found");
 
   logActivity({
     workspaceId: ws.id,
@@ -124,10 +125,10 @@ export async function guestSuggest(token: string, sectionId: string, name: strin
   guestRateLimit(token, 30);
 
   const proposed = (text ?? "").slice(0, MAX_SECTION_TEXT).trim();
-  if (!proposed) throw new Error("Write something first");
+  if (!proposed) throw new UserError("Write something first");
   // What the share page showed them, so the studio sees exactly what they changed.
   const base = docToEditableText(asDoc(section.content));
-  if (proposed === base.trim()) throw new Error("That is the same as the wording now");
+  if (proposed === base.trim()) throw new UserError("That is the same as the wording now");
   const why = (note ?? "").trim().slice(0, MAX_BODY);
 
   const id = newId();
@@ -142,9 +143,9 @@ export async function guestSuggest(token: string, sectionId: string, name: strin
 export async function guestApprovePage(token: string, pageSlug: string, name: string): Promise<{ approved: number }> {
   const guest = cleanGuestName(name);
   const ws = shareWorkspace(token, "shareReview");
-  if (!ws) throw new Error("Not found");
+  if (!ws) throw new UserError("Not found");
   const page = db.select().from(schema.pages).where(and(eq(schema.pages.workspaceId, ws.id), eq(schema.pages.slug, pageSlug))).get();
-  if (!page) throw new Error("Not found");
+  if (!page) throw new UserError("Not found");
   guestRateLimit(token, 30);
 
   const due = db

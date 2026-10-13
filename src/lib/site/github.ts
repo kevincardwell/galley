@@ -1,4 +1,5 @@
 import "server-only";
+import { UserError } from "@/lib/user-error";
 import type { Site } from "@/db/schema";
 import { sealedBox } from "./sealed-box";
 
@@ -13,7 +14,7 @@ export type Review = { number: number; url: string; state: "open" | "merged" | "
 
 async function api<T>(site: Site, path: string, init: RequestInit = {}): Promise<T> {
   const gh = githubRepo(site.repoUrl);
-  if (!gh || !site.token) throw new Error("No GitHub access for this site");
+  if (!gh || !site.token) throw new UserError("No GitHub access for this site");
   const res = await fetch(`https://api.github.com/repos/${gh.owner}/${gh.repo}${path}`, {
     ...init,
     headers: {
@@ -27,12 +28,12 @@ async function api<T>(site: Site, path: string, init: RequestInit = {}): Promise
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { message?: string };
-    if (res.status === 401) throw new Error("GitHub refused the token. It may have expired.");
+    if (res.status === 401) throw new UserError("GitHub refused the token. It may have expired.");
     if (res.status === 403 || res.status === 404) {
       const what = path.startsWith("/actions/secrets") ? "manage this repository's secrets (Secrets: Read and write)" : "use pull requests on this repository";
-      throw new Error(`GitHub said no (${body.message ?? res.status}). Check the token can ${what}.`);
+      throw new UserError(`GitHub said no (${body.message ?? res.status}). Check the token can ${what}.`);
     }
-    throw new Error(`GitHub: ${body.message ?? res.status}`);
+    throw new UserError(`GitHub: ${body.message ?? res.status}`);
   }
   const text = await res.text(); // saving or deleting a secret answers 201/204 with no body
   return (text ? JSON.parse(text) : null) as T;

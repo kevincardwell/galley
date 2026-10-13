@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -117,7 +118,7 @@ export function CalendarScreen(props: Props) {
         toast(`Moved to ${formatDayLabel(target, today)}`, { tone: "done" });
       } catch (err) {
         setEntries(snapshot);
-        toast(err instanceof Error && err.message ? err.message : "That did not move. Try again.", { tone: "late" });
+        toast(errorText(err, "That did not move. Try again."), { tone: "late" });
         router.refresh();
       }
     });

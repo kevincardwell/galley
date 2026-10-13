@@ -1,4 +1,5 @@
 "use server";
+import { UserError } from "@/lib/user-error";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -53,7 +54,7 @@ type ItemContext = { user: User; item: ScheduleItem; workspace: Workspace };
 async function editableItem(id: string): Promise<ItemContext> {
   const user = await requireUser();
   const item = db.select().from(schema.scheduleItems).where(eq(schema.scheduleItems.id, id)).get();
-  if (!item) throw new Error("Not found");
+  if (!item) throw new UserError("Not found");
   const { workspace } = assertAccess(user, item.workspaceId, "edit");
   return { user, item, workspace };
 }
@@ -66,7 +67,7 @@ function assertOwner(workspaceId: string, userId: string) {
     .get();
   if (member) return;
   const admin = db.select({ isAdmin: schema.users.isAdmin }).from(schema.users).where(eq(schema.users.id, userId)).get();
-  if (!admin?.isAdmin) throw new Error("That person is not on this project");
+  if (!admin?.isAdmin) throw new UserError("That person is not on this project");
 }
 
 function assertSupplier(workspaceId: string, supplierId: string) {
@@ -75,7 +76,7 @@ function assertSupplier(workspaceId: string, supplierId: string) {
     .from(schema.workspaceSuppliers)
     .where(and(eq(schema.workspaceSuppliers.workspaceId, workspaceId), eq(schema.workspaceSuppliers.supplierId, supplierId)))
     .get();
-  if (!link) throw new Error("That supplier is not on this project");
+  if (!link) throw new UserError("That supplier is not on this project");
 }
 
 /**
@@ -84,15 +85,15 @@ function assertSupplier(workspaceId: string, supplierId: string) {
  */
 function instants(start: string, end: string | null | undefined, allDay: boolean): { startsAt: number; endsAt: number | null } {
   const from = parseLocalDateTime(start);
-  if (!from) throw new Error("Use a real start date");
+  if (!from) throw new UserError("Use a real start date");
   const startsAt = toUnix(allDay ? startOfDay(from) : from);
   let endsAt: number | null = null;
   if (end) {
     const to = parseLocalDateTime(end);
-    if (!to) throw new Error("Use a real end date");
+    if (!to) throw new UserError("Use a real end date");
     endsAt = toUnix(allDay ? startOfDay(to) : to);
   }
-  if (endsAt !== null && endsAt < startsAt) throw new Error("The end is before the start");
+  if (endsAt !== null && endsAt < startsAt) throw new UserError("The end is before the start");
   return { startsAt, endsAt };
 }
 
@@ -107,7 +108,7 @@ export async function createScheduleItem(workspaceId: string, raw: ScheduleItemI
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, "edit");
   const parsed = inputSchema.safeParse(raw);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   const input = parsed.data;
   const allDay = input.allDay ?? false;
   const { startsAt, endsAt } = instants(input.start, input.end, allDay);
@@ -138,7 +139,7 @@ export async function createScheduleItem(workspaceId: string, raw: ScheduleItemI
 export async function updateScheduleItem(id: string, raw: ScheduleItemPatch): Promise<void> {
   const { user, item, workspace } = await editableItem(id);
   const parsed = patchSchema.safeParse(raw);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   const patch = parsed.data;
   const values: Partial<typeof schema.scheduleItems.$inferInsert> = {};
 
@@ -186,15 +187,15 @@ export async function deleteScheduleItem(id: string): Promise<void> {
  */
 export async function moveEntry(raw: MoveEntryInput): Promise<void> {
   const parsed = moveSchema.safeParse(raw);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   const { kind, id, toIsoDate, keepTime = true } = parsed.data;
   const target = parseIsoDate(toIsoDate);
-  if (!target) throw new Error("Use a real date");
+  if (!target) throw new UserError("Use a real date");
   const user = await requireUser();
 
   if (kind === "task") {
     const task = db.select().from(schema.tasks).where(eq(schema.tasks.id, id)).get();
-    if (!task) throw new Error("Not found");
+    if (!task) throw new UserError("Not found");
     const { workspace } = assertAccess(user, task.workspaceId, "edit");
     if (task.dueOn === toIsoDate) return;
     db.update(schema.tasks).set({ dueOn: toIsoDate }).where(eq(schema.tasks.id, task.id)).run();

@@ -20,6 +20,11 @@ in place and running the previous tag.
 - **A long task is no longer lost.** Typing more than 200 characters into Add task used to fail and throw the
   words away. Now the first part (cut at a word) becomes the title and the whole text the description, and if
   adding a task ever fails for another reason, what you typed goes back into the box.
+- **Errors say what went wrong again.** In the Docker image, every refused action showed "Minified React
+  error #441" or "An error occurred in the Server Components render" instead of its message, because
+  production builds of Next.js hide server error text. The reasons now come through: GitHub turning down the
+  token, a branch that can't be used, a file someone else changed. Unexpected errors still show a plain
+  "try again".
 
 ## v1.3.0 — 2026-10-12
 

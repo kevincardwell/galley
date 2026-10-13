@@ -1,4 +1,5 @@
 "use server";
+import { UserError } from "@/lib/user-error";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { and, desc, eq, gt, inArray } from "drizzle-orm";
@@ -21,7 +22,7 @@ async function siteAccess(workspaceId: string, verb: "view" | "manage" = "view")
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, verb);
   const site = getSite(workspace.id);
-  if (!site) throw new Error("This project has no site connected");
+  if (!site) throw new UserError("This project has no site connected");
   return { user, workspace, site };
 }
 
@@ -31,9 +32,9 @@ const now = () => Math.floor(Date.now() / 1000);
 export async function connectSite(workspaceId: string, form: FormData) {
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, "manage");
-  if (getSite(workspace.id)) throw new Error("A site is already connected. Disconnect it first.");
+  if (getSite(workspace.id)) throw new UserError("A site is already connected. Disconnect it first.");
   const input = siteFromForm(form);
-  if (!input) throw new Error("Paste the repository's address");
+  if (!input) throw new UserError("Paste the repository's address");
   await withRepoLock(workspace.id, () => connect(workspace.id, input, user.id));
   logAudit({ actorId: user.id, action: "site.connected", subjectType: "workspace", subjectId: workspace.id, meta: { repo: input.repoUrl } });
   revalidatePath(sitePath(workspace.slug));
@@ -44,8 +45,8 @@ export async function updateSiteSettings(workspaceId: string, form: FormData) {
   const { user, workspace, site } = await siteAccess(workspaceId, "manage");
   const token = String(form.get("token") ?? "").trim();
   const root = cleanRel(String(form.get("root") ?? ""));
-  if (root === null) throw new Error("That folder can't be used");
-  if (root && !(await fsp.stat(path.join(siteDir(site.workspaceId), root)).catch(() => null))?.isDirectory()) throw new Error(`There is no folder called "${root}" in the repository`);
+  if (root === null) throw new UserError("That folder can't be used");
+  if (root && !(await fsp.stat(path.join(siteDir(site.workspaceId), root)).catch(() => null))?.isDirectory()) throw new UserError(`There is no folder called "${root}" in the repository`);
   db.update(schema.sites)
     .set({ root, ...(token ? { token } : {}) })
     .where(eq(schema.sites.workspaceId, workspace.id))
@@ -95,7 +96,7 @@ export async function readSiteFile(workspaceId: string, file: string) {
 export async function saveSiteFile(workspaceId: string, file: string, text: string, baseHash: string) {
   const { user, site } = await siteAccess(workspaceId);
   const rel = cleanRel(file);
-  if (!rel) throw new Error("That file can't be saved here");
+  if (!rel) throw new UserError("That file can't be saved here");
   const saved = await withRepoLock(site.workspaceId, () => writeEditable(siteRoot(site), rel, text, baseHash));
   noteEdit(site, user, rel);
   return saved;
@@ -113,10 +114,10 @@ const textEdit = z.object({
 export async function saveTextEdit(workspaceId: string, input: z.input<typeof textEdit>) {
   const { user, site } = await siteAccess(workspaceId);
   const parsed = textEdit.safeParse(input);
-  if (!parsed.success) throw new Error("That edit could not be read");
+  if (!parsed.success) throw new UserError("That edit could not be read");
   const { file, start, end, hash, html } = parsed.data;
   const rel = cleanRel(file);
-  if (!rel || !/\.html?$/i.test(rel)) throw new Error("Only pages can be edited this way");
+  if (!rel || !/\.html?$/i.test(rel)) throw new UserError("Only pages can be edited this way");
   await withRepoLock(site.workspaceId, async () => {
     const { text, hash: fileHash } = await readEditable(siteRoot(site), rel);
     const next = applyTextEdit(text, { start, end, hash, html, prefix: previewPrefix(site) });
@@ -176,7 +177,7 @@ export async function siteStatus(workspaceId: string, opts: { fetch?: boolean } 
 /** Commits everything as the sender, credits everyone else who edited, pushes, and opens or updates the pull request. */
 export async function sendForReview(workspaceId: string, message: string) {
   const { user, workspace, site } = await siteAccess(workspaceId);
-  if (!site.token) throw new Error("A manager needs to add an access token in the site settings before changes can be sent");
+  if (!site.token) throw new UserError("A manager needs to add an access token in the site settings before changes can be sent");
   const subject = message.trim().slice(0, 200) || "Edits from Galley";
   const lastSent = db
     .select({ at: schema.activity.createdAt })
@@ -246,22 +247,22 @@ export async function deploySecrets(workspaceId: string): Promise<RepoSecret[]> 
  */
 export async function saveDeploySecrets(workspaceId: string, values: Record<string, string>) {
   const { user, workspace, site } = await siteAccess(workspaceId, "manage");
-  if (!githubRepo(site.repoUrl)) throw new Error("Deploy details can only be stored for a GitHub repository");
-  if (!site.token) throw new Error("Add an access token first");
+  if (!githubRepo(site.repoUrl)) throw new UserError("Deploy details can only be stored for a GitHub repository");
+  if (!site.token) throw new UserError("Add an access token first");
   const chosen: Record<string, string> = {};
   for (const [name, value] of Object.entries(values)) {
-    if (!SECRET_NAME.test(name)) throw new Error(`"${name}" can't be a secret name: capital letters, digits and _ only`);
-    if (typeof value !== "string" || value.length > 48_000) throw new Error(`${name} is too long`);
+    if (!SECRET_NAME.test(name)) throw new UserError(`"${name}" can't be a secret name: capital letters, digits and _ only`);
+    if (typeof value !== "string" || value.length > 48_000) throw new UserError(`${name} is too long`);
     if (value.trim()) chosen[name] = value;
   }
-  if (!Object.keys(chosen).length) throw new Error("Nothing to save: every field was empty");
+  if (!Object.keys(chosen).length) throw new UserError("Nothing to save: every field was empty");
   await setSecrets(site, chosen);
   logAudit({ actorId: user.id, action: "site.secrets_set", subjectType: "workspace", subjectId: workspace.id, meta: { names: Object.keys(chosen) } });
 }
 
 export async function removeDeploySecret(workspaceId: string, name: string) {
   const { user, workspace, site } = await siteAccess(workspaceId, "manage");
-  if (!SECRET_NAME.test(name)) throw new Error("Not found");
+  if (!SECRET_NAME.test(name)) throw new UserError("Not found");
   await deleteSecret(site, name);
   logAudit({ actorId: user.id, action: "site.secret_removed", subjectType: "workspace", subjectId: workspace.id, meta: { name } });
 }

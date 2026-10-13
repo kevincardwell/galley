@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/field";
@@ -18,7 +19,7 @@ export function SettingsForm({ workspace }: { workspace: Ws }) {
   return (
     <form
       className="grid gap-4 sm:grid-cols-2"
-      action={(fd) => start(async () => { setMsg(null); try { await updateWorkspace(workspace.id, fd); setMsg("Saved"); } catch (e) { setMsg((e as Error).message); } })}
+      action={(fd) => start(async () => { setMsg(null); try { await updateWorkspace(workspace.id, fd); setMsg("Saved"); } catch (e) { setMsg(errorText(e)); } })}
     >
       <Label htmlFor="s-name">
         <Name>Website name</Name>

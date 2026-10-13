@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
@@ -30,7 +31,7 @@ export function DeploySecrets({ workspaceId }: { workspaceId: string }) {
     let live = true;
     deploySecrets(workspaceId).then(
       (list) => live && (setSecretsList(list), setError(null)),
-      (e: Error) => live && setError(e.message),
+      (e) => live && setError(errorText(e)),
     );
     return () => {
       live = false;
@@ -52,7 +53,7 @@ export function DeploySecrets({ workspaceId }: { workspaceId: string }) {
         setForm((n) => n + 1);
         setVersion((n) => n + 1);
       } catch (e) {
-        toast((e as Error).message, { tone: "late", duration: 9000 });
+        toast(errorText(e), { tone: "late", duration: 9000 });
       }
     });
 
@@ -63,7 +64,7 @@ export function DeploySecrets({ workspaceId }: { workspaceId: string }) {
         setConfirm(null);
         setVersion((n) => n + 1);
       } catch (e) {
-        toast((e as Error).message, { tone: "late" });
+        toast(errorText(e), { tone: "late" });
       }
     });
 

@@ -1,4 +1,5 @@
 "use server";
+import { UserError } from "@/lib/user-error";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -17,14 +18,14 @@ import type { AssetSummary } from "@/lib/media/types";
 /** Load an asset and check the caller's access to its workspace. Non-members see "Not found". */
 function ownedAsset(user: User, assetId: string, verb: Verb): { asset: Asset; slug: string } {
   const asset = db.select().from(schema.assets).where(eq(schema.assets.id, assetId)).get();
-  if (!asset) throw new Error("Not found");
+  if (!asset) throw new UserError("Not found");
   const { workspace } = assertAccess(user, asset.workspaceId, verb);
   return { asset, slug: workspace.slug };
 }
 
 function ownedFolder(user: User, folderId: string, verb: Verb) {
   const folder = db.select().from(schema.assetFolders).where(eq(schema.assetFolders.id, folderId)).get();
-  if (!folder) throw new Error("Not found");
+  if (!folder) throw new UserError("Not found");
   const { workspace } = assertAccess(user, folder.workspaceId, verb);
   return { folder, slug: workspace.slug };
 }
@@ -64,7 +65,7 @@ export async function moveToFolder(assetId: string, folderId: string | null): Pr
   let target: string | null = null;
   if (folderId) {
     const { folder } = ownedFolder(user, folderId, "edit");
-    if (folder.workspaceId !== asset.workspaceId) throw new Error("Not found");
+    if (folder.workspaceId !== asset.workspaceId) throw new UserError("Not found");
     target = folder.id;
   }
   db.update(schema.assets).set({ folderId: target }).where(eq(schema.assets.id, asset.id)).run();
@@ -126,16 +127,16 @@ export async function attachAsset(assetId: string, target: { taskId?: string; se
   const { asset, slug } = ownedAsset(user, assetId, "edit");
   const taskId = target.taskId ?? null;
   const sectionId = taskId ? null : (target.sectionId ?? null);
-  if (!taskId && !sectionId) throw new Error("Nothing to attach to");
+  if (!taskId && !sectionId) throw new UserError("Nothing to attach to");
 
   let title: string;
   if (taskId) {
     const task = db.select({ title: schema.tasks.title }).from(schema.tasks).where(and(eq(schema.tasks.id, taskId), eq(schema.tasks.workspaceId, asset.workspaceId))).get();
-    if (!task) throw new Error("Not found");
+    if (!task) throw new UserError("Not found");
     title = task.title;
   } else {
     const section = db.select({ title: schema.sections.title }).from(schema.sections).where(and(eq(schema.sections.id, sectionId!), eq(schema.sections.workspaceId, asset.workspaceId))).get();
-    if (!section) throw new Error("Not found");
+    if (!section) throw new UserError("Not found");
     title = section.title;
   }
 
@@ -166,7 +167,7 @@ export async function detachAsset(attachmentId: string): Promise<void> {
     .from(schema.attachments)
     .where(eq(schema.attachments.id, attachmentId))
     .get();
-  if (!row) throw new Error("Not found");
+  if (!row) throw new UserError("Not found");
   const { slug } = ownedAsset(user, row.assetId, "edit");
   db.delete(schema.attachments).where(eq(schema.attachments.id, row.id)).run();
   revalidate(slug);

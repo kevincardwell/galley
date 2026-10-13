@@ -1,4 +1,5 @@
 import "server-only";
+import { UserError } from "@/lib/user-error";
 import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db/client";
@@ -52,7 +53,7 @@ export function siteFromForm(form: FormData): SiteInput | null {
   const raw = Object.fromEntries(["repoUrl", "token", "baseBranch", "workBranch", "root"].map((k) => [k, String(form.get(k) ?? "")]));
   if (!raw.repoUrl.trim()) return null;
   const parsed = siteInput.safeParse(raw);
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message);
+  if (!parsed.success) throw new UserError(parsed.error.issues[0]?.message);
   return parsed.data;
 }
 

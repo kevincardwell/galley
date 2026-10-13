@@ -1,4 +1,5 @@
 "use server";
+import { UserError } from "@/lib/user-error";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -49,7 +50,7 @@ const DEFAULT_SECTIONS = ["Design", "Build", "Content", "Launch"];
 export async function createWorkspace(form: FormData) {
   const user = await requireUser();
   const parsed = wsInput.safeParse(Object.fromEntries(form));
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message);
+  if (!parsed.success) throw new UserError(parsed.error.issues[0]?.message);
   const { name, url, clientName, accent, templateId } = parsed.data;
   // Only copy from a project this person can actually see.
   const template = templateId && accessFor(user, templateId, "view") ? templateId : null;
@@ -85,7 +86,7 @@ export async function updateWorkspace(workspaceId: string, form: FormData) {
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, "manage");
   const parsed = wsInput.safeParse(Object.fromEntries(form));
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message);
+  if (!parsed.success) throw new UserError(parsed.error.issues[0]?.message);
   const { name, url, clientName, clientEmail, accent, status } = parsed.data;
   const slug = name !== workspace.name ? uniqueSlug(name, workspace.id) : workspace.slug;
   db.update(schema.workspaces)

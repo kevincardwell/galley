@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
@@ -22,7 +23,7 @@ export function SiteSettings({ workspaceId, site }: { workspaceId: string; site:
       </p>
       <form
         className="grid gap-4 sm:grid-cols-2"
-        action={(fd) => start(async () => { setMsg(null); try { await updateSiteSettings(workspaceId, fd); setMsg("Saved"); } catch (e) { setMsg((e as Error).message); } })}
+        action={(fd) => start(async () => { setMsg(null); try { await updateSiteSettings(workspaceId, fd); setMsg("Saved"); } catch (e) { setMsg(errorText(e)); } })}
       >
         <Label htmlFor="site-token">
           <Name>Access token</Name>

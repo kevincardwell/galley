@@ -1,4 +1,5 @@
 "use server";
+import { UserError } from "@/lib/user-error";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { notifyMentions } from "@/lib/notify";
@@ -40,7 +41,7 @@ function uniquePageSlug(workspaceId: string, title: string, exceptId?: string): 
 
 function pageOrThrow(pageId: string) {
   const page = db.select().from(schema.pages).where(eq(schema.pages.id, pageId)).get();
-  if (!page) throw new Error("Not found");
+  if (!page) throw new UserError("Not found");
   return page;
 }
 
@@ -51,7 +52,7 @@ function sectionOrThrow(sectionId: string) {
     .innerJoin(schema.pages, eq(schema.pages.id, schema.sections.pageId))
     .where(eq(schema.sections.id, sectionId))
     .get();
-  if (!row) throw new Error("Not found");
+  if (!row) throw new UserError("Not found");
   return row;
 }
 
@@ -197,7 +198,7 @@ export async function snapshotSection(sectionId: string): Promise<{ version: num
 
 export async function setSectionStatus(sectionId: string, status: SectionStatus): Promise<void> {
   const user = await requireUser();
-  if (!SECTION_STATUSES.includes(status)) throw new Error("Unknown status");
+  if (!SECTION_STATUSES.includes(status)) throw new UserError("Unknown status");
   const { section } = sectionOrThrow(sectionId);
   const { workspace } = assertAccess(user, section.workspaceId, "edit");
   if (section.status === status) return;
@@ -230,9 +231,9 @@ export async function restoreVersion(sectionId: string, versionId: string): Prom
     .from(schema.sectionVersions)
     .where(and(eq(schema.sectionVersions.id, versionId), eq(schema.sectionVersions.sectionId, section.id)))
     .get();
-  if (!old) throw new Error("Not found");
+  if (!old) throw new UserError("Not found");
   const saved = replaceDoc(section.id, asDoc(old.content), user.id);
-  if (!saved) throw new Error("Not found");
+  if (!saved) throw new UserError("Not found");
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "restored", subjectType: "section", subjectId: section.id, subjectTitle: section.title, meta: { fromVersion: old.version } });
   revalidatePath(copyPath(workspace.slug, pageSlug));
   return { version: saved.version };
@@ -271,7 +272,7 @@ export async function addComment(sectionId: string, body: string): Promise<{ id:
   const { section, pageSlug } = sectionOrThrow(sectionId);
   const { workspace } = assertAccess(user, section.workspaceId, "edit");
   const text = body.trim().slice(0, 4000);
-  if (!text) throw new Error("Write something first");
+  if (!text) throw new UserError("Write something first");
   const id = newId();
   db.insert(schema.comments).values({ id, workspaceId: workspace.id, sectionId: section.id, body: text, authorId: user.id }).run();
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "commented", subjectType: "section", subjectId: section.id, subjectTitle: section.title });
@@ -283,7 +284,7 @@ export async function addComment(sectionId: string, body: string): Promise<{ id:
 export async function resolveComment(commentId: string): Promise<void> {
   const user = await requireUser();
   const comment = db.select().from(schema.comments).where(eq(schema.comments.id, commentId)).get();
-  if (!comment || !comment.sectionId) throw new Error("Not found");
+  if (!comment || !comment.sectionId) throw new UserError("Not found");
   const { workspace } = assertAccess(user, comment.workspaceId, "edit");
   const { pageSlug } = sectionOrThrow(comment.sectionId);
   db.update(schema.comments).set({ resolvedAt: comment.resolvedAt ? null : nowSec() }).where(eq(schema.comments.id, comment.id)).run();
@@ -299,11 +300,11 @@ export async function resolveComment(commentId: string): Promise<void> {
 export async function acceptSuggestion(commentId: string): Promise<{ version: number }> {
   const user = await requireUser();
   const comment = db.select().from(schema.comments).where(eq(schema.comments.id, commentId)).get();
-  if (!comment || !comment.sectionId || comment.suggestion == null || comment.resolvedAt) throw new Error("Not found");
+  if (!comment || !comment.sectionId || comment.suggestion == null || comment.resolvedAt) throw new UserError("Not found");
   const { workspace } = assertAccess(user, comment.workspaceId, "edit");
   const { section, pageSlug } = sectionOrThrow(comment.sectionId);
   const saved = replaceText(section.id, comment.suggestion, user.id);
-  if (!saved) throw new Error("Not found");
+  if (!saved) throw new UserError("Not found");
   db.update(schema.comments).set({ resolvedAt: nowSec() }).where(eq(schema.comments.id, comment.id)).run();
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "updated", subjectType: "section", subjectId: section.id, subjectTitle: section.title, meta: { acceptedSuggestionFrom: comment.guestName } });
   revalidatePath(copyPath(workspace.slug, pageSlug));

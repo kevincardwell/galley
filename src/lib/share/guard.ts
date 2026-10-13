@@ -1,4 +1,5 @@
 import "server-only";
+import { UserError } from "@/lib/user-error";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import type { Workspace } from "@/db/schema";
@@ -22,7 +23,7 @@ const writes = new Map<string, number[]>();
 export function guestRateLimit(bucket: string, max: number) {
   const now = Date.now();
   const recent = (writes.get(bucket) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (recent.length >= max) throw new Error("Too many changes in a short time. Try again in a few minutes.");
+  if (recent.length >= max) throw new UserError("Too many changes in a short time. Try again in a few minutes.");
   recent.push(now);
   writes.set(bucket, recent);
   if (writes.size > 500) for (const [k, v] of writes) if (!v.some((t) => now - t < WINDOW_MS)) writes.delete(k);
@@ -30,7 +31,7 @@ export function guestRateLimit(bucket: string, max: number) {
 
 export function cleanGuestName(name: string): string {
   const n = (name ?? "").trim().replace(/\s+/g, " ").slice(0, MAX_NAME);
-  if (!n) throw new Error("Tell us your name first");
+  if (!n) throw new UserError("Tell us your name first");
   return n;
 }
 

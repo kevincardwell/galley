@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
@@ -60,7 +61,7 @@ export function ConnectSiteForm({ workspaceId }: { workspaceId: string }) {
           try {
             await connectSite(workspaceId, fd);
           } catch (e) {
-            setError((e as Error).message);
+            setError(errorText(e));
           }
         })
       }

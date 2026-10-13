@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -25,7 +26,7 @@ export function ChangesDialog({ open, onClose, workspaceId, status, onChanged }:
     let cancelled = false;
     siteDiff(workspaceId, file).then(
       (text) => !cancelled && setDiff({ file, text }),
-      (e: Error) => !cancelled && setDiff({ file, text: `Could not show the changes: ${e.message}` }),
+      (e) => !cancelled && setDiff({ file, text: `Could not show the changes: ${errorText(e)}` }),
     );
     return () => {
       cancelled = true;
@@ -41,7 +42,7 @@ export function ChangesDialog({ open, onClose, workspaceId, status, onChanged }:
         toast(r.number ? `Sent for review: pull request #${r.number} is up to date.` : "Sent. Open a pull request on your git host to review it.", { tone: "done", duration: 8000 });
         if (r.url) window.open(r.url, "_blank", "noopener");
       } catch (e) {
-        toast((e as Error).message, { tone: "late", duration: 9000 });
+        toast(errorText(e), { tone: "late", duration: 9000 });
       }
       onChanged();
     });
@@ -53,7 +54,7 @@ export function ChangesDialog({ open, onClose, workspaceId, status, onChanged }:
         setConfirmFor(null);
         toast(`${f} is back to how it was`, { tone: "done" });
       } catch (e) {
-        toast((e as Error).message, { tone: "late" });
+        toast(errorText(e), { tone: "late" });
       }
       onChanged();
     });

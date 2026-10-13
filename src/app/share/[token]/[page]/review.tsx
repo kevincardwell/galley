@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useMemo, useState, useTransition, type FormEvent, type KeyboardEvent } from "react";
 import type { SectionStatus } from "@/db/schema";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { guestApprove, guestApprovePage, guestComment, guestSuggest } from "@/ac
 import type { ShareSectionReview } from "@/lib/copy/types";
 import { askForName, useGuestName } from "@/components/share/guest-name";
 
-const message = (e: unknown, fallback: string) => (e instanceof Error && e.message && !/server/i.test(e.message) ? e.message : fallback);
+const message = errorText;
 
 type Props = {
   token: string;

@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { toast } from "@/components/ui/toast";
 import { guestWriteSection } from "@/actions/share";
 import { askForName, useGuestName } from "./guest-name";
 
-const message = (e: unknown, fallback: string) => (e instanceof Error && e.message && !/server/i.test(e.message) ? e.message : fallback);
+const message = errorText;
 
 /**
  * A section the studio has handed to the client to write.

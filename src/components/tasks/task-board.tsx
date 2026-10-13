@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -104,7 +105,7 @@ export function TaskBoard(props: Props) {
         try {
           await fn();
         } catch (e) {
-          setError(e instanceof Error && e.message ? e.message : "That did not save. Try again.");
+          setError(errorText(e, "That did not save. Try again."));
           onFail?.();
           router.refresh();
         }

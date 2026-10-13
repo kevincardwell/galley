@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -39,7 +40,7 @@ export function SiteScreen({ workspaceId, previewUrl, repoLabel, baseBranch }: P
       try {
         setStatus(await siteStatus(workspaceId, { fetch }));
       } catch (e) {
-        toast((e as Error).message, { tone: "late" });
+        toast(errorText(e), { tone: "late" });
       }
     },
     [workspaceId],
@@ -48,7 +49,7 @@ export function SiteScreen({ workspaceId, previewUrl, repoLabel, baseBranch }: P
     let live = true;
     siteStatus(workspaceId).then(
       (s) => live && setStatus(s),
-      (e: Error) => toast(e.message, { tone: "late" }),
+      (e) => toast(errorText(e), { tone: "late" }),
     );
     return () => {
       live = false;
@@ -95,7 +96,7 @@ export function SiteScreen({ workspaceId, previewUrl, repoLabel, baseBranch }: P
           await saveTextEdit(workspaceId, { file: String(msg.file), start: Number(msg.start), end: Number(msg.end), hash: String(msg.hash), html: String(msg.html) });
           toast("Saved. Send it for review when you are ready.", { tone: "done" });
         } catch (err) {
-          toast((err as Error).message, { tone: "late" });
+          toast(errorText(err), { tone: "late" });
         }
         redraw();
       }
@@ -144,7 +145,7 @@ export function SiteScreen({ workspaceId, previewUrl, repoLabel, baseBranch }: P
                 const outcome = await updateSiteFromRemote(workspaceId);
                 toast(outcome === "reset" ? `Up to date with ${baseBranch}. Ready for the next round of changes.` : `Brought in the latest from ${baseBranch}.`, { tone: "done" });
               } catch (e) {
-                toast((e as Error).message, { tone: "late", duration: 9000 });
+                toast(errorText(e), { tone: "late", duration: 9000 });
               }
               redraw();
             })}>

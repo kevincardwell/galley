@@ -44,6 +44,17 @@ test.describe.serial("invite-only access", () => {
     }
   });
 
+  test("a refused action says why, even in a production build", async ({ page }) => {
+    await signIn(page, ADMIN.email, ADMIN.password);
+    await page.getByRole("button", { name: "New workspace" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "New workspace" });
+    await dialog.getByLabel("Website name").fill("Plain HTTP");
+    await dialog.getByText("Website code").click();
+    await dialog.locator("[name=repoUrl]").fill("http://example.com/site.git");
+    await dialog.getByRole("button", { name: "Create workspace" }).click();
+    await expect(dialog.getByRole("alert")).toHaveText("Use the repository's https:// address, without a password in it");
+  });
+
   test("admin invites an editor to one workspace", async ({ page }) => {
     await signIn(page, ADMIN.email, ADMIN.password);
     await page.goto("/admin");

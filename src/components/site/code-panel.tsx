@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState } from "@codemirror/state";
@@ -53,7 +54,7 @@ export function CodePanel({ workspaceId, openFile, onSaved }: { workspaceId: str
   const save = useRef<() => void>(() => {});
 
   useEffect(() => {
-    siteFiles(workspaceId).then(setFiles, (e: Error) => setListError(e.message));
+    siteFiles(workspaceId).then(setFiles, (e) => setListError(errorText(e)));
   }, [workspaceId]);
 
   // Follow the preview to another page, unless there is unsaved work open.
@@ -88,11 +89,11 @@ export function CodePanel({ workspaceId, openFile, onSaved }: { workspaceId: str
         setDirty(false);
         setFailed(null);
       },
-      (e: Error) => {
+      (e) => {
         if (cancelled) return;
         view.current?.destroy();
         view.current = null;
-        setFailed({ file, message: e.message });
+        setFailed({ file, message: errorText(e) });
       },
     );
     return () => {
@@ -114,7 +115,7 @@ export function CodePanel({ workspaceId, openFile, onSaved }: { workspaceId: str
           toast(`Saved ${file}`, { tone: "done" });
           onSaved();
         } catch (e) {
-          toast((e as Error).message, { tone: "late" });
+          toast(errorText(e), { tone: "late" });
         }
       });
     };

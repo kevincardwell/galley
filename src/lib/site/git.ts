@@ -1,4 +1,5 @@
 import "server-only";
+import { UserError } from "@/lib/user-error";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,7 +9,7 @@ import { SITES_DIR } from "@/db/client";
 const run = promisify(execFile);
 
 /** A message fit to show the person who pressed the button. */
-export class GitError extends Error {}
+export class GitError extends UserError {}
 
 export const siteDir = (workspaceId: string) => path.join(SITES_DIR, workspaceId);
 

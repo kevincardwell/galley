@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useState, useTransition } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -87,7 +88,7 @@ export function ItemDialog({ open, workspaceId, item, defaultDateIso, members, s
         toast(item ? "Schedule updated" : "Added to the schedule", { tone: "done" });
         onClose();
       } catch (err) {
-        setError(err instanceof Error && err.message ? err.message : "That did not save. Try again.");
+        setError(errorText(err, "That did not save. Try again."));
       }
     });
   }
@@ -105,7 +106,7 @@ export function ItemDialog({ open, workspaceId, item, defaultDateIso, members, s
         toast("Removed from the schedule");
         onClose();
       } catch (err) {
-        setError(err instanceof Error && err.message ? err.message : "That did not delete. Try again.");
+        setError(errorText(err, "That did not delete. Try again."));
       }
     });
   }

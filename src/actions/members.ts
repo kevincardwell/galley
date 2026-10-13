@@ -1,4 +1,5 @@
 "use server";
+import { UserError } from "@/lib/user-error";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -11,9 +12,9 @@ import { logActivity, logAudit } from "@/lib/activity";
 export async function addMember(workspaceId: string, userId: string, role: (typeof WORKSPACE_ROLES)[number]) {
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, "manage");
-  if (!WORKSPACE_ROLES.includes(role)) throw new Error("Unknown role");
+  if (!WORKSPACE_ROLES.includes(role)) throw new UserError("Unknown role");
   const target = db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
-  if (!target) throw new Error("Not found");
+  if (!target) throw new UserError("Not found");
   db.insert(schema.memberships)
     .values({ workspaceId: workspace.id, userId, role, addedBy: user.id })
     .onConflictDoUpdate({ target: [schema.memberships.workspaceId, schema.memberships.userId], set: { role } })
@@ -33,6 +34,6 @@ export async function removeMember(workspaceId: string, userId: string) {
 
 export async function setMemberRole(workspaceId: string, userId: string, role: string) {
   const parsed = z.enum(WORKSPACE_ROLES).safeParse(role);
-  if (!parsed.success) throw new Error("Unknown role");
+  if (!parsed.success) throw new UserError("Unknown role");
   await addMember(workspaceId, userId, parsed.data);
 }

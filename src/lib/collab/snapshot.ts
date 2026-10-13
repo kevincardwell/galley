@@ -1,4 +1,5 @@
 import "server-only";
+import { UserError } from "@/lib/user-error";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { newId } from "@/lib/ids";
@@ -28,7 +29,7 @@ const lastLogged = (g.__galleyActivityStamp ??= new Map<string, number>());
  */
 export function snapshotSection(sectionId: string, content: TiptapDoc, userId: string | null): Snapshot {
   const section = db.select().from(schema.sections).where(eq(schema.sections.id, sectionId)).get();
-  if (!section) throw new Error("Not found");
+  if (!section) throw new UserError("Not found");
   const doc = asDoc(content);
   if (JSON.stringify(doc) === JSON.stringify(asDoc(section.content))) {
     return { version: section.version, updatedAt: section.updatedAt, changed: false };

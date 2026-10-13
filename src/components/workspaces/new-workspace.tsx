@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import { useId, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -23,7 +24,7 @@ export function NewWorkspaceButton({ templates = [] }: { templates?: TemplateOpt
       <Dialog open={open} onClose={() => setOpen(false)} title="New workspace">
         <form
           className="flex flex-col gap-3"
-          action={(fd) => start(async () => { try { await createWorkspace(fd); } catch (e) { setError((e as Error).message); } })}
+          action={(fd) => start(async () => { try { await createWorkspace(fd); } catch (e) { setError(errorText(e)); } })}
         >
           <Label htmlFor={`${uid}-ws-name`}><Name>Website name</Name><Input id={`${uid}-ws-name`} name="name" placeholder="Marlow &amp; Finch Joinery" required autoFocus /></Label>
           <Label htmlFor={`${uid}-ws-url`}><Name>Live or planned URL</Name><Input id={`${uid}-ws-url`} name="url" placeholder="marlowandfinch.co.uk" /></Label>

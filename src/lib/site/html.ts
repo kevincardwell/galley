@@ -1,4 +1,5 @@
 import { parse, parseFragment } from "parse5";
+import { UserError } from "@/lib/user-error";
 import { contentHash } from "./hash";
 
 // The few parts of parse5's tree this file reads, typed here rather than leaning on the package's generics.
@@ -172,8 +173,8 @@ export function sanitizeInline(html: string, prefix: string): string {
  */
 export function applyTextEdit(src: string, edit: { start: number; end: number; hash: string; html: string; prefix: string }): string {
   const { start, end } = edit;
-  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end > src.length) throw new Error("This page changed. It has been reloaded, so try again.");
-  if (contentHash(src.slice(start, end)) !== edit.hash) throw new Error("This page changed. It has been reloaded, so try again.");
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end > src.length) throw new UserError("This page changed. It has been reloaded, so try again.");
+  if (contentHash(src.slice(start, end)) !== edit.hash) throw new UserError("This page changed. It has been reloaded, so try again.");
   const clean = sanitizeInline(edit.html, edit.prefix);
   return src.slice(0, start) + clean + src.slice(end);
 }

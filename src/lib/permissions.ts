@@ -1,4 +1,5 @@
 import "server-only";
+import { UserError } from "@/lib/user-error";
 import { and, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db, schema } from "@/db/client";
@@ -38,7 +39,7 @@ export function requireAccess(user: User, workspaceIdOrSlug: string, verb: Verb 
 /** For server actions: throw instead of redirecting. */
 export function assertAccess(user: User, workspaceIdOrSlug: string, verb: Verb = "view"): Access {
   const a = accessFor(user, workspaceIdOrSlug, verb);
-  if (!a) throw new Error("Not found");
+  if (!a) throw new UserError("Not found");
   return a;
 }
 

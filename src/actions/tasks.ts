@@ -1,4 +1,5 @@
 "use server";
+import { UserError } from "@/lib/user-error";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { notifyAssigned, notifyMentions } from "@/lib/notify";
@@ -44,7 +45,7 @@ type TaskContext = { user: User; task: Task; workspace: Workspace };
 async function editableTask(taskId: string): Promise<TaskContext> {
   const user = await requireUser();
   const task = db.select().from(schema.tasks).where(eq(schema.tasks.id, taskId)).get();
-  if (!task) throw new Error("Not found");
+  if (!task) throw new UserError("Not found");
   const { workspace } = assertAccess(user, task.workspaceId, "edit");
   return { user, task, workspace };
 }
@@ -52,7 +53,7 @@ async function editableTask(taskId: string): Promise<TaskContext> {
 async function editableSection(sectionId: string): Promise<{ user: User; section: TaskSection; workspace: Workspace }> {
   const user = await requireUser();
   const section = db.select().from(schema.taskSections).where(eq(schema.taskSections.id, sectionId)).get();
-  if (!section) throw new Error("Not found");
+  if (!section) throw new UserError("Not found");
   const { workspace } = assertAccess(user, section.workspaceId, "edit");
   return { user, section, workspace };
 }
@@ -63,7 +64,7 @@ function sectionIn(workspaceId: string, sectionId: string): TaskSection {
     .from(schema.taskSections)
     .where(and(eq(schema.taskSections.id, sectionId), eq(schema.taskSections.workspaceId, workspaceId)))
     .get();
-  if (!section) throw new Error("That section no longer exists");
+  if (!section) throw new UserError("That section no longer exists");
   return section;
 }
 
@@ -84,7 +85,7 @@ function assertAssignable(workspaceId: string, userId: string) {
     .get();
   if (member) return;
   const admin = db.select({ isAdmin: schema.users.isAdmin }).from(schema.users).where(eq(schema.users.id, userId)).get();
-  if (!admin?.isAdmin) throw new Error("That person is not in this workspace");
+  if (!admin?.isAdmin) throw new UserError("That person is not in this workspace");
 }
 
 // ---- Tasks ----
@@ -94,7 +95,7 @@ export async function createTask(workspaceId: string, sectionId: string, rawTitl
   const { workspace } = assertAccess(user, workspaceId, "edit");
   // Long text is kept, not refused: the title is its first line's worth and the description is all of it.
   const parsed = z.string().trim().min(1, "Give the task a title").max(20000, "That is too long for one task").safeParse(rawTitle);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   const { title, body } = splitTaskTitle(parsed.data);
   const section = sectionIn(workspace.id, sectionId);
   const id = newId();
@@ -109,7 +110,7 @@ export async function createTask(workspaceId: string, sectionId: string, rawTitl
 export async function updateTask(taskId: string, rawPatch: TaskPatch): Promise<void> {
   const { user, task, workspace } = await editableTask(taskId);
   const parsed = patchSchema.safeParse(rawPatch);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   const patch = parsed.data;
   const values: Partial<typeof schema.tasks.$inferInsert> = {};
 
@@ -219,7 +220,7 @@ export async function createSection(workspaceId: string, rawName: string): Promi
   const user = await requireUser();
   const { workspace } = assertAccess(user, workspaceId, "edit");
   const parsed = sectionNameSchema.safeParse(rawName);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   const row = db
     .select({ max: sql<number>`coalesce(max(${schema.taskSections.position}), -1)` })
     .from(schema.taskSections)
@@ -234,7 +235,7 @@ export async function createSection(workspaceId: string, rawName: string): Promi
 export async function renameSection(sectionId: string, rawName: string): Promise<void> {
   const { section, workspace } = await editableSection(sectionId);
   const parsed = sectionNameSchema.safeParse(rawName);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   db.update(schema.taskSections).set({ name: parsed.data }).where(eq(schema.taskSections.id, section.id)).run();
   refresh(workspace);
 }
@@ -248,7 +249,7 @@ export async function deleteSection(sectionId: string): Promise<void> {
     .where(and(eq(schema.taskSections.workspaceId, workspace.id), ne(schema.taskSections.id, section.id)))
     .orderBy(asc(schema.taskSections.position), asc(schema.taskSections.name))
     .get();
-  if (!target) throw new Error("Keep at least one section");
+  if (!target) throw new UserError("Keep at least one section");
   db.transaction((tx) => {
     const moving = tx
       .select({ id: schema.tasks.id })
@@ -283,7 +284,7 @@ export async function reorderSections(workspaceId: string, orderedIds: string[])
 
 async function editableChecklistItem(itemId: string) {
   const item = db.select().from(schema.taskChecklist).where(eq(schema.taskChecklist.id, itemId)).get();
-  if (!item) throw new Error("Not found");
+  if (!item) throw new UserError("Not found");
   const ctx = await editableTask(item.taskId);
   return { ...ctx, item };
 }
@@ -291,7 +292,7 @@ async function editableChecklistItem(itemId: string) {
 export async function addChecklistItem(taskId: string, rawText: string): Promise<string> {
   const { task, workspace } = await editableTask(taskId);
   const parsed = textSchema.safeParse(rawText);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   const row = db
     .select({ max: sql<number>`coalesce(max(${schema.taskChecklist.position}), -1)` })
     .from(schema.taskChecklist)
@@ -312,7 +313,7 @@ export async function toggleChecklistItem(itemId: string): Promise<void> {
 export async function renameChecklistItem(itemId: string, rawText: string): Promise<void> {
   const { item, workspace } = await editableChecklistItem(itemId);
   const parsed = textSchema.safeParse(rawText);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   db.update(schema.taskChecklist).set({ text: parsed.data }).where(eq(schema.taskChecklist.id, item.id)).run();
   refresh(workspace);
 }
@@ -328,7 +329,7 @@ export async function deleteChecklistItem(itemId: string): Promise<void> {
 export async function addComment(taskId: string, rawBody: string): Promise<string> {
   const { user, task, workspace } = await editableTask(taskId);
   const parsed = textSchema.safeParse(rawBody);
-  if (!parsed.success) throw new Error(firstIssue(parsed.error));
+  if (!parsed.success) throw new UserError(firstIssue(parsed.error));
   const id = newId();
   db.insert(schema.comments).values({ id, workspaceId: workspace.id, taskId: task.id, body: parsed.data, authorId: user.id }).run();
   logActivity({ workspaceId: workspace.id, actorId: user.id, verb: "commented on", subjectType: "task", subjectId: task.id, subjectTitle: task.title });
@@ -339,7 +340,7 @@ export async function addComment(taskId: string, rawBody: string): Promise<strin
 
 export async function resolveComment(commentId: string, resolved = true): Promise<void> {
   const comment = db.select().from(schema.comments).where(eq(schema.comments.id, commentId)).get();
-  if (!comment?.taskId) throw new Error("Not found");
+  if (!comment?.taskId) throw new UserError("Not found");
   const { workspace } = await editableTask(comment.taskId);
   db.update(schema.comments).set({ resolvedAt: resolved ? nowSec() : null }).where(eq(schema.comments.id, comment.id)).run();
   refresh(workspace);

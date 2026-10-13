@@ -1,4 +1,5 @@
 "use client";
+import { errorText } from "@/lib/user-error";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -33,7 +34,7 @@ export function MyTasksList({ initialGroups }: { initialGroups: MyTaskGroup[] })
       try {
         await toggleDone(id);
       } catch (e) {
-        setError(e instanceof Error && e.message ? e.message : "That did not save. Try again.");
+        setError(errorText(e, "That did not save. Try again."));
         router.refresh();
       }
     });
