@@ -88,6 +88,8 @@ export function SiteScreen({ workspaceId, previewUrl, repoLabel, baseBranch }: P
         } else {
           lastScroll.current = 0; // a new page starts at the top
         }
+      } else if (msg.type === "galley:locked") {
+        toast("The page's own script changes this text as it runs, so it can't be edited here. Use Code to edit the file.");
       } else if (msg.type === "galley:scrolled") {
         lastScroll.current = Number(msg.y) || 0;
       } else if (msg.type === "galley:edit") {

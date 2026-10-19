@@ -40,6 +40,25 @@
     }
   }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ATTRS });
 
+  // ---- Text that a page script has changed isn't the file's text: saving it would write the script's output (an
+  // animation frame, a counter) into the file. So an element is only editable while it matches the page as served,
+  // parsed without running its scripts; one that doesn't loses its outline. ----
+  let served = null;
+  const asServed = () =>
+    (served ??= realFetch(location.href)
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
+      .then((t) => new DOMParser().parseFromString(t, "text/html"))
+      .catch(() => null));
+  // ponytail: checked when editing starts; a script that rewrites the text mid-edit isn't told apart from typing.
+  // Watch the active element with a MutationObserver if that ever happens.
+  async function untouched(el) {
+    const doc = await asServed();
+    const twin = doc && doc.querySelector(`[data-galley-edit="${el.dataset.galleyEdit}"]`);
+    if (twin && twin.innerHTML === el.innerHTML) return true;
+    el.removeAttribute("data-galley-edit");
+    return false;
+  }
+
   // ---- Click to edit ----
   let editing = false;
   let active = null;
@@ -90,7 +109,8 @@
       if (el) {
         e.preventDefault();
         e.stopPropagation();
-        begin(el, e.clientX, e.clientY);
+        const { clientX: x, clientY: y } = e;
+        untouched(el).then((ok) => (ok ? begin(el, x, y) : tell({ type: "galley:locked" })));
       } else if (e.target.closest && e.target.closest("a[href]")) {
         e.preventDefault(); // stay on the page while editing; links work again in preview mode
       }
@@ -130,7 +150,8 @@
     if (msg.type === "galley:mode") {
       editing = !!msg.editing;
       document.documentElement.classList.toggle("galley-editing", editing);
-      if (!editing) finish(true);
+      if (editing) document.querySelectorAll("[data-galley-edit]").forEach(untouched);
+      else finish(true);
     } else if (msg.type === "galley:scroll") {
       window.scrollTo(0, msg.y || 0);
     }

@@ -17,6 +17,10 @@ in place and running the previous tag.
 
 ### Fixed
 
+- **Edit text leaves animated parts of a page alone.** Text that the page's own script changes as it runs (an
+  animation, a scoreboard, a slideshow) could be clicked and edited in the Site preview, and saving it wrote the
+  script's output into the file instead of the words in the source. Now only text that still matches the page as
+  served can be edited; the rest has no outline, and clicking it says to use Code.
 - **A long task is no longer lost.** Typing more than 200 characters into Add task used to fail and throw the
   words away. Now the first part (cut at a word) becomes the title and the whole text the description, and if
   adding a task ever fails for another reason, what you typed goes back into the box.
