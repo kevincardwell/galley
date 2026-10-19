@@ -14,7 +14,7 @@ const ID_ENV = { GIT_AUTHOR_NAME: "Seed", GIT_AUTHOR_EMAIL: "seed@example.com", 
 const sh = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd, env: { ...process.env, ...ID_ENV }, encoding: "utf8" }).trim();
 
 let origin: string;
-let seed: string; // stands in for Jasper's own clone, where pull requests get merged
+let seed: string; // stands in for Kevin's own clone, where pull requests get merged
 let site: Site;
 const TOKEN = "secret-token-that-must-not-be-written-down";
 

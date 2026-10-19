@@ -341,7 +341,7 @@ does is client sign-off of copy, and that was still weaker than a Google Doc. Tw
   the shared function, so restore and client writes are covered too.
 
 ## Not yet done (pick up here)
-1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). `jasper` is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).
+1. ~~Docker image not yet built.~~ **Done 2026-09-14** — built, run and clicked through (see above). the desktop user is now in the `docker` group, but that needs a fresh login to take effect; until then use `sudo docker`. Still unverified inside the container: ffmpeg video posters (only images were uploaded).
 3. **GitHub**: pushed 2026-09-11 to https://github.com/kevincardwell/galley (private, default branch main). CI + image publish workflows run on main. The ghcr.io image stays private while the repo is private; make the package (and repo) public when ready so `docker compose pull` works for others.
 4. E2E only covers access. Add task → copy → upload → export steps once the UI has been eyeballed (selectors unknown until then).
 5. Small known gaps: page/section drag reorder not wired (actions exist); instance logo not implemented; upload accepts by extension/mime only (bad content fails at processing with a recorded error, not at upload); oversize uploads are drained before rejection (no client-side pre-check).
@@ -353,7 +353,7 @@ See `docs/AGENT-BRIEF.md` for conventions (server-action guard pattern, tokens, 
 ## Site tab 2026-10-12 (branch `site-tab`, unreleased)
 
 Edit a project's website itself: a git working copy per workspace, a live preview with click-to-edit, a
-CodeMirror editor, and changes sent as a pull request. Decisions with Jasper: builds and deploys run in the
+CodeMirror editor, and changes sent as a pull request. Decisions with Kevin: builds and deploys run in the
 repository's GitHub Actions (never on the Galley server); changes go out as a branch + PR; every member edits
 (viewers too); connecting the repository and holding its token is manager-only. Plan:
 `~/.claude/plans/abstract-booping-taco.md`.
@@ -392,5 +392,5 @@ sender, merged on the "remote", **1 new on main** brought it level. Inside the f
 `.github/` 404; a wrong token 404s. Docker image built and run: `git --version` and an https clone work as
 99:100.
 
-Not yet: a real GitHub PR round trip (needs Jasper's token), the Cardwell deploy workflow (separate repo), and
+Not yet: a real GitHub PR round trip (needs Kevin's token), the Cardwell deploy workflow (separate repo), and
 the dark-theme look of the code editor has not been eyeballed.
